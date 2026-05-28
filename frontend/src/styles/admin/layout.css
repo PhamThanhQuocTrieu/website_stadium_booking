@@ -1,0 +1,31 @@
+/* File: Frontend/src/styles/admin/layout.css */
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  transition: all 0.3s ease;
+}
+
+.nav-link {
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #198754 !important; /* Màu xanh success */
+}
+
+.nav-link.active-menu {
+  background-color: #198754 !important;
+  font-weight: 600;
+}
+
+.logout-fixed {
+  position: absolute;
+  bottom: 20px;
+  width: 220px;
+  left: 20px;
+}

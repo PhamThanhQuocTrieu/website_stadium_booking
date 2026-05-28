@@ -1,0 +1,75 @@
+/* Thanh Navbar chính */
+.custom-navbar {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  min-height: 70px;
+  z-index: 1050; /* Đảm bảo nằm trên mọi thành phần khác */
+}
+
+/* Các liên kết điều hướng */
+.nav-link-custom {
+  position: relative;
+  color: #4b5563 !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.95rem;
+  transition: color 0.3s ease;
+}
+.nav-link-custom::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  width: 0; height: 3px;
+  background-color: #198754;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+.nav-link-custom:hover::after { width: 60%; }
+
+/* Khung tìm kiếm */
+.search-input-wrapper { 
+  transition: all 0.3s ease; 
+  border: 1px solid #e5e7eb !important; 
+}
+.search-input-wrapper:focus-within {
+  border-color: #198754 !important;
+  box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.15);
+}
+
+/* Dropdown menu */
+.custom-dropdown .dropdown-toggle::after { display: none !important; }
+.custom-dropdown .dropdown-menu {
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 16px !important;
+  padding: 0.5rem !important;
+  margin-top: 15px !important;
+}
+
+/* Cầu nối để giữ hover (Fix lỗi mất menu) */
+.custom-dropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 0;
+  width: 100%; height: 20px; /* Tăng chiều cao cầu nối */
+  background: transparent;
+}
+
+.custom-dropdown .dropdown-item {
+  border-radius: 10px !important;
+  padding: 0.6rem 1rem !important;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.custom-dropdown .dropdown-item:hover { 
+  background-color: #f3f4f6 !important; 
+  color: #198754 !important; 
+}
+
+/* Nút đăng nhập */
+.btn-login-custom { transition: all 0.3s ease !important; }
+.btn-login-custom:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3) !important; }

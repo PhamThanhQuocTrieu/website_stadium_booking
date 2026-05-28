@@ -1,0 +1,119 @@
+/* ==========================================================================
+   ARENAHUB FIELD DETAIL PAGE STYLESHEET
+   ========================================================================== */
+
+.field-detail-scroll-page {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-top: 90px; /* Tạo vùng đệm tránh bị gầm Navbar che khuất mất thông tin */
+}
+
+/* Khung xử lý hình ảnh và thư viện ảnh */
+.main-image-container { 
+  border-radius: 24px; 
+  overflow: hidden; 
+  position: relative; 
+  height: 480px; 
+}
+
+.main-image { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+}
+
+.image-label {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.thumbnail { 
+  width: 100px; 
+  height: 70px; 
+  border-radius: 12px; 
+  overflow: hidden; 
+  cursor: pointer; 
+  border: 2px solid transparent; 
+  transition: all 0.2s ease; 
+  flex-shrink: 0; 
+}
+
+.thumbnail.active { 
+  border-color: #198754; 
+  transform: scale(1.05); 
+}
+
+.thumbnail img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+}
+
+/* Chống tràn chữ tuyệt đối cho phân hệ mô tả Rich Text Editor (CKEditor/Quill) */
+.rich-text-content {
+  line-height: 1.8;
+  color: #4b5563;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  max-width: 100%;
+}
+
+.rich-text-content p { 
+  margin-bottom: 1rem; 
+  text-align: justify; 
+}
+
+.rich-text-content img { 
+  max-width: 100% !important; 
+  height: auto !important; 
+  border-radius: 12px; 
+}
+
+/* Các phân khối giao diện phụ trợ */
+.info-section-card { 
+  border: 1px solid #f1f5f9; 
+}
+
+.price-box {
+  background-color: #f8fafc;
+}
+
+.icon-circle { 
+  width: 38px; 
+  height: 38px; 
+  background: #fff; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 18px; 
+  border: 1px solid #e2e8f0; 
+}
+
+.avatar-circle { 
+  width: 50px; 
+  height: 50px; 
+  background: #0d6efd; 
+  color: white; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: bold; 
+  flex-shrink: 0; 
+}
+
+.shadow-xs { 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+}
+
+.w-fit-content { 
+  width: fit-content; 
+}

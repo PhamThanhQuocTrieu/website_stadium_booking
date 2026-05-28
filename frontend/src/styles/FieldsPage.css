@@ -1,0 +1,168 @@
+/* ==========================================================================
+   ARENAHUB FIELDS PAGE STYLESHEET - BẢN KHỚP KHÍT 100%
+   ========================================================================== */
+
+.fields-page-v2 {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+/* KHỐI BANNER HERO: Loại bỏ hoàn toàn khoảng hở */
+.fields-hero-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #198754 100%);
+  padding: 35px 0;
+  margin-top: 0 !important;   /* Ép chết không cho tạo khoảng cách với đỉnh */
+  margin-bottom: 30px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.fields-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('https://www.transparenttextures.com/patterns/cubes.png');
+  opacity: 0.1;
+}
+
+/* Sidebar bộ lọc - Đồng bộ neo giữ khi cuộn chuột */
+.filter-sidebar {
+  position: sticky;
+  top: 90px; /* Giữ khoảng cách an toàn dưới Header khi lướt xem */
+  border: 1px solid #f1f5f9;
+  z-index: 10;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.filter-input {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.btn-sort {
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 10px 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-sort:hover {
+  background-color: #f0fdf4;
+  color: #198754;
+  border-color: #198754;
+}
+
+/* Khung ô tìm kiếm */
+.search-group {
+  border-radius: 100px;
+  padding: 3px;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.search-input {
+  font-weight: 600;
+  border-radius: 100px;
+  font-size: 0.9rem;
+}
+
+/* Định dạng Card sân tập */
+.field-card-v2 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent !important;
+}
+
+.field-card-v2:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 25px -5px rgba(25, 135, 84, 0.08) !important;
+  border-color: #198754 !important;
+}
+
+.card-img-box {
+  height: 180px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  z-index: 2;
+}
+
+/* Làm mờ thẻ sân khi không Active */
+.field-card-v2.sold-out {
+  opacity: 0.6;
+  filter: grayscale(0.8);
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.field-card-v2.sold-out:hover {
+  opacity: 0.8;
+  filter: grayscale(0.4);
+}
+
+/* ==========================================================================
+   PHÂN TRANG (PAGINATION) - ARENAHUB STYLE
+   ========================================================================== */
+.pagination {
+  gap: 8px; /* Khoảng cách giữa các nút */
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.page-item .page-link {
+  border: none !important;
+  border-radius: 12px !important; /* Bo tròn các góc */
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #198754 !important;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.page-item.active .page-link {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+}
+
+.page-item.disabled .page-link {
+  background-color: #f1f5f9 !important;
+  color: #cbd5e1 !important;
+  cursor: not-allowed;
+}
+
+.page-link:hover:not(.disabled) {
+  background-color: #f0fdf4 !important;
+  transform: translateY(-2px);
+}

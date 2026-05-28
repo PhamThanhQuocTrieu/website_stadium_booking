@@ -1,0 +1,23 @@
+/* File: Frontend/src/styles/admin/dashboard.css */
+.stat-card {
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.chart-container {
+  height: 300px;
+  background-color: #fdfdfd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #dee2e6;
+  border-radius: 12px;
+  color: #6c757d;
+}
+
+.fw-black {
+  font-weight: 900;
+}

@@ -1,0 +1,90 @@
+/* ==========================================================================
+   ARENAHUB MODERN PAYMENT & CONFIRMATION STYLESHEET
+   ========================================================================== */
+
+.payment-page-premium {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-top: 40px;
+  padding-bottom: 60px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Card tổng quan phong cách Clean-UI */
+.summary-card-v3 {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.card-header-mint {
+  background: linear-gradient(135deg, #0a4d31, #116843);
+  color: #ffffff;
+  padding: 18px 24px;
+  font-weight: 700;
+}
+
+.info-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+.info-item-row:last-child {
+  border-bottom: none;
+}
+
+/* Khối hiển thị chi tiết các slot giờ */
+.slot-badge-item {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Form nhập liệu tinh giản */
+.custom-input-box {
+  border: 1px solid #cbd5e1 !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+}
+.custom-input-box:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Khối điều khoản / chính sách an toàn */
+.policy-box-v3 {
+  background: #fdf2f8;
+  border-left: 4px solid #db2777;
+  padding: 16px;
+  border-radius: 0 12px 12px 0;
+}
+
+/* Nút xác nhận thanh toán */
+.btn-submit-payment {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  padding: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+.btn-submit-payment:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+}
+.btn-submit-payment:disabled {
+  background: #cbd5e1;
+  transform: none;
+  box-shadow: none;
+}

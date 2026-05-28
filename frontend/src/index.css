@@ -1,0 +1,26 @@
+/* 1. Reset trình duyệt để loại bỏ khoảng trắng thừa */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 2. Ép body và #root tràn 100% màn hình */
+body, #root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden; /* Ngăn thanh cuộn ngang xuất hiện */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #fcfcfc;
+}
+
+/* 4. Global styles cho các thành phần */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
+
+/* Đảm bảo ảnh không bị tràn khung */
+img {
+  max-width: 100%;
+  height: auto;
+}

@@ -1,0 +1,36 @@
+/* --- BỔ SUNG ĐỂ ĐỒNG BỘ VỚI USER PROFILE --- */
+
+/* Danh sách thông tin bên trái */
+.info-list {
+  text-align: left;
+  margin-top: 20px;
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  color: #4b5563;
+  font-size: 0.9rem;
+  border: 1px solid #edf2f7;
+}
+
+.info-card svg { 
+  color: #198754; 
+  margin-right: 12px; 
+}
+
+/* Badge thành viên */
+.member-badge {
+  display: inline-block;
+  background: #f0fdf4;
+  color: #198754;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 10px;
+}

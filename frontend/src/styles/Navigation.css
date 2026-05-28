@@ -1,0 +1,118 @@
+/* ==========================================================================
+   ARENAHUB NAVIGATION MODERN STYLESHEET
+   ========================================================================== */
+
+/* 1. Hiệu ứng làm mờ kính (Glassmorphism) khi cuộn trang */
+.custom-navbar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 2. Thiết kế hiệu ứng hover cho các Menu chính */
+.nav-link-custom {
+  position: relative;
+  color: #4b5563 !important; /* Màu xám hiện đại */
+  padding: 0.5rem 1rem !important;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+}
+
+/* Tạo đường gạch dưới ẩn */
+.nav-link-custom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background-color: #198754; /* Xanh lá thương hiệu ArenaHub */
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
+}
+
+/* Khi di chuột qua (Hover) */
+.nav-link-custom:hover {
+  color: #198754 !important;
+}
+.nav-link-custom:hover::after {
+  width: 60%;
+}
+
+/* Khi đang ở trang đó (Active) */
+.nav-link-custom.active {
+  color: #198754 !important;
+}
+.nav-link-custom.active::after {
+  width: 80%;
+  height: 3px;
+}
+
+/* 3. Tối ưu thanh tìm kiếm ẩn bên trong */
+.search-input-wrapper {
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb !important;
+}
+.search-input-wrapper:focus-within {
+  border-color: #198754 !important;
+  box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.15);
+  background-color: #fff !important;
+}
+
+/* 4. Định dạng lại Menu thả xuống của Avatar tài khoản */
+.custom-dropdown .dropdown-toggle::after {
+  display: none !important; /* Ẩn dấu mũi tên mặc định để giao diện thanh thoát */
+}
+
+.custom-dropdown .dropdown-menu {
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 16px !important;
+  padding: 0.5rem !important;
+  margin-top: 10px !important;
+  animation: dropdownFadeUp 0.3s ease forwards;
+}
+
+.custom-dropdown .dropdown-item {
+  border-radius: 10px !important;
+  padding: 0.6rem 1rem !important;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown .dropdown-item:hover {
+  background-color: #f3f4f6 !important;
+  color: #198754 !important;
+}
+
+.custom-dropdown .dropdown-item.text-danger:hover {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+/* Hiệu ứng chuyển động mượt mà khi bấm mở mở Dropdown */
+@keyframes dropdownFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Đăng nhập / Đăng ký Button hiệu ứng */
+.btn-login-custom {
+  transition: all 0.3s ease !important;
+}
+.btn-login-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3) !important;
+}

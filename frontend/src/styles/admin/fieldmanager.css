@@ -1,0 +1,356 @@
+/* =========================================================================
+   File: Frontend/src/styles/admin/fieldmanager.css
+   Hệ thống Style Quản lý tài nguyên Sân bãi - Cao cấp thực tế ArenaHub
+   ========================================================================= */
+
+.bg-admin-gradient {
+  background-color: #f8f9fa;
+}
+
+.fw-black {
+  font-weight: 800;
+}
+
+.tracking-tight {
+  letter-spacing: -0.5px;
+}
+
+.text-muted-light {
+  color: #adb5bd;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================================================================
+   1. ĐỊNH DẠNG BẢNG DANH SÁCH SÂN CHUYÊN NGHIỆP (CUSTOM TABLE)
+   ========================================================================= */
+.custom-admin-table thead th {
+  background-color: #f1f3f5;
+  color: #495057;
+  font-weight: 700;
+  border-bottom: none;
+  padding: 14px 10px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.custom-admin-table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.custom-admin-table tbody tr:hover {
+  background-color: #f8f9fa !important;
+}
+
+.table-img-wrapper {
+  width: 55px;
+  height: 55px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.text-truncate-custom {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* =========================================================================
+   2. HỆ THỐNG ĐÈN LED NHẤP NHÁY THEO TIME THỰC (ĐỒNG BỘ CHUẨN MÀU UX/UI)
+   ========================================================================= */
+.status-dot-label.text-success { color: #198754 !important; }
+.status-dot-label.text-danger { color: #dc3545 !important; }  /* 🔴 Đang bảo trì - Màu Đỏ */
+.status-dot-label.text-warning { color: #ffc107 !important; } /* 🟡 Hệ thống hết sân - Màu Vàng */
+
+.dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Trạng thái 1: Hoạt động (Xanh lá) */
+.dot-pulse.bg-success {
+  animation: pulse-success 2s infinite;
+}
+
+/* Trạng thái 2: Bảo trì (Đỏ) */
+.dot-pulse.bg-danger {
+  animation: pulse-danger 2s infinite;
+}
+
+/* Trạng thái 3: Hết sân (Vàng hổ phách) */
+.dot-pulse.bg-warning {
+  animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-success {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.6); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(25, 135, 84, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+}
+
+@keyframes pulse-danger {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+@keyframes pulse-warning {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+/* =========================================================================
+   3. NÚT THAO TÁC ROW HÀNH ĐỘNG
+   ========================================================================= */
+.btn-action-edit:hover {
+  background-color: #e8f0fe !important;
+  color: #1a73e8 !important;
+}
+
+.btn-action-delete:hover {
+  background-color: #fce8e6 !important;
+  color: #d93025 !important;
+}
+
+/* =========================================================================
+   4. MODAL VÀ THANH TABS DI CHUYỂN
+   ========================================================================= */
+.custom-admin-tabs .nav-link {
+  font-weight: 700;
+  color: #868e96;
+  border: none;
+  padding: 14px 22px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.custom-admin-tabs .nav-link:hover {
+  color: #212529;
+}
+
+.custom-admin-tabs .nav-link.active {
+  color: #198754;
+  border-bottom: 3px solid #198754;
+  background: none;
+}
+
+/* Editor ReactQuill */
+.quill-wrapper-premium .ql-toolbar {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.quill-wrapper-premium .ql-container {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-color: #dee2e6;
+  font-family: inherit;
+}
+
+/* =========================================================================
+   5. KHU VỰC HÌNH ẢNH & TIỆN ÍCH DỊCH VỤ
+   ========================================================================= */
+.border-dashed-premium {
+  border: 2px dashed #dee2e6 !important;
+}
+
+.border-dashed-add {
+  width: 135px;
+  height: 90px;
+  border: 2px dashed #ced4da;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.border-dashed-add:hover {
+  border-color: #198754;
+  background-color: #f1f8f5 !important;
+}
+
+.group-gallery .btn-del {
+  opacity: 0;
+  transition: all 0.2s ease-in-out;
+  z-index: 10;
+}
+
+.group-gallery:hover .btn-del {
+  opacity: 1;
+}
+
+/* =========================================================================
+   6. 🌟 ĐỒ LẠI GIAO DIỆN BẢNG GIÁ THEO HÀNG NGANG TỐI ƯU SIÊU CẤP (GRID)
+   ========================================================================= */
+.premium-price-card {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease;
+  margin-bottom: 10px !important;
+}
+
+.premium-price-card:hover {
+  border-color: #34d399 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Biến hàng nhập liệu thành dạng lưới nằm gọn trên 1 dòng */
+.pricing-row-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1.8fr 2fr 1.8fr 0.4fr 0.4fr; /* Phân bổ tỷ lệ độ rộng hoàn hảo */
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px !important;
+}
+
+.small-label-premium {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.custom-input-premium,
+.custom-select-premium {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px !important;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  background-color: #f8fafc;
+  color: #0f172a;
+  height: 36px;
+  box-shadow: none !important;
+}
+
+.custom-input-premium:focus,
+.custom-select-premium:focus {
+  background-color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+.input-group-premium {
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #f8fafc;
+  height: 36px;
+}
+
+.font-code {
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* Checkbox ngọn lửa Giờ cao điểm nhỏ gọn */
+.peak-checkbox-premium {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 0 !important;
+  margin-bottom: 0;
+}
+
+.peak-checkbox-premium input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 32px;
+  height: 32px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: 1px solid #cbd5e1;
+  margin: 0 !important;
+}
+
+.peak-checkbox-premium input::before {
+  content: '🔥';
+  filter: grayscale(100%);
+  opacity: 0.4;
+  font-size: 14px;
+}
+
+.peak-checkbox-premium input:checked {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.peak-checkbox-premium input:checked::before {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* Nút xóa dòng inline tinh tế */
+.btn-remove-rule-inline {
+  color: #94a3b8;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-rule-inline:hover {
+  color: #ef4444;
+  background-color: #ffeeef;
+}
+
+.last-border-0:last-child {
+  border-bottom: none !important;
+}
+
+/* =========================================================================
+   7. 🌟 FIX LỖI KHÓA CUỘN (SCROLL) TRONG CÁC TAB CỦA MODAL PREMIUM
+   ========================================================================= */
+.premium-admin-modal .modal-body {
+  max-height: calc(100vh - 210px); /* Tự động tính toán chiều cao an toàn theo màn hình máy tính */
+  overflow-y: auto !important;     /* Ép Modal luôn hiển thị thanh cuộn dọc khi nội dung bị tràn */
+  padding-right: 8px !important;   /* Tạo khoảng trống nhỏ để thanh cuộn không đè lên chữ */
+}
+
+/* Tinh chỉnh riêng cho phân hệ nội dung bên trong các Tab */
+.premium-admin-modal .tab-content {
+  overflow: visible !important;    /* Cho phép các Card bảng giá thoải mái tràn xuống dưới */
+  padding-bottom: 20px;            /* Tạo khoảng đệm dưới đáy để không bị sát Footer */
+}
+
+/* Độ lại thanh cuộn dọc (Scrollbar) cho đồng bộ phong cách tinh tế */
+.premium-admin-modal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.premium-admin-modal .modal-body::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 10px;
+}
+.premium-admin-modal .modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.premium-admin-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: #198754;            /* Rê chuột vào thanh cuộn đổi sang màu xanh ArenaHub */
+}

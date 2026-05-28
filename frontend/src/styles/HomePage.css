@@ -1,0 +1,94 @@
+/* ==========================================================================
+   ARENAHUB HOMEPAGE MODERN STYLESHEET
+   ========================================================================== */
+
+.homepage-container {
+  background-color: #fdfefe;
+  min-height: 100vh;
+  padding-bottom: 50px;
+}
+
+/* 1. Banner Section: Khớp tỷ lệ 1920:750 */
+.banner-top-section {
+  position: relative;
+  background-color: #ffffff;
+}
+
+.banner-container {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1920 / 750; /* Giữ tỷ lệ khung hình chuẩn */
+  overflow: hidden;
+  background-color: #000;
+  border-radius: 0 0 16px 16px;
+}
+
+.banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Sử dụng cover để lấp đầy khung mà không bị méo */
+}
+
+/* 2. Thanh tìm kiếm đè lên Banner */
+.search-overlay-container {
+  position: absolute;
+  bottom: -40px; /* Vị trí bám đáy banner */
+  left: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+.search-bar-box {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px !important;
+}
+
+.search-bar-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 3. Card sân bãi */
+.field-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-radius: 20px !important;
+}
+
+.field-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(25, 135, 84, 0.15) !important;
+}
+
+/* Hiệu ứng mờ cho sân bảo trì/hết sân */
+.grayscale {
+  filter: grayscale(100%);
+  transition: 0.3s;
+}
+
+/* 4. Điều chỉnh khoảng cách cho nội dung dưới Banner */
+/* Đã bù trừ khoảng cách do thanh tìm kiếm bám đáy banner */
+@media (min-width: 992px) {
+  .homepage-container .container-fluid {
+    margin-top: 60px !important;
+  }
+}
+
+/* Nút chi tiết */
+.btn-details-premium {
+  background-color: #198754 !important;
+  border: none !important;
+  transition: 0.3s !important;
+}
+
+.btn-details-premium:hover {
+  background-color: #146c43 !important;
+  transform: scale(1.05);
+}
+
+/* Tiêu đề mục */
+h2.fw-bold, h3.fw-bold {
+  color: #1f2937;
+}
