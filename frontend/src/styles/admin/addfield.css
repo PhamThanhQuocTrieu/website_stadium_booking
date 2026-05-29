@@ -1,0 +1,97 @@
+/* Frontend/src/styles/admin/addfield.css */
+
+/* --- Layout chính --- */
+.admin-gradient {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding-bottom: 50px;
+}
+
+/* --- Tabs --- */
+.custom-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 600;
+    border: none;
+    padding: 15px 30px;
+    transition: 0.3s;
+}
+
+.custom-tabs .nav-link.active {
+    color: #198754 !important;
+    background-color: transparent !important;
+    border-bottom: 3px solid #198754;
+}
+
+/* --- Editor mô tả --- */
+.quill-editor-large .ql-container {
+    min-height: 250px;
+    font-size: 16px;
+    border-radius: 0 0 8px 8px;
+}
+
+.quill-editor-large .ql-toolbar {
+    border-radius: 8px 8px 0 0;
+    background-color: #f8f9fa;
+}
+
+/* --- Vùng Upload ảnh chung --- */
+.upload-container {
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    height: 150px; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #ffffff;
+    width: 100%;
+    color: #adb5bd;
+    margin-bottom: 1rem;
+}
+
+.upload-container:hover {
+    border-color: #198754;
+    background: #f1f8f3;
+    color: #198754;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(25, 135, 84, 0.1);
+}
+
+/* --- Container cho ảnh Gallery (Grid) --- */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+/* --- Bảng giá (Pricing Row) --- */
+.pricing-row {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px; 
+    margin-bottom: 15px; 
+    transition: 0.2s;
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap; 
+}
+
+/* Ép các ô input nhỏ gọn và căn chỉnh đồng nhất */
+.pricing-row .form-control, 
+.pricing-row .form-select {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* --- Typo & Utils --- */
+.fw-bold {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #495057;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
