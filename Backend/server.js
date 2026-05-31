@@ -9,9 +9,10 @@ const connectDB = require('./config/db');
 
 // IMPORT CÁC ĐƯỜNG DẪN ĐỊNH TUYẾN (ROUTES)
 const userRoutes = require('./routes/userRoutes');
-const adminFieldRoutes = require('./routes/adminFieldRoutes'); // Dành cho Admin CRUD
-const userFieldRoutes = require('./routes/userFieldRoutes');   // Dành cho Client xem/đặt sân
+const adminFieldRoutes = require('./routes/adminFieldRoutes');
+const userFieldRoutes = require('./routes/userFieldRoutes');
 const bookingRoutes = require('./routes/bookingRoutes'); 
+const voucherRoutes = require('./routes/voucherRoutes'); // 🌟 Route Voucher đã có file
 
 // 1. Cấu hình biến môi trường
 dotenv.config();
@@ -22,7 +23,6 @@ connectDB();
 const app = express();
 
 // 3. CẤU HÌNH MIDDLEWARE
-// Cấu hình CORS để cho phép Frontend gửi Token (credentials: true)
 app.use(cors({
   origin: "http://localhost:5173", 
   credentials: true,
@@ -30,7 +30,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 })); 
 
-// Tăng giới hạn payload để nhận dữ liệu lớn (ảnh/gallery/description từ ReactQuill)
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -43,7 +42,6 @@ const io = new Server(server, {
   }
 });
 
-// Gán 'io' để dùng trong Controllers qua req.app.get('io')
 app.set('io', io);
 
 io.on('connection', (socket) => {
@@ -56,13 +54,12 @@ app.get('/', (req, res) => {
   res.send('ArenaHub API đang vận hành ổn định...');
 });
 
-// PHÂN TÁCH ROUTES RÕ RÀNG
-// /api/admin/fields: Dành cho Admin quản lý sân (cần bảo mật)
-// /api/fields: Dành cho User thường xem/đặt sân
+// PHÂN TÁCH ROUTES (Đã loại bỏ adminRoutes không tồn tại)
 app.use('/api/users', userRoutes);
 app.use('/api/admin/fields', adminFieldRoutes); 
 app.use('/api/fields', userFieldRoutes);       
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/admin/vouchers', voucherRoutes); // 🌟 Route cho Voucher
 
 // 6. MIDDLEWARE BẮT LỖI TẬP TRUNG
 app.use((err, req, res, next) => {

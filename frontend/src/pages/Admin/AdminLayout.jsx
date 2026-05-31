@@ -1,8 +1,17 @@
 // File: Frontend/src/pages/Admin/AdminLayout.jsx
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MapPinned, CalendarDays, Users, LogOut, UserCircle } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  MapPinned, 
+  CalendarDays, 
+  Users, 
+  LogOut, 
+  UserCircle, 
+  TicketPercent // 🌟 Đã thêm icon TicketPercent
+} from 'lucide-react';
 import Swal from 'sweetalert2';
+
 import '../../styles/admin/layout.css';
 
 const AdminLayout = () => {
@@ -18,9 +27,9 @@ const AdminLayout = () => {
       confirmButtonText: 'Đăng xuất'
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem('token'); // Xóa token
-        localStorage.removeItem('user');  // Xóa thông tin user nếu có
-        navigate('/login');              // Chuyển về trang đăng nhập
+        localStorage.removeItem('token'); 
+        localStorage.removeItem('user');  
+        navigate('/login');               
       }
     });
   };
@@ -30,6 +39,7 @@ const AdminLayout = () => {
     { path: '/admin/fields', icon: <MapPinned size={20}/>, label: 'Quản lý sân' },
     { path: '/admin/bookings', icon: <CalendarDays size={20}/>, label: 'Đơn đặt sân' },
     { path: '/admin/users', icon: <Users size={20}/>, label: 'Người dùng' },
+    { path: '/admin/vouchers', icon: <TicketPercent size={20}/>, label: 'Mã giảm giá' }, // 🌟 Đã thêm menu này
     { path: '/admin/profile', icon: <UserCircle size={20}/>, label: 'Thông tin cá nhân' },
   ];
 
@@ -39,7 +49,11 @@ const AdminLayout = () => {
         <h4 className="text-success fw-bold mb-5 text-center">ArenaHub Admin</h4>
         <div className="nav flex-column">
           {menuItems.map((item) => (
-            <Link key={item.path} to={item.path} className={`nav-link text-white d-flex align-items-center gap-3 mb-2 ${location.pathname === item.path ? 'active-menu' : ''}`}>
+            <Link 
+              key={item.path} 
+              to={item.path} 
+              className={`nav-link text-white d-flex align-items-center gap-3 mb-2 ${location.pathname === item.path ? 'active-menu' : ''}`}
+            >
               {item.icon} {item.label}
             </Link>
           ))}

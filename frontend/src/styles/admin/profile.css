@@ -5,7 +5,6 @@
 }
 
 /* HEADER */
-
 .profile-header {
   display: flex;
   justify-content: space-between;
@@ -34,7 +33,6 @@
 }
 
 /* CARD */
-
 .modern-profile-card {
   border: 1px solid #e5e7eb;
   border-radius: 28px;
@@ -44,7 +42,6 @@
 }
 
 /* SIDEBAR */
-
 .profile-sidebar {
   background: #f8fafc;
   border-right: 1px solid #e5e7eb;
@@ -61,45 +58,44 @@
   width: 160px;
   height: 160px;
   margin: auto;
+  cursor: pointer; /* Thay đổi con trỏ chuột */
 }
 
 .avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-
   border-radius: 50%;
   border: 5px solid white;
-
   box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+/* Hiệu ứng làm mờ khi di chuột vào ảnh */
+.avatar-wrapper:hover .avatar-img {
+  filter: brightness(80%);
 }
 
 .avatar-upload {
   position: absolute;
   right: 8px;
   bottom: 8px;
-
   width: 44px;
   height: 44px;
-
   background: white;
   color: #198754;
-
   border-radius: 50%;
   border: 1px solid #e5e7eb;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: pointer;
-
-  transition: all 0.25s ease;
-
+  pointer-events: none; /* Không chặn sự kiện click vào ảnh */
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: all 0.25s ease;
 }
 
-.avatar-upload:hover {
+.avatar-wrapper:hover .avatar-upload {
   transform: scale(1.05);
   background: #f3f4f6;
 }
@@ -107,10 +103,8 @@
 .avatar-box h4 {
   margin-top: 22px;
   margin-bottom: 6px;
-
   font-size: 26px;
   font-weight: 800;
-
   color: #111827;
 }
 
@@ -121,7 +115,6 @@
 }
 
 /* INFO ITEMS */
-
 .profile-info-list {
   display: flex;
   flex-direction: column;
@@ -132,23 +125,16 @@
   display: flex;
   align-items: center;
   gap: 14px;
-
   padding: 16px 18px;
-
   border-radius: 16px;
   border: 1px solid #e5e7eb;
-
   background: white;
-
   color: #374151;
   font-weight: 500;
-
   transition: all 0.25s ease;
 }
 
-.info-item svg {
-  color: #198754;
-}
+.info-item svg { color: #198754; }
 
 .info-item:hover {
   transform: translateY(-2px);
@@ -157,54 +143,38 @@
 }
 
 /* CONTENT */
-
 .profile-content {
   padding: 42px;
   background: white;
 }
 
-/* SECTION TITLE */
-
 .section-title {
   display: flex;
   align-items: center;
   gap: 10px;
-
   margin-bottom: 26px;
-
   font-size: 20px;
   font-weight: 800;
-
   color: #111827;
 }
 
-.section-title svg {
-  color: #198754;
-}
+.section-title svg { color: #198754; }
 
 /* FORM */
-
 .form-label {
   margin-bottom: 10px;
-
   font-size: 14px;
   font-weight: 700;
-
   color: #374151;
 }
 
 .form-control {
   height: 54px;
-
   border-radius: 14px;
   border: 1px solid #dbe2ea;
-
   padding-left: 16px;
-
   font-size: 15px;
-
   background: #ffffff;
-
   transition: all 0.25s ease;
 }
 
@@ -218,82 +188,40 @@
 }
 
 /* BUTTON */
-
 .save-btn {
   margin-top: 10px;
-
   height: 54px;
   padding: 0 28px;
-
   border: none;
   border-radius: 14px;
-
   background: #198754;
-
   font-weight: 700;
   font-size: 15px;
-
   display: flex;
   align-items: center;
   gap: 10px;
-
   transition: all 0.25s ease;
 }
 
 .save-btn:hover {
   background: #157347;
   transform: translateY(-2px);
-
   box-shadow: 0 10px 20px rgba(25,135,84,0.18);
 }
 
 /* RESPONSIVE */
-
 @media (max-width: 992px) {
-  .modern-profile-page {
-    padding: 20px;
-  }
-
-  .profile-sidebar {
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .profile-content {
-    padding: 28px;
-  }
-
-  .profile-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  .avatar-wrapper {
-    width: 140px;
-    height: 140px;
-  }
+  .modern-profile-page { padding: 20px; }
+  .profile-sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
+  .profile-content { padding: 28px; }
+  .profile-header { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .avatar-wrapper { width: 140px; height: 140px; }
 }
 
 @media (max-width: 576px) {
-  .profile-content {
-    padding: 22px;
-  }
-
-  .profile-sidebar {
-    padding: 28px 20px;
-  }
-
-  .avatar-box h4 {
-    font-size: 22px;
-  }
-
-  .form-control {
-    height: 50px;
-  }
-
-  .save-btn {
-    width: 100%;
-    justify-content: center;
-  }
+  .profile-content { padding: 22px; }
+  .profile-sidebar { padding: 28px 20px; }
+  .avatar-box h4 { font-size: 22px; }
+  .form-control { height: 50px; }
+  .save-btn { width: 100%; justify-content: center; }
 }

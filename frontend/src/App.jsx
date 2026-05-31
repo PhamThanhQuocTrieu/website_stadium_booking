@@ -16,14 +16,14 @@ import UserProfile from './pages/UserProfile';
 import AdminLayout from './pages/Admin/AdminLayout';
 import Dashboard from './pages/Admin/Dashboard';
 import FieldManager from './pages/Admin/FieldManager';
-import AddFieldPage from './pages/Admin/AddFieldPage';      // 🌟 MỚI: Trang thêm sân
-import UpdateFieldPage from './pages/Admin/UpdateFieldPage'; // 🌟 MỚI: Trang sửa sân
+import AddFieldPage from './pages/Admin/AddFieldPage';
+import UpdateFieldPage from './pages/Admin/UpdateFieldPage';
 import BookingCalendar from './pages/Admin/BookingCalendar';
 import UserManager from './pages/Admin/UserManager'; 
 import AdminProfile from './pages/Admin/Profile'; 
+import VoucherManager from './pages/Admin/VoucherManager'; // 🌟 IMPORT TRANG VOUCHER
 import './App.css';
 
-// 🛡️ BẢO VỆ ROUTE: Chỉ cho phép 'admin' truy cập
 const AdminRoute = ({ children }) => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -39,13 +39,11 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Interceptor giúp tự động đính kèm token hoặc xử lý lỗi 401 tập trung
     const interceptor = axios.interceptors.response.use(
       (response) => response, 
       (error) => {
         if (error.response && error.response.status === 401) {
-          console.warn("Phiên đăng nhập hết hạn hoặc không có quyền!");
-          localStorage.clear(); // Xóa sạch dữ liệu cũ để tránh lỗi "User không tồn tại"
+          localStorage.clear();
           navigate('/login');
         }
         return Promise.reject(error);
@@ -73,16 +71,17 @@ function App() {
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/profile" element={<UserProfile />} />
           
-          {/* Cấu trúc Admin mới */}
+          {/* Cấu trúc Admin */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="fields" element={<FieldManager />} />
-            <Route path="addField" element={<AddFieldPage />} />        {/* Route thêm sân */}
-            <Route path="updateField/:id" element={<UpdateFieldPage />} /> {/* Route sửa sân */}
+            <Route path="addField" element={<AddFieldPage />} />
+            <Route path="updateField/:id" element={<UpdateFieldPage />} />
             <Route path="calendar" element={<BookingCalendar />} />
             <Route path="bookings" element={<div>Quản lý đơn đặt sân</div>} />
             <Route path="users" element={<UserManager />} /> 
             <Route path="profile" element={<AdminProfile />} />
+            <Route path="vouchers" element={<VoucherManager />} /> {/* 🌟 ĐÃ THÊM ROUTE VOUCHER */}
             <Route path="payments" element={<div>Quản lý thanh toán</div>} />
             <Route path="reports" element={<div>Báo cáo doanh thu</div>} />
           </Route>
