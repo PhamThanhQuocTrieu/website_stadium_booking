@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Form, NavDropdown, Image } from 'react-bootstrap';
-import { Search, BoxArrowRight, Person, ListCheck, Bell } from 'react-bootstrap-icons';
+import { Search, BoxArrowRight, Person, ListCheck, Bell, ShieldLock } from 'react-bootstrap-icons';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { jwtDecode } from "jwt-decode"; // Nhớ cài đặt: npm install jwt-decode
 import myLogo from '../assets/logo.png';
 import '../styles/navbar.css'; 
 
@@ -17,10 +18,34 @@ const Navigation = () => {
     else setUser(null);
   };
 
+  // Hàm kiểm tra token hết hạn
+  const checkTokenValidity = () => {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp < currentTime) {
+          console.log("Token đã hết hạn, tự động đăng xuất...");
+          handleLogout();
+        }
+      } catch (error) {
+        handleLogout();
+      }
+    }
+  };
+
   useEffect(() => {
     updateUserInfo();
+    checkTokenValidity(); // Kiểm tra ngay khi load
+    
+    const interval = setInterval(checkTokenValidity, 300000); // Kiểm tra mỗi 5 phút
     window.addEventListener('storage', updateUserInfo);
-    return () => window.removeEventListener('storage', updateUserInfo);
+    
+    return () => {
+      window.removeEventListener('storage', updateUserInfo);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -36,7 +61,8 @@ const Navigation = () => {
     navigate(searchTerm.trim() ? `/fields?search=${encodeURIComponent(searchTerm.trim())}` : '/fields');
   };
 
-  const profileLink = user?.role === 'admin' || user?.role === 'Super Admin' ? '/admin/profile' : '/profile';
+  const isAdmin = user?.role === 'admin';
+  const profileLink = isAdmin ? '/admin/profile' : '/profile';
 
   return (
     <Navbar expand="lg" className="shadow-sm fixed-top py-2 custom-navbar">
@@ -47,7 +73,6 @@ const Navigation = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           
-          {/* MENU CHÍNH: ĐÃ THÊM TIN TỨC & HỖ TRỢ */}
           <Nav className="mx-auto gap-3">
             <NavLink to="/" end className="fw-bold text-decoration-none nav-link-custom">Trang chủ</NavLink>
             <NavLink to="/fields" className="fw-bold text-decoration-none nav-link-custom">Sân tập</NavLink>
@@ -56,7 +81,6 @@ const Navigation = () => {
           </Nav>
 
           <div className="d-flex align-items-center gap-3">
-            {/* TÌM KIẾM */}
             <Form onSubmit={handleToggleSearch} className="d-none d-xl-block">
               <div className="d-flex align-items-center bg-light px-3 rounded-pill search-input-wrapper" style={{ height: '42px', width: '260px' }}>
                 <Form.Control placeholder="Tìm tên sân..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border-0 bg-transparent shadow-none small p-0" />
@@ -66,13 +90,11 @@ const Navigation = () => {
             
             {user ? (
               <div className="d-flex align-items-center gap-3">
-                {/* ICON CHUÔNG THÔNG BÁO */}
                 <Button variant="link" className="p-0 text-dark position-relative">
                   <Bell size={20} />
                   <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
                 </Button>
 
-                {/* USER DROPDOWN */}
                 <NavDropdown 
                   show={showDropdown}
                   onMouseEnter={() => setShowDropdown(true)}
@@ -90,14 +112,20 @@ const Navigation = () => {
                       <small className="text-muted">{user.email}</small>
                   </div>
                   
+                  {isAdmin && (
+                    <NavDropdown.Item as={Link} to="/admin/dashboard" onClick={() => setShowDropdown(false)}>
+                      <ShieldLock className="me-2" size={16} /> Trang quản trị
+                    </NavDropdown.Item>
+                  )}
+                  
                   <NavDropdown.Item as={Link} to={profileLink} onClick={() => setShowDropdown(false)}>
                       <Person className="me-2" size={16} /> Thông tin cá nhân
                   </NavDropdown.Item>
 
-                  {user.role === 'user' && (
-                      <NavDropdown.Item as={Link} to="/my-bookings" onClick={() => setShowDropdown(false)}>
-                          <ListCheck className="me-2" size={16} /> Lịch sử đặt sân
-                      </NavDropdown.Item>
+                  {!isAdmin && (
+                    <NavDropdown.Item as={Link} to="/my-bookings" onClick={() => setShowDropdown(false)}>
+                        <ListCheck className="me-2" size={16} /> Lịch sử đặt sân
+                    </NavDropdown.Item>
                   )}
                   
                   <NavDropdown.Divider />

@@ -21,7 +21,9 @@ import UpdateFieldPage from './pages/Admin/UpdateFieldPage';
 import BookingCalendar from './pages/Admin/BookingCalendar';
 import UserManager from './pages/Admin/UserManager'; 
 import AdminProfile from './pages/Admin/Profile'; 
-import VoucherManager from './pages/Admin/VoucherManager'; // 🌟 IMPORT TRANG VOUCHER
+import VoucherManager from './pages/Admin/VoucherManager';
+import ServiceManager from './pages/Admin/ServiceManager'; // 🌟 IMPORT TRANG DỊCH VỤ
+
 import './App.css';
 
 const AdminRoute = ({ children }) => {
@@ -71,9 +73,9 @@ function App() {
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/profile" element={<UserProfile />} />
           
-          {/* Cấu trúc Admin */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="fields" element={<FieldManager />} />
             <Route path="addField" element={<AddFieldPage />} />
             <Route path="updateField/:id" element={<UpdateFieldPage />} />
@@ -81,7 +83,8 @@ function App() {
             <Route path="bookings" element={<div>Quản lý đơn đặt sân</div>} />
             <Route path="users" element={<UserManager />} /> 
             <Route path="profile" element={<AdminProfile />} />
-            <Route path="vouchers" element={<VoucherManager />} /> {/* 🌟 ĐÃ THÊM ROUTE VOUCHER */}
+            <Route path="vouchers" element={<VoucherManager />} />
+            <Route path="services" element={<ServiceManager />} /> {/* 🌟 ROUTE MỚI */}
             <Route path="payments" element={<div>Quản lý thanh toán</div>} />
             <Route path="reports" element={<div>Báo cáo doanh thu</div>} />
           </Route>

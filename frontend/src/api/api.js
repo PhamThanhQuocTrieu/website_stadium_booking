@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Tạo instance api với baseURL
 const api = axios.create({
   baseURL: 'http://localhost:5000/api',
 });
@@ -8,36 +7,34 @@ const api = axios.create({
 // Interceptor xử lý request
 api.interceptors.request.use(
   (config) => {
-    // Lấy token từ localStorage
     const token = localStorage.getItem('userToken');
-    
-    // Nếu có token, thêm vào header Authorization
     if (token) {
-      // Đảm bảo dùng 'Bearer ' (có khoảng trắng)
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Thêm Content-Type mặc định nếu là JSON
     config.headers['Content-Type'] = 'application/json';
-    
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// [BỔ SUNG QUAN TRỌNG] Thêm Interceptor xử lý phản hồi để phát hiện lỗi Token hết hạn ngay lập tức
+// [HOÀN THIỆN] Xử lý phản hồi để tự động đăng xuất khi Token hết hạn
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Nếu server trả về 401, tức là token hết hạn hoặc không hợp lệ
+    // Kiểm tra nếu lỗi là 401 (Unauthorized) - Token hết hạn hoặc không hợp lệ
     if (error.response && error.response.status === 401) {
-      // Có thể xóa token cũ và redirect về login nếu cần
-      console.error("Token hết hạn hoặc không hợp lệ, cần đăng nhập lại!");
-      // localStorage.removeItem('userToken');
-      // window.location.href = '/login'; 
+      console.warn("Token hết hạn, thực hiện đăng xuất...");
+      
+      // 1. Xóa dữ liệu xác thực
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userInfo');
+      
+      // 2. Chuyển hướng về trang login
+      // Sử dụng window.location để refresh lại hoàn toàn ứng dụng, xóa sạch state cũ
+      window.location.href = '/login'; 
     }
+    
+    // Nếu là lỗi khác (ví dụ 403, 404, 500), vẫn trả lỗi về cho nơi gọi API xử lý
     return Promise.reject(error);
   }
 );

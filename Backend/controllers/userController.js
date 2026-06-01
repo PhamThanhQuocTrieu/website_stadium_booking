@@ -3,11 +3,15 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 
-// Khởi tạo Google Client
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// 🌟 FIX QUAN TRỌNG: Đảm bảo role được nhúng vào token
 const generateToken = (user) => {
-  return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '2h' });
+  return jwt.sign(
+    { id: user._id, role: user.role }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '2h' } // Nên tăng thời gian expire cho demo
+  );
 };
 
 const hashPassword = async (password) => {
@@ -15,7 +19,7 @@ const hashPassword = async (password) => {
   return await bcrypt.hash(password, salt);
 };
 
-// [POST] Google Login - ĐÃ CẬP NHẬT LOGIC ROLE
+// [POST] Google Login
 exports.googleLogin = async (req, res) => {
   const { token } = req.body;
   try {
@@ -27,16 +31,15 @@ exports.googleLogin = async (req, res) => {
 
     let user = await User.findOne({ email });
     if (!user) {
-      // Logic tự động set role admin cho email của bạn
       const role = (email === 'maulanhlun@gmail.com') ? 'admin' : 'user';
-      
       const randomPassword = await hashPassword(Math.random().toString(36).slice(-8));
+      
       user = await User.create({
         fullName: name,
         email,
         password: randomPassword,
         avatar: picture,
-        role: role
+        role: role // Lưu role xuống DB
       });
     }
 
@@ -44,9 +47,8 @@ exports.googleLogin = async (req, res) => {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
-      phone: user.phone,
       avatar: user.avatar,
-      role: user.role,
+      role: user.role, // Trả về role để Frontend lưu vào localStorage
       token: generateToken(user)
     });
   } catch (error) {
@@ -64,7 +66,7 @@ exports.registerUser = async (req, res) => {
     const hashedPassword = await hashPassword(password);
     const user = await User.create({ fullName, phone, email: email.toLowerCase().trim(), password: hashedPassword, role: 'user' });
 
-    req.app.get('io').emit('userUpdated');
+    req.app.get('io')?.emit('userUpdated');
     res.status(201).json({ _id: user._id, fullName: user.fullName, email: user.email, role: user.role, token: generateToken(user) });
   } catch (error) { res.status(500).json({ message: 'Lỗi server: ' + error.message }); }
 };
@@ -77,6 +79,7 @@ exports.loginUser = async (req, res) => {
 
     if (user && (await user.matchPassword(password))) {
       if (user.isActive === false) return res.status(403).json({ message: `Tài khoản đã bị khóa.` });
+      
       res.json({ 
         _id: user._id, fullName: user.fullName, email: user.email, phone: user.phone,
         avatar: user.avatar, dob: user.dob, role: user.role, token: generateToken(user) 
@@ -90,26 +93,26 @@ exports.loginUser = async (req, res) => {
 // [PUT] Cập nhật thông tin
 exports.updateUser = async (req, res) => {
   try {
-    const { oldPassword, newPassword, confirmPassword, ...updateData } = req.body;
+    const { oldPassword, newPassword, ...updateData } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User không tồn tại' });
 
     if (newPassword) {
-      if (!oldPassword) return res.status(400).json({ message: 'Vui lòng nhập mật khẩu cũ' });
-      const isMatch = await user.matchPassword(oldPassword);
-      if (!isMatch) return res.status(400).json({ message: 'Mật khẩu cũ không chính xác' });
+      if (!oldPassword || !(await user.matchPassword(oldPassword))) {
+        return res.status(400).json({ message: 'Mật khẩu cũ không chính xác' });
+      }
       user.password = await hashPassword(newPassword);
     }
 
-    Object.keys(updateData).forEach((key) => { if (key !== 'password') user[key] = updateData[key]; });
+    Object.keys(updateData).forEach((key) => { if (key !== 'password' && key !== 'role') user[key] = updateData[key]; });
     const updatedUser = await user.save();
     
-    const userResponse = updatedUser.toObject();
-    delete userResponse.password;
-    req.app.get('io').emit('userUpdated');
-    res.json(userResponse); 
+    req.app.get('io')?.emit('userUpdated');
+    res.json({ _id: updatedUser._id, fullName: updatedUser.fullName, email: updatedUser.email, role: updatedUser.role }); 
   } catch (err) { res.status(400).json({ message: err.message }); }
 };
+
+// ... Các hàm createUser, getAllUsers, deleteUser giữ nguyên logic của bạn ...
 
 // [POST] Thêm mới (Admin)
 exports.createUser = async (req, res) => {

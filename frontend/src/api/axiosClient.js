@@ -1,17 +1,45 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:5000/api', // Đảm bảo đúng port và có /api
-    headers: { 'Content-Type': 'application/json' }
+    baseURL: 'http://localhost:5000/api',
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
 
-// Thêm interceptor để đính kèm Token tự động
-axiosClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('userToken');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+// Interceptor cho Request: Gắn Token
+axiosClient.interceptors.request.use(
+    (config) => {
+        const userInfoRaw = localStorage.getItem('userInfo');
+        if (userInfoRaw) {
+            try {
+                const userInfo = JSON.parse(userInfoRaw);
+                const token = userInfo.token; 
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            } catch (e) {
+                console.error("Lỗi parse token từ localStorage", e);
+            }
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Interceptor cho Response: Chỉ đăng xuất nếu lỗi 401 thuộc về server của mình
+axiosClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Kiểm tra xem lỗi có phải từ server của bạn không (localhost:5000)
+        const isOurServer = error.config?.baseURL?.includes('localhost:5000');
+        
+        if (error.response?.status === 401 && isOurServer) {
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
     }
-    return config;
-});
+);
 
 export default axiosClient;

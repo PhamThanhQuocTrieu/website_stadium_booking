@@ -12,7 +12,8 @@ const userRoutes = require('./routes/userRoutes');
 const adminFieldRoutes = require('./routes/adminFieldRoutes');
 const userFieldRoutes = require('./routes/userFieldRoutes');
 const bookingRoutes = require('./routes/bookingRoutes'); 
-const voucherRoutes = require('./routes/voucherRoutes'); // 🌟 Route Voucher đã có file
+const voucherRoutes = require('./routes/voucherRoutes');
+const serviceRoutes = require('./routes/serviceRoutes'); // 🌟 IMPORT ROUTE DỊCH VỤ MỚI
 
 // 1. Cấu hình biến môi trường
 dotenv.config();
@@ -26,7 +27,7 @@ const app = express();
 app.use(cors({
   origin: "http://localhost:5173", 
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // 🌟 Đã thêm PATCH cho việc cập nhật status
   allowedHeaders: ["Content-Type", "Authorization"]
 })); 
 
@@ -38,7 +39,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
   }
 });
 
@@ -54,12 +55,13 @@ app.get('/', (req, res) => {
   res.send('ArenaHub API đang vận hành ổn định...');
 });
 
-// PHÂN TÁCH ROUTES (Đã loại bỏ adminRoutes không tồn tại)
+// PHÂN TÁCH ROUTES
 app.use('/api/users', userRoutes);
 app.use('/api/admin/fields', adminFieldRoutes); 
 app.use('/api/fields', userFieldRoutes);       
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/admin/vouchers', voucherRoutes); // 🌟 Route cho Voucher
+app.use('/api/admin/vouchers', voucherRoutes);
+app.use('/api/services', serviceRoutes); // 🌟 ĐĂNG KÝ ROUTE DỊCH VỤ
 
 // 6. MIDDLEWARE BẮT LỖI TẬP TRUNG
 app.use((err, req, res, next) => {

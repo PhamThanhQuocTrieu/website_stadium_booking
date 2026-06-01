@@ -1,20 +1,14 @@
-// File: Backend/middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 exports.protect = (req, res, next) => {
-    // 1. Kiểm tra cả authorization (thường) và Authorization (viết hoa)
     let token = req.headers.authorization || req.headers.Authorization;
 
-    // 2. Kiểm tra nếu token tồn tại và bắt đầu bằng "Bearer" (không phân biệt hoa thường)
     if (token && token.toLowerCase().startsWith('bearer ')) {
         try {
-            // Tách token sau chữ "Bearer "
             token = token.split(' ')[1];
-            
-            // Giải mã token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             
-            // Lưu thông tin user vào req để các controller/middleware sau sử dụng
+            // Lưu thông tin user vào req
             req.user = decoded; 
             next();
         } catch (error) {
@@ -26,12 +20,18 @@ exports.protect = (req, res, next) => {
     }
 };
 
+// Hàm logic gốc
 exports.adminOnly = (req, res, next) => {
-    const role = req.user?.role;
+    if (!req.user) {
+        return res.status(401).json({ message: 'Vui lòng đăng nhập!' });
+    }
 
-    if (role === 'admin' || role === 'Super Admin') {
+    if (req.user.role === 'admin') {
         next();
     } else {
         return res.status(403).json({ message: 'Bạn không có quyền truy cập trang quản trị!' });
     }
 };
+
+// 🌟 ĐỒNG BỘ: Xuất khẩu 'admin' để các file Route nhận diện được
+exports.admin = exports.adminOnly;

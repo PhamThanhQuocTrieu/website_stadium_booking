@@ -1,4 +1,3 @@
-// File: Frontend/src/pages/Admin/AdminLayout.jsx
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -8,7 +7,8 @@ import {
   Users, 
   LogOut, 
   UserCircle, 
-  TicketPercent // 🌟 Đã thêm icon TicketPercent
+  TicketPercent,
+  ShoppingBasket // 🌟 Đã thêm icon ShoppingBasket cho dịch vụ
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -24,12 +24,13 @@ const AdminLayout = () => {
       text: "Bạn có chắc chắn muốn rời khỏi trang quản trị?",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Đăng xuất'
+      confirmButtonText: 'Đăng xuất',
+      cancelButtonText: 'Hủy'
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem('token'); 
-        localStorage.removeItem('user');  
-        navigate('/login');               
+        localStorage.removeItem('userToken'); // Đồng bộ tên key với các file khác
+        localStorage.removeItem('userInfo');  
+        navigate('/login');                
       }
     });
   };
@@ -39,7 +40,8 @@ const AdminLayout = () => {
     { path: '/admin/fields', icon: <MapPinned size={20}/>, label: 'Quản lý sân' },
     { path: '/admin/bookings', icon: <CalendarDays size={20}/>, label: 'Đơn đặt sân' },
     { path: '/admin/users', icon: <Users size={20}/>, label: 'Người dùng' },
-    { path: '/admin/vouchers', icon: <TicketPercent size={20}/>, label: 'Mã giảm giá' }, // 🌟 Đã thêm menu này
+    { path: '/admin/vouchers', icon: <TicketPercent size={20}/>, label: 'Mã giảm giá' },
+    { path: '/admin/services', icon: <ShoppingBasket size={20}/>, label: 'Dịch vụ đi kèm' }, // 🌟 Đã thêm menu Dịch vụ
     { path: '/admin/profile', icon: <UserCircle size={20}/>, label: 'Thông tin cá nhân' },
   ];
 
@@ -70,4 +72,5 @@ const AdminLayout = () => {
     </div>
   );
 };
+
 export default AdminLayout;

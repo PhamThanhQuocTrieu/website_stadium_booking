@@ -9,7 +9,6 @@ import Swal from 'sweetalert2';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  
   const [formData, setFormData] = useState({ account: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,22 +19,39 @@ const LoginPage = () => {
   };
 
   const saveAuthData = (data) => {
-    // Kiểm tra kỹ xem có token không trước khi lưu
     if (data && data.token) {
       localStorage.setItem('userToken', data.token);
       localStorage.setItem('userInfo', JSON.stringify(data));
-      window.dispatchEvent(new Event("storage"));
       return true;
     }
     return false;
   };
 
-  // --- XỬ LÝ ĐĂNG NHẬP THỦ CÔNG ---
+  const handleLoginSuccess = (data) => {
+    if (saveAuthData(data)) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Đăng nhập thành công!',
+        text: data.role === 'admin' ? 'Chào Quản trị viên...' : `Chào mừng ${data.fullName}...`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      // 🌟 FIX: Điều hướng tới /admin để khớp với index route trong App.js
+      setTimeout(() => {
+        if (data.role === 'admin') {
+          navigate('/admin'); 
+        } else {
+          navigate('/');
+        }
+      }, 1500);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.account.trim() || !formData.password) {
-      return Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập Email/Số điện thoại và Mật khẩu.', confirmButtonColor: '#198754' });
+      return Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập Email và Mật khẩu.', confirmButtonColor: '#198754' });
     }
 
     setLoading(true);
@@ -44,45 +60,21 @@ const LoginPage = () => {
         account: formData.account.trim().toLowerCase(),
         password: formData.password
       });
-
-      if (saveAuthData(data)) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Đăng nhập thành công!',
-          text: data.role === 'admin' ? 'Chào Quản trị viên...' : `Chào mừng ${data.fullName}...`,
-          timer: 1500,
-          showConfirmButton: false
-        });
-
-        setTimeout(() => {
-          data.role === 'admin' ? navigate('/admin') : navigate('/');
-        }, 1500);
-      } else {
-        throw new Error("Không nhận được token từ server");
-      }
-      
+      handleLoginSuccess(data);
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Đăng nhập thất bại.';
-      Swal.fire({ icon: 'error', title: 'Lỗi', text: errorMsg, confirmButtonColor: '#d33' });
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: err.response?.data?.message || 'Đăng nhập thất bại.', confirmButtonColor: '#d33' });
     } finally {
       setLoading(false);
     }
   };
 
-  // --- XỬ LÝ GOOGLE AUTH ---
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
       const { data } = await axios.post('http://localhost:5000/api/users/google-login', {
         token: credentialResponse.credential
       });
-
-      if (saveAuthData(data)) {
-        Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Đăng nhập Google thành công!', timer: 1500, showConfirmButton: false });
-        navigate(data.role === 'admin' ? '/admin' : '/');
-      } else {
-        throw new Error("Không nhận được token từ Google Login");
-      }
+      handleLoginSuccess(data);
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Xác thực Google thất bại.', confirmButtonColor: '#d33' });
     } finally {
@@ -144,14 +136,7 @@ const LoginPage = () => {
 
                 <div className="text-center mt-3">
                   <p className="text-muted small mb-3">Hoặc đăng nhập với</p>
-                  <div className="d-flex justify-content-center">
-                    <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => Swal.fire('Lỗi', 'Không thể kết nối Google.', 'error')} theme="outline" shape="pill" />
-                  </div>
-                </div>
-
-                <div className="text-center mt-4 pt-2 border-top">
-                  <span className="text-muted small">Chưa có tài khoản? </span>
-                  <Link to="/register" className="text-decoration-none fw-bold small text-success">Đăng ký ngay</Link>
+                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => Swal.fire('Lỗi', 'Không thể kết nối Google.', 'error')} theme="outline" shape="pill" />
                 </div>
               </Form>
             </div>
