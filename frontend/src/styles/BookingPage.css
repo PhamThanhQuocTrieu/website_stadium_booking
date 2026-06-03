@@ -1,11 +1,12 @@
 /* ==========================================================================
-   ARENAHUB GRID MATRIX BOOKING STYLESHEET (BẢN THEO ẢNH 2)
+   ARENAHUB GRID MATRIX BOOKING STYLESHEET (UPDATED - FULL CSS)
    ========================================================================== */
 
 .booking-page-premium {
   background: #f4f6f8;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding-bottom: 120px;
 }
 
 /* Header & Date Pill */
@@ -14,31 +15,55 @@
   padding: 15px 0;
   border-bottom: 1px solid #063421;
 }
+
+.booking-nav-premium h5 {
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
 .date-pill-v3 {
   background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  color: #ffffff;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   border: 1px solid rgba(255,255,255,0.2);
+  transition: background 0.3s;
 }
 
-/* Thanh thông báo Lưu ý màu cam */
+.date-pill-v3:hover { 
+  background: rgba(255, 255, 255, 0.25); 
+}
+
+/* Thanh thông báo Lưu ý */
 .notice-bar {
   background-color: #fff3cd;
   color: #856404;
   font-size: 13px;
   padding: 10px 0;
   border-bottom: 1px solid #ffeeba;
+  font-weight: 600;
+  margin-bottom: 15px;
 }
 
-/* Chú thích trạng thái mẫu màu */
+/* Chú thích trạng thái màu - CẬP NHẬT MỚI */
 .legend-container-v3 {
   background: #fff;
-  padding: 15px 0;
+  padding: 20px 0;
   border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 20px;
 }
+
+.legend-row-v3 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+}
+
 .legend-item-v3 {
   display: flex;
   align-items: center;
@@ -47,8 +72,9 @@
   font-weight: 600;
   color: #4a5568;
 }
+
 .box-demo {
-  width: 24px;
+  width: 20px;
   height: 20px;
   border-radius: 4px;
   border: 1px solid #cbd5e1;
@@ -56,121 +82,142 @@
 .box-demo.empty { background: #ffffff; }
 .box-demo.booked { background: #ff4d4f; border-color: #ff4d4f; }
 .box-demo.locked { background: #cccccc; border-color: #cccccc; }
-.box-demo.selecting { background: #c6f6d5; border-color: #48bb78; }
+.box-demo.selecting { background: #c6f6d5; border-color: #38a169; }
 
-/* MA TRẬN GRID CHỮA TOÀN BỘ SÂN TỪ 5:00 -> 24:00 */
+.pricing-link-v3 {
+  background: #f8fafc;
+  border: 1px solid #0a4d31;
+  color: #0a4d31;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.pricing-link-v3:hover { background: #0a4d31; color: #ffffff; }
+
+/* Booking Note Panel - CẬP NHẬT MỚI */
+.booking-note-panel {
+  background: #f8f9fa;
+  border-left: 5px solid #0a4d31;
+  padding: 16px 24px;
+  margin: 0 auto 24px auto;
+  max-width: 1200px;
+  color: #4a5568;
+  font-size: px;
+  line-height: 1.6;
+}
+.booking-note-content { display: flex; flex-direction: column; gap: 4px; }
+.note-label { font-weight: 800; color: #0a4d31; text-transform: uppercase; margin-right: 6px; }
+
+/* ====================== MATRIX GRID ====================== */
 .matrix-wrapper {
   background: #fff;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  overflow-x: auto; /* Phòng hờ màn hình quá bé */
+  border-radius: 10px;
+  border: 1px solid #dbe4ea;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  padding: 0;
 }
 
-/* Khung Grid chính: 1 cột chứa Tên sân (120px) + 38 cột chứa các mốc 30 phút */
 .grid-matrix-container {
   display: grid;
-  grid-template-columns: 120px repeat(38, minmax(45px, 1fr));
-  width: 100%;
+  grid-template-columns: 220px repeat(37, 62px);
+  width: max-content;
+  background: #fff;
 }
 
-/* Các ô Header hiển thị mốc thời gian */
+/* ==================== HEADER THỜI GIAN ==================== */
 .grid-time-header {
-  background: #eef2f6;
-  color: #4b5563;
-  font-size: 11px;
+  height: 56px;
+  width: 62px;
+  background: #b8eef6;
+  color: #4a5568;
+  font-size: 0;
   font-weight: 700;
-  text-center: center;
-  padding: 10px 2px;
-  border-right: 1px solid #cbd5e1;
-  border-bottom: 2px solid #cbd5e1;
-  display: d-flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  border-bottom: 1px solid #dbe4ea;
 }
 
-/* Ô tiêu đề hiển thị tên Sân (Cột đầu tiên) */
+.grid-time-header::before {
+  content: attr(data-time);
+  position: absolute;
+  left: 0;
+  top: 17px;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.grid-time-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  height: 14px;
+  background: #f5a623;
+}
+
+.grid-empty-header {
+  width: 220px;
+  height: 56px;
+  background: #b8eef6;
+  border-bottom: 1px solid #dbe4ea;
+}
+
+/* Cột tên sân */
 .grid-field-name-label {
-  background: #f8fafc;
-  color: #0a4d31;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 15px 10px;
-  border-right: 1px solid #cbd5e1;
-  border-bottom: 1px solid #cbd5e1;
+  width: 220px;
+  height: 64px;
+  background: #d8f8e6;
+  color: #14532d;
+  font-size: 18px;
+  font-weight: 500;
   display: flex;
   align-items: center;
-}
-
-/* Ô chọn slot đặt giờ của Grid */
-.grid-slot-box {
-  height: 48px;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-/* Các trạng thái ô màu theo ảnh 2 */
-.grid-slot-box.booked {
-  background: #ff4d4f !important; /* Đỏ đậm bắt mắt */
-  cursor: not-allowed;
-}
-
-.grid-slot-box.locked {
-  background: #cccccc !important; /* Xám khóa giờ cũ */
-  cursor: not-allowed;
-}
-
-.grid-slot-box.available:hover {
-  background: #f0fdf4;
-}
-
-.grid-slot-box.active {
-  background: #c6f6d5 !important; /* Xanh lá mint nhạt sang trọng */
-  border: 2px solid #38a169 !important;
-}
-
-/* Thanh toán Footer phong cách ảnh 2 */
-.payment-bar-v3 {
-  position: fixed;
-  bottom: 0;
+  justify-content: center;
+  border-right: 1px solid #9adbb5;
+  box-shadow: none;
+  position: sticky;
   left: 0;
-  width: 100%;
-  background: #0a4d31;
-  padding: 15px 0;
-  z-index: 2000;
-  box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+  z-index: 10;
 }
 
-.btn-next-v3 {
-  background: #ecc94b;
-  color: #000;
-  font-weight: 700;
-  border: none;
-  padding: 12px 50px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: 0.2s;
-}
-.btn-next-v3:hover {
-  background: #d69e2e;
+/* Các ô slot */
+.grid-slot-box {
+  width: 62px;
+  height: 64px;
+  background: #ffffff;
+  border-right: 1px solid #9ca3af;
+  cursor: pointer;
+  transition: .15s;
 }
 
-/* Custom CSS cho Toast thông báo nổi */
-.custom-toast {
-  position: fixed;
-  top: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.85);
-  color: #fff;
-  padding: 10px 24px;
-  border-radius: 50px;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 3000;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-  pointer-events: none;
-}
+.grid-slot-box:hover { background: #ecfdf5; }
+
+/* Trạng thái */
+.grid-slot-box.booked { background: #fee2e2 !important; cursor: not-allowed; }
+.grid-slot-box.locked { background: #c5cace !important; cursor: not-allowed; }
+.grid-slot-box.active { background: #bbf7d0 !important; border: 2px solid #4ade80 !important; z-index: 5; }
+
+/* MODAL CALENDAR */
+.calendar-modal-content { border-radius: 16px; border: none; }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; font-weight: 700; color: #0a4d31; }
+.calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: #888; margin-bottom: 10px; }
+.calendar-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.day-cell { aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; font-size: 14px; transition: 0.2s; }
+.day-cell:hover:not(.empty) { background: #eef7f2; }
+.day-cell.active { background: #0a4d31 !important; color: #fff; }
+.calendar-footer { display: flex; justify-content: flex-end; padding: 15px 20px; gap: 10px; }
+
+/* Footer thanh toán */
+.payment-bar-v3 { position: fixed; bottom: 0; left: 0; width: 100%; background: #0a4d31; padding: 15px 0; z-index: 2000; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); }
+.payment-bar-v3 .text-white { color: #ffffff !important; }
+.payment-bar-v3 .text-warning { color: #ffeb3b !important; font-size: 1.4rem; font-weight: 800; }
+.btn-next-v3 { background: #ecc94b; color: #000; font-weight: 700; border: none; padding: 12px 40px; border-radius: 4px; text-transform: uppercase; }
+.btn-next-v3:hover { background: #d69e2e; }
+.custom-toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #fff; padding: 10px 20px; border-radius: 50px; font-size: 13px; z-index: 3000; }
