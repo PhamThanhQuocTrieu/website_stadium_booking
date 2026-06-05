@@ -14,15 +14,18 @@
 .summary-card-v3 {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .card-header-mint {
-  background: linear-gradient(135deg, #0a4d31, #116843);
+  background: #0a4d31;
   color: #ffffff;
   padding: 18px 24px;
   font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 8px 8px 0 0;
 }
 
 .info-item-row {
@@ -88,3 +91,67 @@
   transform: none;
   box-shadow: none;
 }
+
+/* Style cho danh sách dịch vụ trong Modal & Card */
+.service-item-card {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.service-item-card:hover {
+  border-color: #0a4d31;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.service-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  margin-right: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 5px;
+}
+
+/* Style các nút tăng/giảm số lượng dịch vụ */
+.btn-qty {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border: none !important;
+  color: white;
+  margin: 0 5px;
+}
+
+.btn-qty.minus { background-color: #f6ad55 !important; }
+.btn-qty.plus { background-color: #f6ad55 !important; }
+.btn-qty.add-new { background-color: #38a169 !important; }
+
+.btn-add-service {
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #166534 !important;
+  font-weight: bold;
+  border-radius: 8px !important;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add-service:hover {
+  background: #0a4d31 !important;
+  color: white !important;
+}
+
+.cursor-pointer { cursor: pointer; }

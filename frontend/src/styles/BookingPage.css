@@ -104,7 +104,7 @@
   margin: 0 auto 24px auto;
   max-width: 1200px;
   color: #4a5568;
-  font-size: px;
+  font-size: 16px;
   line-height: 1.6;
 }
 .booking-note-content { display: flex; flex-direction: column; gap: 4px; }
@@ -200,7 +200,13 @@
 .grid-slot-box:hover { background: #ecfdf5; }
 
 /* Trạng thái */
-.grid-slot-box.booked { background: #fee2e2 !important; cursor: not-allowed; }
+.grid-slot-box.booked {
+    background: #ff4d4f !important;
+    color: white;
+    cursor: not-allowed;
+    position: relative;
+}
+
 .grid-slot-box.locked { background: #c5cace !important; cursor: not-allowed; }
 .grid-slot-box.active { background: #bbf7d0 !important; border: 2px solid #4ade80 !important; z-index: 5; }
 
@@ -214,10 +220,64 @@
 .day-cell.active { background: #0a4d31 !important; color: #fff; }
 .calendar-footer { display: flex; justify-content: flex-end; padding: 15px 20px; gap: 10px; }
 
-/* Footer thanh toán */
-.payment-bar-v3 { position: fixed; bottom: 0; left: 0; width: 100%; background: #0a4d31; padding: 15px 0; z-index: 2000; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); }
-.payment-bar-v3 .text-white { color: #ffffff !important; }
-.payment-bar-v3 .text-warning { color: #ffeb3b !important; font-size: 1.4rem; font-weight: 800; }
-.btn-next-v3 { background: #ecc94b; color: #000; font-weight: 700; border: none; padding: 12px 40px; border-radius: 4px; text-transform: uppercase; }
-.btn-next-v3:hover { background: #d69e2e; }
-.custom-toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #fff; padding: 10px 20px; border-radius: 50px; font-size: 13px; z-index: 3000; }
+/* Footer thanh toán - ĐÃ TỐI ƯU CHIỀU CAO VÀ MÀU CHỮ */
+.payment-bar-v3 {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #0a4d31;
+  padding: 20px 0; /* Tăng padding để thanh cao hơn */
+  z-index: 2000;
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.2);
+}
+
+/* Định dạng chữ Tổng thời gian - Màu trắng */
+.payment-time-text {
+  color: #ffffff !important;
+  font-size: 1.1rem; /* Chữ to hơn */
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+/* Định dạng chữ Tổng tiền */
+.payment-total-price {
+  color: #ffeb3b !important;
+  font-size: 1.6rem; /* Chữ to hơn */
+  font-weight: 600;
+  margin: 0;
+}
+
+.btn-next-v3 {
+  background-color: #ecc94b !important; /* Dùng !important để ghi đè class btn của Bootstrap */
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: none !important;
+  padding: 16px 50px !important; 
+  border-radius: 8px !important;
+  text-transform: uppercase !important;
+  font-size: 1.1rem !important;
+  transition: all 0.2s ease;
+}
+
+.btn-next-v3:hover { 
+  background-color: #d69e2e !important;
+}
+
+/* Toast thông báo - Đảm bảo nó luôn nằm trên cùng */
+.custom-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px; /* Chuyển sang góc phải cho tinh tế */
+    background: #ffffff;
+    color: #c53030;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border-left: 5px solid #e53e3e;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    z-index: 9999;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

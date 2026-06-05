@@ -1,21 +1,27 @@
-// File: Backend/models/Booking.js
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   field: { type: mongoose.Schema.Types.ObjectId, ref: 'Field', required: true },
   
-  date: { type: String, required: true },      // Định dạng chuỗi: "2026-05-19"
-  startTime: { type: String, required: true }, // Định dạng chuỗi: "17:00"
-  endTime: { type: String, required: true },   // Định dạng chuỗi: "18:00"
+  date: { type: String, required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  
+  // Mảng chứa các dịch vụ đã chọn
+  services: [{
+    serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+    name: String,
+    price: Number,
+    quantity: { type: Number, default: 1 }
+  }],
   
   totalPrice: { type: Number, required: true },
   paymentStatus: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' },
   status: { type: String, enum: ['Confirmed', 'Cancelled'], default: 'Confirmed' }
 }, { timestamps: true });
 
-// Hệ thống Index Unique chống trùng lịch vật lý cứng cho luận văn
+// Index Unique chống trùng lịch
 bookingSchema.index({ field: 1, date: 1, startTime: 1 }, { unique: true });
 
-// 🌟 KIỂM TRA KỸ DÒNG NÀY: Phải có chữ "exports" số nhiều!
 module.exports = mongoose.model('Booking', bookingSchema);

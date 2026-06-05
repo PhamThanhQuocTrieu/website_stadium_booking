@@ -1,0 +1,111 @@
+/* PricingModal.css */
+.pricing-modal-modern .modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.pricing-modal-header {
+    background: linear-gradient(135deg, #0a4d31, #14532d);
+    color: white;
+    padding: 24px 28px;
+    border-bottom: none;
+}
+
+.pricing-modal-header .modal-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.price-icon {
+    font-size: 2rem;
+}
+
+.field-name {
+    color: #ffeb3b;
+    font-weight: 600;
+}
+
+/* Bảng giá */
+.modern-pricing-table {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.modern-pricing-table table {
+    margin-bottom: 0;
+}
+
+.modern-pricing-table th {
+    background: #f8fafc;
+    color: #0a4d31;
+    font-weight: 600;
+    padding: 16px 14px;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.modern-pricing-table td {
+    padding: 18px 14px;
+    vertical-align: middle;
+    font-size: 1rem;
+}
+
+.peak-row {
+    background-color: #fffbeb !important;
+}
+
+/* Badge */
+.day-badge {
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.day-badge.weekend { background: #fee2e2; color: #b91c1c; }
+.day-badge.holiday { background: #fef3c7; color: #b45309; }
+.day-badge.normal { background: #e0f2fe; color: #0369a1; }
+
+.note-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.88rem;
+}
+
+.note-badge.peak {
+    background: #fef3c7;
+    color: #b45309;
+    font-weight: 600;
+}
+
+.note-badge.normal {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.price-cell {
+    font-size: 1.1rem;
+    color: #0a4d31;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+/* Hover effect */
+.modern-pricing-table tr:hover {
+    background-color: #f8fafc !important;
+}

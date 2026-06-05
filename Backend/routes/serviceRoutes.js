@@ -9,10 +9,17 @@ const {
     toggleServiceStatus 
 } = require('../controllers/serviceController');
 
-// Kiểm tra: Nếu 1 trong các hàm này là undefined, code sẽ lỗi ngay tại đây khi load
-if (!createService) console.error("LỖI: createService không được export từ controller!");
+// Debug: Đảm bảo các hàm controller đã được nạp đúng
+if (!getServices) console.error("LỖI: getServices không được export!");
+if (!createService) console.error("LỖI: createService không được export!");
+if (!updateService) console.error("LỖI: updateService không được export!");
+if (!deleteService) console.error("LỖI: deleteService không được export!");
+if (!toggleServiceStatus) console.error("LỖI: toggleServiceStatus không được export!");
 
+// Route lấy danh sách dịch vụ (Ai cũng xem được)
 router.get('/', getServices);
+
+// Các route quản lý dịch vụ (Chỉ dành cho Admin)
 router.post('/', protect, admin, createService);
 router.put('/:id', protect, admin, updateService);
 router.delete('/:id', protect, admin, deleteService);

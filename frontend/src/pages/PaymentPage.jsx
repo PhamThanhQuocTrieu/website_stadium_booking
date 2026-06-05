@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, Spinner, Modal } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, ShieldCheck, CalendarCheck, Wallet2, 
-  Person, Telephone, PencilSquare, InfoCircle 
+  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash 
 } from 'react-bootstrap-icons';
 import axios from 'axios';
 import '../styles/PaymentPage.css';
@@ -14,6 +14,12 @@ const PaymentPage = () => {
 
   // Nhận dữ liệu Id hóa đơn tạm và danh sách slot từ BookingPage chuyển sang
   const { bookingId, totalAmount } = location.state || {};
+
+  // --- BỔ SUNG STATE DỊCH VỤ ---
+  const [services, setServices] = useState([]);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  // -----------------------------
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,23 +47,49 @@ const PaymentPage = () => {
       note: ''
     });
 
-    // Gọi API lấy thông tin chi tiết của đơn đặt chỗ tạm thời (Để hiện tên sân, địa chỉ, ngày giờ cụ thể)
-    const fetchTempBooking = async () => {
+    // Gọi API lấy thông tin chi tiết của đơn đặt chỗ và danh sách dịch vụ
+    const fetchAllData = async () => {
       try {
         const token = localStorage.getItem('userToken');
-        const res = await axios.get(`http://localhost:5000/api/bookings/${bookingId}`, {
+        const bookingRes = await axios.get(`http://localhost:5000/api/bookings/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setBookingDetail(res.data);
+        const fieldId = bookingRes.data?.fieldId?._id || bookingRes.data?.field?._id || bookingRes.data?.field;
+        const servicesRes = fieldId
+          ? await axios.get(`http://localhost:5000/api/services?fieldId=${fieldId}`)
+          : { data: [] };
+        setBookingDetail(bookingRes.data);
+        setServices(servicesRes.data);
         setIsLoading(false);
       } catch (err) {
-        console.error("Lỗi tải thông tin hóa đơn:", err);
+        console.error("Lỗi tải thông tin:", err);
         setIsLoading(false);
       }
     };
 
-    fetchTempBooking();
+    fetchAllData();
   }, [bookingId, navigate]);
+
+  // --- LOGIC XỬ LÝ DỊCH VỤ ---
+  const handleAddService = (service) => {
+    setSelectedServices(prev => {
+      const exists = prev.find(item => item.serviceId === service._id);
+      if (exists) {
+        return prev.map(item => item.serviceId === service._id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { serviceId: service._id, name: service.name, price: service.price, quantity: 1, image: service.image }];
+    });
+  };
+
+  const removeService = (serviceId) => {
+    setSelectedServices(prev => prev.filter(item => item.serviceId !== serviceId));
+  };
+
+  const calculateFinalTotal = () => {
+    const serviceTotal = selectedServices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return (totalAmount || 0) + serviceTotal;
+  };
+  // ---------------------------
 
   // Xử lý gửi yêu cầu thanh toán tích hợp VNPay Sandbox
   const handleConfirmPayment = async (e) => {
@@ -67,22 +99,25 @@ const PaymentPage = () => {
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('userToken');
-      
-      // 1. Cập nhật thông tin khách hàng thực tế và ghi chú vào đơn hàng
-      await axios.put(`http://localhost:5000/api/bookings/${bookingId}/update-info`, formData, {
+
+      // 1. Cập nhật thông tin khách hàng, ghi chú VÀ dịch vụ vào đơn hàng
+      await axios.put(`http://localhost:5000/api/bookings/${bookingId}/update-info`, {
+        ...formData,
+        services: selectedServices,
+        totalPrice: calculateFinalTotal()
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       // 2. Gọi API khởi tạo đường dẫn thanh toán VNPay gateway
       const res = await axios.post(`http://localhost:5000/api/payments/create-vnpay-url`, {
         bookingId,
-        amount: totalAmount
+        amount: calculateFinalTotal()
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.data.paymentUrl) {
-        // Chuyển hướng người dùng sang cổng ngân hàng Sandbox của VNPay
         window.location.href = res.data.paymentUrl;
       }
     } catch (err) {
@@ -102,7 +137,7 @@ const PaymentPage = () => {
   return (
     <div className="payment-page-premium">
       <Container>
-        
+
         {/* NÚT QUAY LẠI TINH GỌN */}
         <div className="mb-4 d-flex align-items-center gap-3">
           <Button variant="light" className="rounded-circle p-2 border shadow-sm" onClick={() => navigate(-1)}>
@@ -127,15 +162,45 @@ const PaymentPage = () => {
                 </div>
                 <div className="info-item-row">
                   <span className="text-muted small fw-bold">ĐỊA CHỈ KHU VỰC</span>
-                  <span className="fw-bold text-end text-secondary small" style={{maxWidth: '65%'}}>
+                  <span className="fw-bold text-end text-secondary small" style={{ maxWidth: '65%' }}>
                     {bookingDetail?.fieldId?.address || "Đường 3/2, Ninh Kiều, Cần Thơ"}
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* PHẦN DỊCH VỤ BỔ SUNG */}
+            <div className="summary-card-v3 shadow-sm mb-4">
+              <div className="card-header-mint d-flex align-items-center justify-content-between p-3" style={{ background: '#0a4d31' }}>
+                <span className="text-white fw-bold">DỊCH VỤ BỔ SUNG</span>
+                <Button size="sm" variant="light" className="text-success" onClick={() => setShowServiceModal(true)}>
+                  <PlusCircle size={18} />
+                </Button>
+              </div>
+
+              <div className="p-3">
+                {selectedServices.length === 0 ? (
+                  <div className="text-center text-muted py-3 small">Chưa chọn dịch vụ nào</div>
+                ) : (
+                  selectedServices.map((s, i) => (
+                    <div key={i} className="d-flex align-items-center mb-3 pb-2 border-bottom">
+                      <img src={s.image} style={{ width: 40, height: 40, borderRadius: '4px', objectFit: 'cover' }} alt="" />
+                      <div className="ms-3 flex-grow-1">
+                        <div className="fw-bold text-dark small">{s.name}</div>
+                        <div className="text-secondary small">{s.quantity} x {s.price.toLocaleString()}đ</div>
+                      </div>
+                      <div className="text-end">
+                        <div className="fw-bold text-success">{(s.price * s.quantity).toLocaleString()}đ</div>
+                        <Trash size={16} className="text-danger cursor-pointer mt-1" onClick={() => removeService(s.serviceId)} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
             <div className="summary-card-v3 shadow-sm">
-              <div className="card-header-mint d-flex align-items-center gap-2" style={{background: '#115e59'}}>
+              <div className="card-header-mint d-flex align-items-center gap-2" style={{ background: '#115e59' }}>
                 <CalendarCheck size={20} />
                 <span>CHI TIẾT LỊCH ĐẶT CHỖ</span>
               </div>
@@ -146,7 +211,7 @@ const PaymentPage = () => {
                 </div>
                 <div className="info-item-row align-items-start">
                   <span className="text-muted small fw-bold mt-1">KHUNG GIỜ CHỌN</span>
-                  <div className="d-flex flex-wrap gap-2 justify-content-end" style={{maxWidth: '65%'}}>
+                  <div className="d-flex flex-wrap gap-2 justify-content-end" style={{ maxWidth: '65%' }}>
                     {bookingDetail?.slots?.map((slot, idx) => (
                       <span key={idx} className="slot-badge-item">{slot}</span>
                     )) || <span className="slot-badge-item">14:00</span>}
@@ -168,58 +233,47 @@ const PaymentPage = () => {
           <Col lg={7}>
             <div className="summary-card-v3 shadow-sm p-4 bg-white">
               <h5 className="fw-bold mb-4 text-dark border-start border-4 border-success ps-2">THÔNG TIN KHÁCH HÀNG TẠI QUẦY</h5>
-              
+
               <Form onSubmit={handleConfirmPayment}>
                 <Form.Group className="mb-3">
-                  <Form.Label className="small fw-bold text-secondary"><Person className="me-1"/> Tên người nhận sân *</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    required
-                    className="custom-input-box"
-                    placeholder="Nhập đầy đủ họ và tên..."
+                  <Form.Label className="small fw-bold text-secondary"><Person className="me-1" /> Tên người nhận sân *</Form.Label>
+                  <Form.Control
+                    type="text" required className="custom-input-box"
                     value={formData.fullName}
-                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label className="small fw-bold text-secondary"><Telephone className="me-1"/> Số điện thoại liên hệ *</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    required
-                    className="custom-input-box"
-                    placeholder="Nhập số điện thoại nhận mã sân..."
+                  <Form.Label className="small fw-bold text-secondary"><Telephone className="me-1" /> Số điện thoại liên hệ *</Form.Label>
+                  <Form.Control
+                    type="text" required className="custom-input-box"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-4">
-                  <Form.Label className="small fw-bold text-secondary"><PencilSquare className="me-1"/> Ghi chú cho chủ sân (Nếu có)</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={3} 
-                    className="custom-input-box"
-                    placeholder="Ví dụ: Cần thuê thêm bóng, mượn áo bít tập thi đấu..."
+                  <Form.Label className="small fw-bold text-secondary"><PencilSquare className="me-1" /> Ghi chú cho chủ sân (Nếu có)</Form.Label>
+                  <Form.Control
+                    as="textarea" rows={3} className="custom-input-box"
                     value={formData.note}
-                    onChange={(e) => setFormData({...formData, note: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                   />
                 </Form.Group>
 
-                {/* KHỐI ĐIỀU KHOẢN PHÒNG VỆ LUẬN VĂN */}
                 <div className="policy-box-v3 mb-4">
-                  <div className="d-flex align-items-center gap-2 text-danger fw-bold small mb-2">
-                    <InfoCircle /> HƯỚNG DẪN AN TOÀN GIAO DỊCH
-                  </div>
-                  <ul className="text-muted small ps-3 mb-0" style={{lineHeight: '1.6'}}>
-                    <li>Khung giờ của bạn đang được hệ thống <strong>Database Locking</strong> tạm giữ độc quyền trong thời gian thực hiện giao dịch.</li>
-                    <li>ArenaHub đóng vai trò điều phối, kết nối tự động giúp chống trùng lịch (Double Booking) tuyệt đối.</li>
-                    <li>Bằng việc bấm xác nhận, bạn đồng ý với Điều khoản sử dụng và Chính sách hoàn trả ví điện tử của chúng tôi.</li>
+                  <div className="d-flex align-items-center gap-2 text-danger fw-bold small mb-2"><InfoCircle /> HƯỚNG DẪN AN TOÀN GIAO DỊCH</div>
+                  <ul className="text-muted small ps-3 mb-0" style={{ lineHeight: '1.6' }}>
+                    <li>Khung giờ của bạn đang được hệ thống <strong>Database Locking</strong> tạm giữ độc quyền.</li>
+                    <li>ArenaHub đóng vai trò điều phối, kết nối tự động giúp chống trùng lịch (Double Booking).</li>
+                    <li>Bằng việc bấm xác nhận, bạn đồng ý với Điều khoản sử dụng và Chính sách hoàn trả.</li>
                   </ul>
                 </div>
 
-                <Button 
-                  type="submit" 
+                <div className="h4 text-success fw-bold mt-4">Tổng cộng: {calculateFinalTotal().toLocaleString()} đ</div>
+                <Button
+                  type="submit"
                   className="w-100 btn-submit-payment d-flex align-items-center justify-content-center gap-2"
                   disabled={isProcessing}
                 >
@@ -229,9 +283,33 @@ const PaymentPage = () => {
               </Form>
             </div>
           </Col>
-
         </Row>
       </Container>
+
+      {/* MODAL CHỌN DỊCH VỤ */}
+      <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} size="lg" centered>
+        <Modal.Header closeButton><Modal.Title>Danh sách dịch vụ</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Row>
+            {services.length === 0 ? (
+              <Col xs={12}>
+                <div className="text-center text-muted py-4 small">Sân này chưa có dịch vụ đi kèm khả dụng.</div>
+              </Col>
+            ) : services.map(s => (
+              <Col md={6} key={s._id} className="mb-3">
+                <div className="d-flex p-2 border rounded align-items-center">
+                  <img src={s.image} style={{ width: 50, height: 50 }} alt={s.name} />
+                  <div className="ms-3 flex-grow-1">
+                    <div className="fw-bold">{s.name}</div>
+                    <small className="text-muted">{s.price.toLocaleString()} đ</small>
+                  </div>
+                  <Button size="sm" variant="success" onClick={() => handleAddService(s)}>+</Button>
+                </div>
+              </Col>
+            ))}
+          </Row>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };
