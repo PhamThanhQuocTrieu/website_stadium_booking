@@ -37,7 +37,9 @@ exports.userGetFieldById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy sân bóng yêu cầu!" });
     }
     
-    const reviews = await Review.find({ field: id }).sort({ createdAt: -1 });
+    const reviews = await Review.find({ field: id })
+      .populate('user', 'fullName email avatar')
+      .sort({ createdAt: -1 });
     
     return res.json({ field, reviews });
   } catch (error) {

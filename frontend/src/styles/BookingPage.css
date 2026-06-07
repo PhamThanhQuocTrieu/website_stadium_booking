@@ -281,3 +281,172 @@
     align-items: center;
     gap: 10px;
 }
+
+.matrix-wrapper {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1199px) {
+  .booking-note-panel {
+    max-width: calc(100% - 2rem);
+  }
+}
+
+@media (max-width: 991px) {
+  .booking-nav-premium .container {
+    gap: 1rem;
+  }
+
+  .booking-nav-premium h5 {
+    font-size: 1.05rem;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .legend-row-v3 {
+    gap: 14px;
+    padding: 0 1rem;
+  }
+
+  .booking-note-panel {
+    font-size: 14px;
+    padding: 14px 16px;
+  }
+
+  .grid-matrix-container {
+    grid-template-columns: 180px repeat(37, 56px);
+  }
+
+  .grid-empty-header,
+  .grid-field-name-label {
+    width: 180px;
+  }
+
+  .grid-time-header,
+  .grid-slot-box {
+    width: 56px;
+  }
+}
+
+@media (max-width: 767px) {
+  .booking-page-premium {
+    padding-bottom: 170px;
+  }
+
+  .booking-nav-premium {
+    padding: 12px 0;
+  }
+
+  .booking-nav-premium .container {
+    flex-wrap: wrap;
+  }
+
+  .booking-nav-premium h5 {
+    order: 3;
+    flex: 0 0 100%;
+    font-size: 1rem;
+    margin-top: 0.35rem;
+  }
+
+  .date-pill-v3 {
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .legend-container-v3 {
+    padding: 14px 0;
+  }
+
+  .legend-row-v3 {
+    justify-content: flex-start;
+  }
+
+  .pricing-link-v3 {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .booking-note-panel {
+    max-width: calc(100% - 1rem);
+    margin-bottom: 16px;
+  }
+
+  .booking-page-premium .container-fluid {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .grid-matrix-container {
+    grid-template-columns: 150px repeat(37, 50px);
+  }
+
+  .grid-empty-header,
+  .grid-field-name-label {
+    width: 150px;
+  }
+
+  .grid-field-name-label {
+    font-size: 14px;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  .grid-time-header,
+  .grid-slot-box {
+    width: 50px;
+  }
+
+  .grid-time-header::before {
+    font-size: 12px;
+  }
+
+  .payment-bar-v3 {
+    padding: 14px 0;
+  }
+
+  .payment-bar-v3 .container {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .payment-bar-v3 h4 {
+    font-size: 1.25rem;
+  }
+
+  .btn-next-v3 {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-nav-premium h5 {
+    font-size: 0.95rem;
+  }
+
+  .notice-bar {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .legend-item-v3 {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .calendar-modal-content {
+    margin: 0 0.75rem;
+  }
+
+  .calendar-days-grid {
+    gap: 6px;
+  }
+
+  .custom-toast {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+  }
+}

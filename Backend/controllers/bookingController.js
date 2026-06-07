@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Field = require('../models/Field');
+const Review = require('../models/Review');
+const Payment = require('../models/Payment');
 const cron = require('node-cron');
 
 const normalizeTime = (time) => {
@@ -19,10 +21,14 @@ const getRulePrice = (pricingRules, slotTime, isWeekend) => {
   const sameDayRules = pricingRules.filter((pricingRule) => pricingRule.dayType === dayType);
   const rulesForFallback = sameDayRules.length > 0 ? sameDayRules : pricingRules;
 
-  const matchedRule = sameDayRules.find((pricingRule) => {
+  const matchedRule = rulesForFallback.find((pricingRule) => {
     const startMinutes = timeToMinutes(pricingRule.startTime);
     const endMinutes = timeToMinutes(pricingRule.endTime);
-    return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+    if (startMinutes === endMinutes) return true;
+    if (endMinutes > startMinutes) {
+      return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+    }
+    return slotMinutes >= startMinutes || slotMinutes < endMinutes;
   });
 
   if (matchedRule) return Number(matchedRule.price || 0);
@@ -57,15 +63,19 @@ const expandBookingSlots = (booking) => {
 
 const getHoldExpiredAt = () => new Date(Date.now() - 5 * 60 * 1000);
 
+const activeBookingStatuses = ['Confirmed', 'CONFIRMED', 'PENDING_PAYMENT'];
+const paidPaymentStatuses = ['Paid', 'PAID'];
+const pendingPaymentStatuses = ['Pending', 'PENDING'];
+
 const cancelExpiredPendingBookings = async () => {
   const fiveMinutesAgo = getHoldExpiredAt();
   return Booking.updateMany(
     {
-      paymentStatus: 'Pending',
-      status: 'Confirmed',
+      paymentStatus: { $in: pendingPaymentStatuses },
+      status: { $in: activeBookingStatuses },
       createdAt: { $lte: fiveMinutesAgo }
     },
-    { $set: { status: 'Cancelled' } }
+    { $set: { status: 'Cancelled', paymentStatus: 'FAILED' } }
   );
 };
 
@@ -91,10 +101,10 @@ exports.getBookingStatus = async (req, res) => {
     const bookings = await Booking.find({
       field: new mongoose.Types.ObjectId(fieldId),
       date: String(queryDateStr).trim(),
-      status: 'Confirmed',
+      status: { $in: activeBookingStatuses },
       $or: [
-        { paymentStatus: 'Paid' },
-        { paymentStatus: 'Pending', createdAt: { $gt: getHoldExpiredAt() } }
+        { paymentStatus: { $in: paidPaymentStatuses } },
+        { paymentStatus: { $in: pendingPaymentStatuses }, createdAt: { $gt: getHoldExpiredAt() } }
       ]
     });
 
@@ -142,10 +152,10 @@ exports.reserveSlots = async (req, res) => {
     const confirmedBookings = await Booking.find({
       field: new mongoose.Types.ObjectId(fieldId),
       date,
-      status: 'Confirmed',
+      status: { $in: activeBookingStatuses },
       $or: [
-        { paymentStatus: 'Paid' },
-        { paymentStatus: 'Pending', createdAt: { $gt: getHoldExpiredAt() } }
+        { paymentStatus: { $in: paidPaymentStatuses } },
+        { paymentStatus: { $in: pendingPaymentStatuses }, createdAt: { $gt: getHoldExpiredAt() } }
       ]
     });
 
@@ -208,6 +218,117 @@ exports.getBookingById = async (req, res) => {
       fieldId: bookingData.field,
       slots: expandBookingSlots(booking)
     });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getMyBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ user: new mongoose.Types.ObjectId(req.user.id) })
+      .populate('field')
+      .sort({ createdAt: -1 });
+
+    const bookingIds = bookings.map((booking) => booking._id);
+    const reviews = await Review.find({
+      user: new mongoose.Types.ObjectId(req.user.id),
+      booking: { $in: bookingIds }
+    });
+    const reviewByBookingId = new Map(reviews.map((review) => [String(review.booking), review]));
+
+    return res.json(bookings.map((booking) => {
+      const bookingData = booking.toObject();
+      return {
+        ...bookingData,
+        fieldId: bookingData.field,
+        slots: expandBookingSlots(booking),
+        review: reviewByBookingId.get(String(booking._id)) || null
+      };
+    }));
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateBookingInfo = async (req, res) => {
+  try {
+    const { services, totalPrice } = req.body;
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (String(booking.user) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Ban khong co quyen cap nhat don nay.' });
+    }
+
+    if (Array.isArray(services)) booking.services = services;
+    if (totalPrice !== undefined) booking.totalPrice = Number(totalPrice);
+    await booking.save();
+
+    return res.json(booking);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.adminGetBookings = async (req, res) => {
+  try {
+    const {
+      search = '',
+      status = '',
+      paymentStatus = '',
+      paymentMethod = '',
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    const query = {};
+    if (status) query.status = status;
+    if (paymentStatus) query.paymentStatus = paymentStatus;
+    if (paymentMethod) query.paymentMethod = paymentMethod;
+
+    const bookings = await Booking.find(query)
+      .populate('user', 'fullName email phone')
+      .populate('field', 'fieldName address type')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+
+    const bookingIds = bookings.map((booking) => booking._id);
+    const payments = await Payment.find({ bookingId: { $in: bookingIds } }).sort({ createdAt: -1 });
+    const latestPaymentByBooking = new Map();
+    payments.forEach((payment) => {
+      const key = String(payment.bookingId);
+      if (!latestPaymentByBooking.has(key)) latestPaymentByBooking.set(key, payment);
+    });
+
+    const normalizedSearch = String(search).trim().toLowerCase();
+    const rows = bookings
+      .map((booking) => {
+        const bookingData = booking.toObject();
+        const payment = latestPaymentByBooking.get(String(booking._id)) || null;
+        return {
+          ...bookingData,
+          fieldId: bookingData.field,
+          userId: bookingData.user,
+          payment
+        };
+      })
+      .filter((booking) => {
+        if (!normalizedSearch) return true;
+        const haystack = [
+          booking._id,
+          booking.user?.fullName,
+          booking.user?.email,
+          booking.user?.phone,
+          booking.userId?.fullName,
+          booking.userId?.email,
+          booking.userId?.phone,
+          booking.payment?.txnRef,
+          booking.payment?.transactionNo
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(normalizedSearch);
+      });
+
+    return res.json({ bookings: rows, total: rows.length });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

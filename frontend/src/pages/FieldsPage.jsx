@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { findPricingRule, getRulePrice } from '../utils/pricing';
 import '../styles/FieldsPage.css'; 
 
 const FieldsPage = () => {
@@ -72,13 +73,12 @@ const FieldsPage = () => {
     setCurrentPage(1); 
   }, [location.search]);
 
-  // 💡 HÀM TRỢ GIÚP: Tìm mức giá cơ bản (Thấp nhất) của một sân từ mảng pricingRules đã bóc tách
-  const getMinPrice = (field) => {
-    if (!field.pricingRules || field.pricingRules.length === 0) return 0;
-    // Tìm các quy tắc giá thuộc ngày thường 'Weekday' để làm giá hiển thị đại diện đại trà
-    const weekdayRules = field.pricingRules.filter(r => r.dayType === 'Weekday');
-    const rulesToMin = weekdayRules.length > 0 ? weekdayRules : field.pricingRules;
-    return Math.min(...rulesToMin.map(r => r.price || 0));
+  const getCurrentPricing = (field) => {
+    const now = new Date();
+    return {
+      rule: findPricingRule(field.pricingRules || [], now),
+      price: getRulePrice(field.pricingRules || [], now)
+    };
   };
 
   // Thuật toán lọc nâng cao và sắp xếp động theo mô hình dữ liệu mới
@@ -93,12 +93,12 @@ const FieldsPage = () => {
       return matchSearch && matchSport && matchStatus;
     });
 
-    // 🌟 ĐÃ CẬP NHẬT: Sắp xếp theo hàm bóc tách getMinPrice(field) thay vì mảng tĩnh index [0] cũ
+    // Sắp xếp theo giá của khung giờ đang áp dụng hiện tại.
     if (filter.sortPrice === 'asc') {
-      result.sort((a, b) => getMinPrice(a) - getMinPrice(b));
+      result.sort((a, b) => getCurrentPricing(a).price - getCurrentPricing(b).price);
     }
     if (filter.sortPrice === 'desc') {
-      result.sort((a, b) => getMinPrice(b) - getMinPrice(a));
+      result.sort((a, b) => getCurrentPricing(b).price - getCurrentPricing(a).price);
     }
 
     return result;
@@ -120,7 +120,7 @@ const FieldsPage = () => {
       
       {/* BANNER HERO */}
       <section className="fields-hero-banner shadow-sm">
-        <Container className="px-5">
+        <Container className="fields-container">
           <div className="py-2">
             <h2 className="fw-bold mb-1 text-white">Hệ thống danh sách sân bãi</h2>
             <p className="mb-0 text-white-50 small">Tìm kiếm và kiểm tra trạng thái sẵn sàng của sân thể thao theo thời gian thực.</p>
@@ -128,7 +128,7 @@ const FieldsPage = () => {
         </Container>
       </section>
 
-      <Container className="px-5 mt-4">
+      <Container className="fields-container mt-4">
         <Row className="g-4">
           
           {/* BỘ LỌC SIDEBAR */}
@@ -156,7 +156,7 @@ const FieldsPage = () => {
 
               <div className="mb-4">
                 <label className="filter-label">SẮP XẾP GIÁ</label>
-                <div className="d-flex gap-2">
+                <div className="sort-actions d-flex gap-2">
                   <Button 
                     variant={filter.sortPrice === 'asc' ? 'success' : 'outline-light'} 
                     className="flex-fill btn-sort shadow-none text-dark"
@@ -217,7 +217,7 @@ const FieldsPage = () => {
             <Row>
               <AnimatePresence mode='popLayout'>
                 {currentItems.length > 0 ? currentItems.map((field) => {
-                  const minPrice = getMinPrice(field);
+                  const currentPricing = getCurrentPricing(field);
                   return (
                     <Col md={6} xl={4} key={field._id} className="mb-4">
                       <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -238,11 +238,11 @@ const FieldsPage = () => {
                           </div>
 
                           <Card.Body className="p-3 d-flex flex-column">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                              <h6 className="fw-bold mb-0 text-truncate text-dark" style={{maxWidth: '130px'}}>{field.fieldName}</h6>
-                              {/* 🌟 ĐÃ CẬP NHẬT: Hiển thị giá linh hoạt từ hàm getMinPrice tính toán thực tế */}
+                            <div className="field-card-title-row d-flex justify-content-between align-items-center mb-2">
+                              <h6 className="fw-bold mb-0 text-truncate text-dark">{field.fieldName}</h6>
+                              {/* Hiển thị giá theo khung giờ đang áp dụng hiện tại */}
                               <span className="price-tag text-success fw-bold">
-                                  {minPrice > 0 ? `${minPrice.toLocaleString()}đ/h` : 'Liên hệ'}
+                                  {currentPricing.price > 0 ? `${currentPricing.price.toLocaleString('vi-VN')}đ/h` : 'Liên hệ'}
                               </span>
                             </div>
                             <p className="location-text text-muted small mb-3 text-truncate">

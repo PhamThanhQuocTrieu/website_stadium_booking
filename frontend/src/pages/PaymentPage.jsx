@@ -3,7 +3,7 @@ import { Container, Row, Col, Form, Button, Spinner, Modal } from 'react-bootstr
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, ShieldCheck, CalendarCheck, Wallet2, 
-  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash 
+  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash, CreditCard2Front, QrCode 
 } from 'react-bootstrap-icons';
 import axios from 'axios';
 import '../styles/PaymentPage.css';
@@ -19,6 +19,7 @@ const PaymentPage = () => {
   const [services, setServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('VNPAY');
   // -----------------------------
 
   const [isLoading, setIsLoading] = useState(true);
@@ -85,6 +86,39 @@ const PaymentPage = () => {
     setSelectedServices(prev => prev.filter(item => item.serviceId !== serviceId));
   };
 
+  const updateServiceQuantity = (serviceId, delta) => {
+    setSelectedServices(prev => (
+      prev
+        .map(item => (
+          item.serviceId === serviceId
+            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
+            : item
+        ))
+        .filter(item => item.quantity > 0)
+    ));
+  };
+
+  const addMinutesToTime = (time, minutesToAdd) => {
+    const [hour = 0, minute = 0] = String(time || '00:00').split(':').map(Number);
+    const totalMinutes = hour * 60 + minute + minutesToAdd;
+    const nextHour = Math.floor(totalMinutes / 60);
+    const nextMinute = totalMinutes % 60;
+    return `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}`;
+  };
+
+  const getBookingTimeRange = () => {
+    if (bookingDetail?.startTime && bookingDetail?.endTime) {
+      return `${bookingDetail.startTime} - ${bookingDetail.endTime}`;
+    }
+
+    const slots = bookingDetail?.slots || [];
+    if (slots.length > 0) {
+      return `${slots[0]} - ${addMinutesToTime(slots[slots.length - 1], 30)}`;
+    }
+
+    return '14:00 - 15:00';
+  };
+
   const calculateFinalTotal = () => {
     const serviceTotal = selectedServices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     return (totalAmount || 0) + serviceTotal;
@@ -110,7 +144,7 @@ const PaymentPage = () => {
       });
 
       // 2. Gọi API khởi tạo đường dẫn thanh toán VNPay gateway
-      const res = await axios.post(`http://localhost:5000/api/payments/create-vnpay-url`, {
+      const res = await axios.post(`http://localhost:5000/api/payments/vnpay/create`, {
         bookingId,
         amount: calculateFinalTotal()
       }, {
@@ -188,6 +222,25 @@ const PaymentPage = () => {
                       <div className="ms-3 flex-grow-1">
                         <div className="fw-bold text-dark small">{s.name}</div>
                         <div className="text-secondary small">{s.quantity} x {s.price.toLocaleString()}đ</div>
+                        <div className="d-inline-flex align-items-center border rounded-pill overflow-hidden mt-2">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            className="border-0 px-2 py-0 fw-bold"
+                            onClick={() => updateServiceQuantity(s.serviceId, -1)}
+                          >
+                            -
+                          </Button>
+                          <span className="px-2 small fw-bold text-dark">{s.quantity}</span>
+                          <Button
+                            size="sm"
+                            variant="light"
+                            className="border-0 px-2 py-0 fw-bold text-success"
+                            onClick={() => updateServiceQuantity(s.serviceId, 1)}
+                          >
+                            +
+                          </Button>
+                        </div>
                       </div>
                       <div className="text-end">
                         <div className="fw-bold text-success">{(s.price * s.quantity).toLocaleString()}đ</div>
@@ -211,11 +264,7 @@ const PaymentPage = () => {
                 </div>
                 <div className="info-item-row align-items-start">
                   <span className="text-muted small fw-bold mt-1">KHUNG GIỜ CHỌN</span>
-                  <div className="d-flex flex-wrap gap-2 justify-content-end" style={{ maxWidth: '65%' }}>
-                    {bookingDetail?.slots?.map((slot, idx) => (
-                      <span key={idx} className="slot-badge-item">{slot}</span>
-                    )) || <span className="slot-badge-item">14:00</span>}
-                  </div>
+                  <span className="slot-badge-item">{getBookingTimeRange()}</span>
                 </div>
                 <div className="info-item-row">
                   <span className="text-muted small fw-bold">TỔNG THỜI GIAN THUÊ</span>
@@ -272,13 +321,38 @@ const PaymentPage = () => {
                 </div>
 
                 <div className="h4 text-success fw-bold mt-4">Tổng cộng: {calculateFinalTotal().toLocaleString()} đ</div>
+                <div className="payment-method-box mb-4">
+                  <div className="small fw-bold text-secondary mb-3">PHƯƠNG THỨC THANH TOÁN</div>
+                  <div className="payment-method-grid">
+                    <button
+                      type="button"
+                      className={`payment-method-card ${paymentMethod === 'VNPAY' ? 'selected' : ''}`}
+                      onClick={() => setPaymentMethod('VNPAY')}
+                    >
+                      <span className="payment-method-icon"><CreditCard2Front size={24} /></span>
+                      <span>
+                        <span className="fw-bold text-dark d-block">VNPAY</span>
+                        <span className="text-muted small d-block">Thanh toán qua ATM, Internet Banking, QR VNPAY</span>
+                      </span>
+                    </button>
+
+                    <button type="button" className="payment-method-card disabled" disabled>
+                      <span className="payment-method-icon muted"><QrCode size={24} /></span>
+                      <span>
+                        <span className="fw-bold text-dark d-block">VietQR</span>
+                        <span className="text-muted small d-block">Sắp ra mắt</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
                 <Button
                   type="submit"
                   className="w-100 btn-submit-payment d-flex align-items-center justify-content-center gap-2"
                   disabled={isProcessing}
                 >
                   {isProcessing ? <Spinner animation="border" size="sm" /> : <Wallet2 />}
-                  <span>XÁC NHẬN & THANH TOÁN QUA VNPAY</span>
+                  <span>XÁC NHẬN & THANH TOÁN</span>
                 </Button>
               </Form>
             </div>
@@ -287,7 +361,7 @@ const PaymentPage = () => {
       </Container>
 
       {/* MODAL CHỌN DỊCH VỤ */}
-      <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} size="lg" centered>
+      <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} size="lg" centered dialogClassName="payment-service-modal">
         <Modal.Header closeButton><Modal.Title>Danh sách dịch vụ</Modal.Title></Modal.Header>
         <Modal.Body>
           <Row>

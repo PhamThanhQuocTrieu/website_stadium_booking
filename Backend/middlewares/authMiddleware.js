@@ -26,7 +26,8 @@ exports.adminOnly = (req, res, next) => {
         return res.status(401).json({ message: 'Vui lòng đăng nhập!' });
     }
 
-    if (req.user.role === 'admin') {
+    const role = String(req.user.role || '').toLowerCase();
+    if (role === 'admin' || role === 'super admin') {
         next();
     } else {
         return res.status(403).json({ message: 'Bạn không có quyền truy cập trang quản trị!' });

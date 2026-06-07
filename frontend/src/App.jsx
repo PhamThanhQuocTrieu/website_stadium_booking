@@ -10,28 +10,32 @@ import BookingPage from './pages/BookingPage';
 import FieldDetailPage from './pages/FieldDetailPage';
 import Footer from './components/Footer';
 import PaymentPage from './pages/PaymentPage';
-import UserProfile from './pages/UserProfile'; 
+import VnpayReturnPage from './pages/VnpayReturnPage';
+import UserProfile from './pages/UserProfile';
+import MyBookingsPage from './pages/MyBookingsPage';
 
-// IMPORT CÁC TRANG ADMIN
 import AdminLayout from './pages/Admin/AdminLayout';
 import Dashboard from './pages/Admin/Dashboard';
 import FieldManager from './pages/Admin/FieldManager';
 import AddFieldPage from './pages/Admin/AddFieldPage';
 import UpdateFieldPage from './pages/Admin/UpdateFieldPage';
 import BookingCalendar from './pages/Admin/BookingCalendar';
-import UserManager from './pages/Admin/UserManager'; 
-import AdminProfile from './pages/Admin/Profile'; 
+import BookingManager from './pages/Admin/BookingManager';
+import UserManager from './pages/Admin/UserManager';
+import AdminProfile from './pages/Admin/Profile';
 import VoucherManager from './pages/Admin/VoucherManager';
-import ServiceManager from './pages/Admin/ServiceManager'; // 🌟 IMPORT TRANG DỊCH VỤ
+import ServiceManager from './pages/Admin/ServiceManager';
+import ReviewManager from './pages/Admin/ReviewManager';
 
 import './App.css';
 
 const AdminRoute = ({ children }) => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-    const isAdmin = userInfo && userInfo.role === 'admin'; 
+    const role = String(userInfo?.role || '').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'super admin';
     return isAdmin ? children : <Navigate to="/" replace />;
-  } catch (e) {
+  } catch {
     return <Navigate to="/login" replace />;
   }
 };
@@ -42,7 +46,7 @@ function App() {
 
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
-      (response) => response, 
+      (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
           localStorage.clear();
@@ -71,8 +75,10 @@ function App() {
           <Route path="/booking/:id" element={<BookingPage />} />
           <Route path="/field-detail/:id" element={<FieldDetailPage />} />
           <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/payment/vnpay-return" element={<VnpayReturnPage />} />
           <Route path="/profile" element={<UserProfile />} />
-          
+          <Route path="/my-bookings" element={<MyBookingsPage />} />
+
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
@@ -80,13 +86,14 @@ function App() {
             <Route path="addField" element={<AddFieldPage />} />
             <Route path="updateField/:id" element={<UpdateFieldPage />} />
             <Route path="calendar" element={<BookingCalendar />} />
-            <Route path="bookings" element={<div>Quản lý đơn đặt sân</div>} />
-            <Route path="users" element={<UserManager />} /> 
+            <Route path="bookings" element={<BookingManager />} />
+            <Route path="users" element={<UserManager />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="vouchers" element={<VoucherManager />} />
-            <Route path="services" element={<ServiceManager />} /> {/* 🌟 ROUTE MỚI */}
-            <Route path="payments" element={<div>Quản lý thanh toán</div>} />
-            <Route path="reports" element={<div>Báo cáo doanh thu</div>} />
+            <Route path="services" element={<ServiceManager />} />
+            <Route path="reviews" element={<ReviewManager />} />
+            <Route path="payments" element={<BookingManager />} />
+            <Route path="reports" element={<div>Bao cao doanh thu</div>} />
           </Route>
         </Routes>
       </main>

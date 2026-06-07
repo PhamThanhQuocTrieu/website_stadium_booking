@@ -1,11 +1,12 @@
 import React from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import '../styles/Footer.css';
 
 const Footer = () => {
   return (
-    <footer style={{ backgroundColor: '#111827', color: '#9ca3af' }} className="py-5 mt-5">
-      <Container fluid className="px-5">
-        <Row>
+    <footer style={{ backgroundColor: '#111827', color: '#9ca3af' }} className="py-5 mt-5 user-footer">
+      <Container fluid className="footer-container">
+        <Row className="g-4">
           {/* Cột 1: Thông tin thương hiệu */}
           <Col md={3}>
             <h3 className="text-white fw-bold">ArenaHub</h3>
@@ -37,7 +38,7 @@ const Footer = () => {
           <Col md={5}>
             <h6 className="text-white fw-bold mb-3">ĐĂNG KÝ NHẬN ƯU ĐÃI</h6>
             <p className="small">Nhận ngay voucher giảm 20% cho lần đặt sân đầu tiên</p>
-            <div className="d-flex mb-3">
+            <div className="footer-subscribe d-flex mb-3">
               <Form.Control type="email" placeholder="Email của bạn" className="rounded-0" />
               <Button variant="success" className="rounded-0">Đăng ký</Button>
             </div>
@@ -47,7 +48,7 @@ const Footer = () => {
         
         <hr className="my-4 border-secondary" />
         
-        <Row className="small">
+        <Row className="small footer-bottom">
           <Col>© 2026 ArenaHub - All rights reserved.</Col>
           <Col className="text-end">Đăng ký chủ sân? <a href="#" className="text-success">Liên hệ ngay</a></Col>
         </Row>

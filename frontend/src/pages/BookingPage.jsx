@@ -7,42 +7,11 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import '../styles/BookingPage.css';
 import PricingModal from './PricingModal';
+import { getRulePrice, normalizeTime } from '../utils/pricing';
 
 const socket = io('http://localhost:5000');
 
-const timeToMinutes = (time) => {
-    const [hour, minute = 0] = String(time).split(':').map(Number);
-    return hour * 60 + minute;
-};
-
-const normalizeTime = (time) => {
-    const [hour, minute = 0] = String(time).split(':').map(Number);
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-};
-
 const formatCurrency = (amount) => Number(amount || 0).toLocaleString('vi-VN');
-
-const getRulePrice = (pricingRules, slotTime, selectedDate) => {
-    const slotMinutes = timeToMinutes(slotTime);
-    const dayOfWeek = selectedDate.getDay();
-    const dayType = dayOfWeek === 0 || dayOfWeek === 6 ? 'Weekend' : 'Weekday';
-    const sameDayRules = pricingRules.filter(rule => rule.dayType === dayType);
-    const rulesForFallback = sameDayRules.length > 0 ? sameDayRules : pricingRules;
-
-    const matchedRule = sameDayRules.find(rule => {
-        const startMinutes = timeToMinutes(rule.startTime);
-        const endMinutes = timeToMinutes(rule.endTime);
-        return slotMinutes >= startMinutes && slotMinutes < endMinutes;
-    });
-
-    if (matchedRule) return Number(matchedRule.price || 0);
-
-    const fallbackPrices = rulesForFallback
-        .map(rule => Number(rule.price || 0))
-        .filter(price => price > 0);
-
-    return fallbackPrices.length > 0 ? Math.min(...fallbackPrices) : 100000;
-};
 
 const BookingPage = () => {
     const navigate = useNavigate();
@@ -112,7 +81,7 @@ const BookingPage = () => {
 
     const calculateTotalAmount = () => {
         return selectedSlots.reduce((total, slotTime) => {
-            return total + (getRulePrice(pricingRules, slotTime, selectedDate) / 2);
+            return total + (getRulePrice(pricingRules, selectedDate, slotTime) / 2);
         }, 0);
     };
 

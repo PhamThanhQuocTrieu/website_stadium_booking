@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   avatar: { type: String, default: '' },
   dob: { type: Date },
   gender: { type: String, enum: ['Nam', 'Nữ', 'Khác'], default: 'Nam' },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  role: { type: String, enum: ['user', 'admin', 'Super Admin'], default: 'user' },
   isActive: { type: Boolean, default: true },
   lockReason: { type: String, default: "" }
 }, { timestamps: true });

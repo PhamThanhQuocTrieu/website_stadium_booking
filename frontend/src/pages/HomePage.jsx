@@ -7,6 +7,7 @@ import axios from 'axios';
 import AOS from 'aos'; 
 import 'aos/dist/aos.css';
 import { io } from 'socket.io-client';
+import { getRulePrice } from '../utils/pricing';
 import '../styles/HomePage.css'; 
 
 // Import các tài nguyên biểu ngữ hệ thống ArenaHub
@@ -65,12 +66,8 @@ const HomePage = () => {
     };
   }, []);
 
-  // HÀM TRỢ GIÚP: Tìm mức giá cơ bản thấp nhất từ mảng pricingRules đã bóc tách để render ra màn hình
-  const getMinPrice = (field) => {
-    if (!field.pricingRules || field.pricingRules.length === 0) return 0;
-    const weekdayRules = field.pricingRules.filter(r => r.dayType === 'Weekday');
-    const rulesToMin = weekdayRules.length > 0 ? weekdayRules : field.pricingRules;
-    return Math.min(...rulesToMin.map(r => r.price || 0));
+  const getCurrentPrice = (field) => {
+    return getRulePrice(field.pricingRules || [], new Date());
   };
 
   // PHÂN TÁCH DANH MỤC CÁC PHÂN HỆ SÂN
@@ -88,9 +85,9 @@ const HomePage = () => {
 
   // Thành phần Card hiển thị chi tiết tài nguyên sân
   const FieldCard = ({ field }) => {
-    const minPrice = getMinPrice(field);
+    const currentPrice = getCurrentPrice(field);
     return (
-      <Col md={3} className="mb-4" data-aos="zoom-in">
+      <Col xs={12} sm={6} lg={3} className="mb-4" data-aos="zoom-in">
         <Card className="field-card border-0 shadow-sm rounded-4 overflow-hidden h-100 bg-white">
           <div style={{ height: '180px', position: 'relative' }}>
             <Card.Img 
@@ -114,7 +111,7 @@ const HomePage = () => {
               <div>
                 <small className="text-muted d-block" style={{ fontSize: '0.65rem', fontWeight: 700 }}>GIÁ TỪ</small>
                 <span className="text-success fw-bold fs-5">
-                  {minPrice > 0 ? `${minPrice.toLocaleString()}đ/h` : '150.000đ'}
+                  {currentPrice > 0 ? `${currentPrice.toLocaleString('vi-VN')}đ/h` : 'Liên hệ'}
                 </span>
               </div>
               <Button 
@@ -158,7 +155,7 @@ const HomePage = () => {
 
         {/* 2. THANH TÌM KIẾM ĐA CHỨC NĂNG */}
         <div className="search-overlay-container">
-          <Container fluid className="px-5">
+          <Container fluid className="homepage-container-fluid">
             <div className="search-bar-box shadow-lg bg-white p-4 rounded-4">
               <Row className="g-3 align-items-end">
                 <Col md={4}>
@@ -202,12 +199,12 @@ const HomePage = () => {
       </section>
 
       {/* KHỐI HIỂN THỊ DANH MỤC CÁC PHÂN HỆ SÂN BÃI TRỰC TUYẾN */}
-      <Container fluid className="px-5" style={{ marginTop: '90px', paddingBottom: '50px' }}>
+      <Container fluid className="homepage-container-fluid homepage-main-content" style={{ marginTop: '90px', paddingBottom: '50px' }}>
         
         {/* 3. DANH MỤC SÂN NỔI BẬT */}
         {featuredFields.length > 0 && (
           <div className="my-5">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="section-heading-row d-flex justify-content-between align-items-center mb-4">
               <div>
                 <span className="text-danger fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>— TOP CHOICE</span>
                 <h2 className="fw-bold text-dark mt-1">Sân nổi bật hệ thống</h2>
@@ -231,7 +228,7 @@ const HomePage = () => {
         ].map((section, idx) => (
           section.data.length > 0 && (
             <div className="my-5" key={idx} data-aos="fade-up">
-              <div className="d-flex justify-content-between align-items-center mb-4">
+              <div className="section-heading-row d-flex justify-content-between align-items-center mb-4">
                 <h3 className="fw-bold mb-0 border-start border-4 border-success ps-3 text-dark">{section.title}</h3>
                 <Button variant="link" className="text-success fw-bold text-decoration-none small" onClick={() => navigate(`/fields?type=${section.title.includes('Bóng') ? 'Bóng đá' : section.title.includes('Cầu') ? 'Cầu lông' : section.title.includes('Tennis') ? 'Tennis' : 'Pickleball'}`)}>
                   Xem thêm

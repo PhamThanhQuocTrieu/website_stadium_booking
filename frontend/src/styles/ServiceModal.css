@@ -158,3 +158,104 @@
     background: #ca8a04;
     color: black;
 }
+
+.service-modal-modern {
+    max-width: min(1140px, calc(100vw - 2rem));
+}
+
+.service-modal-modern .modal-body {
+    max-height: calc(100vh - 210px);
+    overflow-y: auto;
+}
+
+.category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.category-tabs .btn {
+    margin-right: 0 !important;
+}
+
+@media (max-width: 1199px) {
+    .service-modal-modern {
+        max-width: calc(100vw - 2rem);
+    }
+}
+
+@media (max-width: 991px) {
+    .service-card {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 767px) {
+    .service-modal-modern {
+        margin: 0.75rem;
+        max-width: calc(100vw - 1.5rem);
+    }
+
+    .service-modal-header {
+        padding: 15px 16px;
+    }
+
+    .service-modal-header .modal-title {
+        font-size: 1.1rem;
+    }
+
+    .service-modal-modern .modal-body {
+        max-height: calc(100vh - 190px);
+    }
+
+    .category-tabs .btn {
+        flex: 1 1 100%;
+        min-height: 42px;
+    }
+
+    .service-card {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .service-name {
+        font-size: 1rem;
+        overflow-wrap: anywhere;
+    }
+
+    .service-price {
+        font-size: 0.88rem;
+    }
+
+    .footer-content {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .total-price {
+        display: block;
+        margin-left: 0;
+        margin-top: 0.4rem;
+    }
+
+    .add-service-btn {
+        width: 100%;
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    .services-list {
+        padding: 0.75rem !important;
+    }
+
+    .service-card {
+        flex-wrap: wrap;
+    }
+
+    .quantity-control {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

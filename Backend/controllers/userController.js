@@ -108,7 +108,17 @@ exports.updateUser = async (req, res) => {
     const updatedUser = await user.save();
     
     req.app.get('io')?.emit('userUpdated');
-    res.json({ _id: updatedUser._id, fullName: updatedUser.fullName, email: updatedUser.email, role: updatedUser.role }); 
+    res.json({
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      avatar: updatedUser.avatar,
+      dob: updatedUser.dob,
+      role: updatedUser.role,
+      isActive: updatedUser.isActive,
+      token: generateToken(updatedUser)
+    }); 
   } catch (err) { res.status(400).json({ message: err.message }); }
 };
 

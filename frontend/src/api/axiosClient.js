@@ -10,17 +10,18 @@ const axiosClient = axios.create({
 // Interceptor cho Request: Gắn Token
 axiosClient.interceptors.request.use(
     (config) => {
+        let token = localStorage.getItem('userToken');
         const userInfoRaw = localStorage.getItem('userInfo');
         if (userInfoRaw) {
             try {
                 const userInfo = JSON.parse(userInfoRaw);
-                const token = userInfo.token; 
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
-                }
+                token = userInfo.token || token;
             } catch (e) {
                 console.error("Lỗi parse token từ localStorage", e);
             }
+        }
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },

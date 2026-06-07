@@ -109,3 +109,85 @@
 .modern-pricing-table tr:hover {
     background-color: #f8fafc !important;
 }
+
+.pricing-modal-modern {
+    max-width: min(1140px, calc(100vw - 2rem));
+}
+
+.pricing-modal-modern .modal-body {
+    max-height: 72vh;
+    overflow-y: auto;
+}
+
+.modern-pricing-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modern-pricing-table table {
+    min-width: 760px;
+}
+
+@media (max-width: 1199px) {
+    .pricing-modal-modern {
+        max-width: calc(100vw - 2rem);
+    }
+}
+
+@media (max-width: 991px) {
+    .pricing-modal-header {
+        padding: 20px 22px;
+    }
+
+    .pricing-modal-header .modal-title {
+        align-items: flex-start !important;
+        flex-wrap: wrap;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .pricing-modal-modern {
+        margin: 0.75rem;
+        max-width: calc(100vw - 1.5rem);
+    }
+
+    .pricing-modal-header {
+        padding: 16px;
+    }
+
+    .pricing-modal-header .modal-title {
+        gap: 0.5rem !important;
+        font-size: 1.05rem;
+    }
+
+    .field-name {
+        flex: 0 0 100%;
+    }
+
+    .pricing-modal-modern .modal-body {
+        max-height: 68vh;
+        padding: 1rem !important;
+    }
+
+    .modern-pricing-table th,
+    .modern-pricing-table td {
+        padding: 12px 10px;
+        font-size: 0.88rem;
+    }
+
+    .pricing-modal-modern .modal-footer .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    .price-icon {
+        font-size: 1.5rem;
+    }
+
+    .empty-state {
+        padding: 36px 12px;
+    }
+}

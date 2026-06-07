@@ -61,28 +61,29 @@ const Navigation = () => {
     navigate(searchTerm.trim() ? `/fields?search=${encodeURIComponent(searchTerm.trim())}` : '/fields');
   };
 
-  const isAdmin = user?.role === 'admin';
+  const role = String(user?.role || '').toLowerCase();
+  const isAdmin = role === 'admin' || role === 'super admin';
   const profileLink = isAdmin ? '/admin/profile' : '/profile';
 
   return (
     <Navbar expand="lg" className="shadow-sm fixed-top py-2 custom-navbar">
-      <Container fluid className="px-5">
-        <Navbar.Brand as={Link} to="/" className="py-0">
+      <Container fluid className="navbar-container">
+        <Navbar.Brand as={Link} to="/" className="py-0 navbar-brand-custom">
           <img src={myLogo} alt="ArenaHub Logo" style={{ height: '55px', width: 'auto' }} />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           
-          <Nav className="mx-auto gap-3">
+          <Nav className="mx-auto gap-3 nav-links-wrap">
             <NavLink to="/" end className="fw-bold text-decoration-none nav-link-custom">Trang chủ</NavLink>
             <NavLink to="/fields" className="fw-bold text-decoration-none nav-link-custom">Sân tập</NavLink>
             <NavLink to="/news" className="fw-bold text-decoration-none nav-link-custom">Tin tức</NavLink>
             <NavLink to="/support" className="fw-bold text-decoration-none nav-link-custom">Hỗ trợ</NavLink>
           </Nav>
 
-          <div className="d-flex align-items-center gap-3">
-            <Form onSubmit={handleToggleSearch} className="d-none d-xl-block">
-              <div className="d-flex align-items-center bg-light px-3 rounded-pill search-input-wrapper" style={{ height: '42px', width: '260px' }}>
+          <div className="navbar-actions d-flex align-items-center gap-3">
+            <Form onSubmit={handleToggleSearch} className="navbar-search-form">
+              <div className="d-flex align-items-center bg-light px-3 rounded-pill search-input-wrapper">
                 <Form.Control placeholder="Tìm tên sân..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border-0 bg-transparent shadow-none small p-0" />
                 <Button type="submit" variant="link" className="p-0 text-muted"><Search size={15} /></Button>
               </div>

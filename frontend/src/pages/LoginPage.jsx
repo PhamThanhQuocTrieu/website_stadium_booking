@@ -29,17 +29,19 @@ const LoginPage = () => {
 
   const handleLoginSuccess = (data) => {
     if (saveAuthData(data)) {
+      const role = String(data.role || '').toLowerCase();
+      const isAdmin = role === 'admin' || role === 'super admin';
       Swal.fire({
         icon: 'success',
         title: 'Đăng nhập thành công!',
-        text: data.role === 'admin' ? 'Chào Quản trị viên...' : `Chào mừng ${data.fullName}...`,
+        text: isAdmin ? 'Chào Quản trị viên...' : `Chào mừng ${data.fullName}...`,
         timer: 1500,
         showConfirmButton: false
       });
 
       // 🌟 FIX: Điều hướng tới /admin để khớp với index route trong App.js
       setTimeout(() => {
-        if (data.role === 'admin') {
+        if (isAdmin) {
           navigate('/admin'); 
         } else {
           navigate('/');

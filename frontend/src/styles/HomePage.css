@@ -92,3 +92,102 @@
 h2.fw-bold, h3.fw-bold {
   color: #1f2937;
 }
+
+.homepage-container-fluid {
+  padding-left: clamp(1rem, 4vw, 3rem) !important;
+  padding-right: clamp(1rem, 4vw, 3rem) !important;
+}
+
+.search-overlay-container .homepage-container-fluid {
+  margin-top: 0 !important;
+}
+
+.homepage-main-content {
+  margin-top: 90px !important;
+}
+
+.field-card .card-body {
+  min-width: 0;
+}
+
+@media (max-width: 1199px) {
+  .search-overlay-container {
+    bottom: -58px;
+  }
+
+  .homepage-main-content {
+    margin-top: 120px !important;
+  }
+}
+
+@media (max-width: 991px) {
+  .banner-container {
+    aspect-ratio: 16 / 7;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .search-overlay-container {
+    position: static;
+    margin-top: 1rem;
+  }
+
+  .search-bar-box {
+    padding: 1rem !important;
+    border-radius: 16px !important;
+  }
+
+  .homepage-main-content {
+    margin-top: 1rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .homepage-container {
+    padding-bottom: 20px;
+  }
+
+  .homepage-container-fluid {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .banner-container {
+    aspect-ratio: 16 / 9;
+  }
+
+  .section-heading-row {
+    align-items: flex-start !important;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .section-heading-row .btn {
+    padding-left: 0;
+  }
+
+  .search-bar-box .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-container {
+    aspect-ratio: 4 / 3;
+  }
+
+  .search-bar-box {
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .field-card .mt-auto {
+    align-items: flex-start !important;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .btn-details-premium {
+    width: 100%;
+    min-height: 42px;
+  }
+}

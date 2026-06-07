@@ -1,0 +1,97 @@
+.my-bookings-page .container {
+  max-width: 1140px;
+  padding-left: clamp(1rem, 3vw, 1.5rem);
+  padding-right: clamp(1rem, 3vw, 1.5rem);
+}
+
+.booking-history-card {
+  border-radius: 12px !important;
+}
+
+.booking-history-card .card-body {
+  min-width: 0;
+}
+
+.booking-card-heading {
+  min-width: 0;
+}
+
+.booking-card-heading h5,
+.booking-card-heading .text-muted,
+.booking-history-card .bg-light .small {
+  overflow-wrap: anywhere;
+}
+
+.booking-card-actions .btn {
+  min-height: 42px;
+}
+
+.review-modal-dialog .modal-content {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+@media (max-width: 1199px) {
+  .my-bookings-page {
+    padding-top: 2.5rem !important;
+  }
+}
+
+@media (max-width: 991px) {
+  .booking-card-heading {
+    align-items: flex-start !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .my-bookings-page {
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  .my-bookings-header {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .my-bookings-header .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .booking-history-card .card-body {
+    padding: 1rem !important;
+  }
+
+  .booking-card-heading {
+    flex-direction: column;
+  }
+
+  .booking-card-heading .badge {
+    align-self: flex-start;
+  }
+
+  .booking-card-actions {
+    flex-direction: column;
+  }
+
+  .booking-card-actions .btn {
+    width: 100%;
+  }
+
+  .review-modal-dialog {
+    margin: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-bookings-page .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .my-bookings-page h3 {
+    font-size: 1.35rem;
+  }
+}
