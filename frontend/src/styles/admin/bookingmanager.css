@@ -33,7 +33,7 @@
 }
 
 .admin-booking-table {
-  min-width: 1180px;
+  min-width: 1420px;
 }
 
 .admin-booking-table th {
@@ -46,6 +46,86 @@
 
 .admin-booking-table td {
   font-size: 0.9rem;
+}
+
+.admin-booking-table th.admin-action-col,
+.admin-booking-table td.admin-action-cell {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  min-width: 260px;
+  width: 260px;
+  background: #fff;
+  box-shadow: -10px 0 18px rgba(15, 23, 42, 0.06);
+}
+
+.admin-booking-table th.admin-action-col {
+  background: #f8fafc;
+  z-index: 4;
+}
+
+.admin-action-cell {
+  vertical-align: middle;
+}
+
+.cancel-action-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cancel-action-btn,
+.detail-action-btn {
+  min-height: 36px;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 700 !important;
+  white-space: nowrap;
+}
+
+.detail-action-btn {
+  width: 100%;
+  color: #0f5132 !important;
+  background: #ecfdf5 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.detail-action-btn:hover {
+  background: #dcfce7 !important;
+}
+
+.cancel-review-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  background: #fffbeb;
+}
+
+.cancel-review-panel strong {
+  color: #92400e;
+}
+
+.cancel-review-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cancel-review-actions .btn {
+  min-height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
 }
 
 .txn-text {
@@ -115,6 +195,28 @@
 
   .payment-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-booking-table th.admin-action-col,
+  .admin-booking-table td.admin-action-cell {
+    position: static;
+    min-width: 240px;
+    width: 240px;
+    box-shadow: none;
+  }
+
+  .cancel-review-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cancel-review-actions {
+    flex-direction: column;
+  }
+
+  .cancel-review-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

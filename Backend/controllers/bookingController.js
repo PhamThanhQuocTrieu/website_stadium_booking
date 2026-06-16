@@ -61,27 +61,71 @@ const expandBookingSlots = (booking) => {
   return slots;
 };
 
-const getHoldExpiredAt = () => new Date(Date.now() - 5 * 60 * 1000);
+const HOLD_DURATION_MS = 5 * 60 * 1000;
+const getHoldExpiredAt = () => new Date(Date.now() - HOLD_DURATION_MS);
+const getHoldExpiresAt = () => new Date(Date.now() + HOLD_DURATION_MS);
+const getActivePendingHoldQuery = () => ({
+  $or: [
+    { holdExpiresAt: { $gt: new Date() } },
+    { holdExpiresAt: { $exists: false }, createdAt: { $gt: getHoldExpiredAt() } }
+  ]
+});
 
-const activeBookingStatuses = ['Confirmed', 'CONFIRMED', 'PENDING_PAYMENT'];
-const paidPaymentStatuses = ['Paid', 'PAID'];
-const pendingPaymentStatuses = ['Pending', 'PENDING'];
+const activeBookingStatuses = ['confirmed', 'Confirmed', 'CONFIRMED', 'PENDING_PAYMENT', 'cancel_requested'];
+const paidPaymentStatuses = ['paid', 'success', 'Paid', 'PAID'];
+const pendingPaymentStatuses = ['pending', 'Pending', 'PENDING', 'UNPAID'];
+const completedBookingStatuses = ['completed', 'Completed', 'COMPLETED', 'Da hoan thanh', 'ÄÃ£ hoÃ n thÃ nh'];
+const cancelledBookingStatuses = ['cancelled', 'Cancelled', 'CANCELLED'];
+const paidLikePaymentStatuses = ['paid', 'success', 'Paid', 'PAID', 'SUCCESS'];
+const normalizeStatus = (value) => String(value || '').trim().toLowerCase();
+const paidLikeStatusSet = paidLikePaymentStatuses.map(normalizeStatus);
+const completedStatusSet = completedBookingStatuses.map(normalizeStatus);
+const cancelledStatusSet = cancelledBookingStatuses.map(normalizeStatus);
+const isPaidBooking = (booking, payment) => {
+  return paidLikeStatusSet.includes(normalizeStatus(payment?.status)) ||
+    paidLikeStatusSet.includes(normalizeStatus(booking?.paymentStatus));
+};
+const getBookingEndDate = (booking) => new Date(`${booking.date}T${normalizeTime(booking.endTime)}:00`);
 
 const cancelExpiredPendingBookings = async () => {
-  const fiveMinutesAgo = getHoldExpiredAt();
   return Booking.updateMany(
     {
       paymentStatus: { $in: pendingPaymentStatuses },
       status: { $in: activeBookingStatuses },
-      createdAt: { $lte: fiveMinutesAgo }
+      $or: [
+        { holdExpiresAt: { $lte: new Date() } },
+        { holdExpiresAt: { $exists: false }, createdAt: { $lte: getHoldExpiredAt() } }
+      ]
     },
-    { $set: { status: 'Cancelled', paymentStatus: 'FAILED' } }
+    { $set: { status: 'Cancelled', paymentStatus: 'FAILED' }, $unset: { holdExpiresAt: '' } }
+  );
+};
+
+const completePastPaidBookings = async () => {
+  const candidates = await Booking.find({
+    status: { $in: ['confirmed', 'Confirmed', 'CONFIRMED'] },
+    paymentStatus: { $in: paidPaymentStatuses }
+  }).select('_id date endTime');
+
+  const completedIds = candidates
+    .filter((booking) => {
+      const endAt = getBookingEndDate(booking);
+      return !Number.isNaN(endAt.getTime()) && endAt < new Date();
+    })
+    .map((booking) => booking._id);
+
+  if (completedIds.length === 0) return;
+
+  await Booking.updateMany(
+    { _id: { $in: completedIds } },
+    { $set: { status: 'completed' }, $unset: { holdExpiresAt: '' } }
   );
 };
 
 cron.schedule('* * * * *', async () => {
   try {
     await cancelExpiredPendingBookings();
+    await completePastPaidBookings();
   } catch (error) {
     console.error('Loi Cron Job:', error.message);
   }
@@ -93,6 +137,7 @@ exports.getBookingStatus = async (req, res) => {
     const { date } = req.query;
 
     await cancelExpiredPendingBookings();
+    await completePastPaidBookings();
 
     const field = await Field.findById(fieldId);
     if (!field) return res.status(404).json({ message: 'Khong tim thay san!' });
@@ -104,7 +149,7 @@ exports.getBookingStatus = async (req, res) => {
       status: { $in: activeBookingStatuses },
       $or: [
         { paymentStatus: { $in: paidPaymentStatuses } },
-        { paymentStatus: { $in: pendingPaymentStatuses }, createdAt: { $gt: getHoldExpiredAt() } }
+        { paymentStatus: { $in: pendingPaymentStatuses }, ...getActivePendingHoldQuery() }
       ]
     });
 
@@ -155,7 +200,7 @@ exports.reserveSlots = async (req, res) => {
       status: { $in: activeBookingStatuses },
       $or: [
         { paymentStatus: { $in: paidPaymentStatuses } },
-        { paymentStatus: { $in: pendingPaymentStatuses }, createdAt: { $gt: getHoldExpiredAt() } }
+        { paymentStatus: { $in: pendingPaymentStatuses }, ...getActivePendingHoldQuery() }
       ]
     });
 
@@ -176,24 +221,16 @@ exports.reserveSlots = async (req, res) => {
       startTime,
       endTime,
       totalPrice,
+      subtotal: totalPrice,
+      serviceTotal: 0,
+      discountAmount: 0,
+      transactionFee: 0,
+      holdExpiresAt: getHoldExpiresAt(),
       paymentStatus: 'Pending',
       status: 'Confirmed'
     };
 
-    const cancelledBooking = await Booking.findOne({
-      field: new mongoose.Types.ObjectId(fieldId),
-      date,
-      startTime,
-      status: 'Cancelled'
-    });
-
-    const newBooking = cancelledBooking
-      ? await Booking.findByIdAndUpdate(
-          cancelledBooking._id,
-          { $set: { ...bookingData, services: [] } },
-          { new: true }
-        )
-      : await Booking.create(bookingData);
+    const newBooking = await Booking.create(bookingData);
 
     const io = req.app.get('io');
     if (io) io.emit('slot_booked_success', { fieldId, date, slots: selectedSlots });
@@ -225,24 +262,36 @@ exports.getBookingById = async (req, res) => {
 
 exports.getMyBookings = async (req, res) => {
   try {
+    await cancelExpiredPendingBookings();
+    await completePastPaidBookings();
+
     const bookings = await Booking.find({ user: new mongoose.Types.ObjectId(req.user.id) })
       .populate('field')
       .sort({ createdAt: -1 });
 
     const bookingIds = bookings.map((booking) => booking._id);
+    const payments = await Payment.find({ bookingId: { $in: bookingIds } }).sort({ createdAt: -1 });
     const reviews = await Review.find({
       user: new mongoose.Types.ObjectId(req.user.id),
       booking: { $in: bookingIds }
+    });
+    const latestPaymentByBookingId = new Map();
+    payments.forEach((payment) => {
+      const key = String(payment.bookingId);
+      if (!latestPaymentByBookingId.has(key)) latestPaymentByBookingId.set(key, payment);
     });
     const reviewByBookingId = new Map(reviews.map((review) => [String(review.booking), review]));
 
     return res.json(bookings.map((booking) => {
       const bookingData = booking.toObject();
+      const payment = latestPaymentByBookingId.get(String(booking._id)) || null;
       return {
         ...bookingData,
         fieldId: bookingData.field,
         slots: expandBookingSlots(booking),
-        review: reviewByBookingId.get(String(booking._id)) || null
+        payment,
+        review: reviewByBookingId.get(String(booking._id)) || null,
+        reviewed: Boolean(reviewByBookingId.get(String(booking._id)) || bookingData.reviewed)
       };
     }));
   } catch (error) {
@@ -259,8 +308,16 @@ exports.updateBookingInfo = async (req, res) => {
       return res.status(403).json({ message: 'Ban khong co quyen cap nhat don nay.' });
     }
 
-    if (Array.isArray(services)) booking.services = services;
-    if (totalPrice !== undefined) booking.totalPrice = Number(totalPrice);
+    if (Array.isArray(services)) {
+      booking.services = services;
+      booking.serviceTotal = services.reduce((sum, service) => {
+        return sum + (Number(service.price || 0) * Number(service.quantity || 1));
+      }, 0);
+    }
+    if (totalPrice !== undefined) {
+      booking.totalPrice = Number(totalPrice);
+      booking.subtotal = Math.max(0, Number(totalPrice) - Number(booking.serviceTotal || 0));
+    }
     await booking.save();
 
     return res.json(booking);
@@ -269,8 +326,138 @@ exports.updateBookingInfo = async (req, res) => {
   }
 };
 
+exports.cancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (String(booking.user) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Ban khong co quyen huy don nay.' });
+    }
+    if (completedBookingStatuses.includes(booking.status) || cancelledBookingStatuses.includes(booking.status)) {
+      return res.status(400).json({ message: 'Booking nay khong the huy.' });
+    }
+
+    const startAt = new Date(`${booking.date}T${normalizeTime(booking.startTime)}:00`);
+    if (Number.isNaN(startAt.getTime())) {
+      return res.status(400).json({ message: 'Thoi gian booking khong hop le.' });
+    }
+
+    const twoHoursBeforeStart = startAt.getTime() - (2 * 60 * 60 * 1000);
+    if (Date.now() >= twoHoursBeforeStart) {
+      return res.status(400).json({ message: 'Chi co the huy truoc gio bat dau toi thieu 2 tieng.' });
+    }
+
+    booking.status = 'Cancelled';
+    booking.cancelledAt = new Date();
+    booking.cancelReason = req.body?.reason || '';
+    booking.holdExpiresAt = undefined;
+    if (!paidLikePaymentStatuses.includes(booking.paymentStatus)) {
+      booking.paymentStatus = 'FAILED';
+    }
+    await booking.save();
+
+    const latestPayment = await Payment.findOne({ bookingId: booking._id }).sort({ createdAt: -1 });
+    if (latestPayment && latestPayment.status === 'PENDING') {
+      latestPayment.status = 'CANCELLED';
+      await latestPayment.save();
+    }
+
+    const io = req.app.get('io');
+    if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
+
+    return res.json({ success: true, booking, payment: latestPayment });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.requestCancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (String(booking.user) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Ban khong co quyen huy don nay.' });
+    }
+
+    const currentStatus = normalizeStatus(booking.status);
+    if (completedStatusSet.includes(currentStatus) || cancelledStatusSet.includes(currentStatus)) {
+      return res.status(400).json({ message: 'Booking nay khong the huy.' });
+    }
+    if (currentStatus === 'cancel_requested') {
+      return res.json({ success: true, booking, message: 'Booking dang cho admin xac nhan huy.' });
+    }
+
+    const latestPayment = await Payment.findOne({ bookingId: booking._id }).sort({ createdAt: -1 });
+    const paid = isPaidBooking(booking, latestPayment);
+
+    booking.status = paid ? 'cancel_requested' : 'cancelled';
+    booking.cancelReason = req.body?.reason || '';
+    booking.holdExpiresAt = undefined;
+    if (!paid) {
+      booking.cancelledAt = new Date();
+      booking.paymentStatus = 'failed';
+      if (latestPayment && latestPayment.status === 'PENDING') {
+        latestPayment.status = 'CANCELLED';
+        await latestPayment.save();
+      }
+    }
+    await booking.save();
+
+    const io = req.app.get('io');
+    if (io) io.emit('booking_cancel_requested', { bookingId: booking._id, fieldId: booking.field, date: booking.date, status: booking.status });
+
+    return res.json({ success: true, booking, payment: latestPayment });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.approveCancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (normalizeStatus(booking.status) !== 'cancel_requested') {
+      return res.status(400).json({ message: 'Booking khong o trang thai cho xac nhan huy.' });
+    }
+
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date();
+    booking.holdExpiresAt = undefined;
+    if (req.body?.reason) booking.cancelReason = req.body.reason;
+    await booking.save();
+
+    const io = req.app.get('io');
+    if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
+
+    return res.json({ success: true, booking });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.rejectCancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (normalizeStatus(booking.status) !== 'cancel_requested') {
+      return res.status(400).json({ message: 'Booking khong o trang thai cho xac nhan huy.' });
+    }
+
+    booking.status = 'confirmed';
+    if (req.body?.reason) booking.cancelReason = req.body.reason;
+    await booking.save();
+
+    return res.json({ success: true, booking });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
 exports.adminGetBookings = async (req, res) => {
   try {
+    await cancelExpiredPendingBookings();
+    await completePastPaidBookings();
+
     const {
       search = '',
       status = '',
@@ -281,8 +468,25 @@ exports.adminGetBookings = async (req, res) => {
     } = req.query;
 
     const query = {};
-    if (status) query.status = status;
-    if (paymentStatus) query.paymentStatus = paymentStatus;
+    const statusGroups = {
+      pending: ['pending', 'Pending', 'PENDING_PAYMENT'],
+      confirmed: ['confirmed', 'Confirmed', 'CONFIRMED'],
+      completed: ['completed', 'Completed', 'COMPLETED', 'Da hoan thanh', 'ÄÃ£ hoÃ n thÃ nh'],
+      cancel_requested: ['cancel_requested'],
+      cancelled: ['cancelled', 'Cancelled', 'CANCELLED'],
+      refunded: ['refunded']
+    };
+    const paymentStatusGroups = {
+      pending: ['pending', 'Pending', 'PENDING', 'UNPAID'],
+      unpaid: ['pending', 'Pending', 'PENDING', 'UNPAID'],
+      paid: ['paid', 'success', 'Paid', 'PAID', 'SUCCESS'],
+      success: ['paid', 'success', 'Paid', 'PAID', 'SUCCESS'],
+      failed: ['failed', 'FAILED'],
+      refunded: ['refunded', 'REFUNDED']
+    };
+
+    if (status) query.status = { $in: statusGroups[normalizeStatus(status)] || [status] };
+    if (paymentStatus) query.paymentStatus = { $in: paymentStatusGroups[normalizeStatus(paymentStatus)] || [paymentStatus] };
     if (paymentMethod) query.paymentMethod = paymentMethod;
 
     const bookings = await Booking.find(query)

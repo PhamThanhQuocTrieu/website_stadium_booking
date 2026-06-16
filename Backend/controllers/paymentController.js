@@ -41,6 +41,9 @@ const applySuccessPayment = async (payment, query) => {
     booking.paymentStatus = 'PAID';
     booking.paymentMethod = 'VNPAY';
     booking.status = 'CONFIRMED';
+    booking.transactionId = query.vnp_TransactionNo;
+    booking.txnRef = query.vnp_TxnRef;
+    booking.holdExpiresAt = undefined;
     await booking.save();
   }
 
@@ -61,6 +64,12 @@ exports.createVnpayPayment = async (req, res) => {
     }
     if (cancelledStatuses.includes(booking.status)) {
       return res.status(400).json({ success: false, message: 'Booking da bi huy.' });
+    }
+    if (pendingPaymentStatuses.includes(booking.paymentStatus) && booking.holdExpiresAt && booking.holdExpiresAt <= new Date()) {
+      booking.status = 'Cancelled';
+      booking.paymentStatus = 'FAILED';
+      await booking.save();
+      return res.status(400).json({ success: false, message: 'Thoi gian giu cho 5 phut da het. Vui long dat lai.' });
     }
     if (paidStatuses.includes(booking.paymentStatus)) {
       return res.status(400).json({ success: false, message: 'Booking da duoc thanh toan.' });

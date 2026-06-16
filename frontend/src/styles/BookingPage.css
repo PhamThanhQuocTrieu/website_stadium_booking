@@ -121,8 +121,10 @@
 }
 
 .grid-matrix-container {
+  --label-width: 220px;
+  --slot-width: 62px;
   display: grid;
-  grid-template-columns: 220px repeat(37, 62px);
+  grid-template-columns: var(--label-width) repeat(var(--slot-count), var(--slot-width));
   width: max-content;
   background: #fff;
 }
@@ -130,7 +132,7 @@
 /* ==================== HEADER THỜI GIAN ==================== */
 .grid-time-header {
   height: 56px;
-  width: 62px;
+  width: var(--slot-width);
   background: #b8eef6;
   color: #4a5568;
   font-size: 0;
@@ -162,8 +164,29 @@
   background: #f5a623;
 }
 
+.grid-time-header.last-time-header {
+  overflow: visible;
+}
+
+.grid-time-header.last-time-header::after {
+  box-shadow: var(--slot-width) 0 0 #f5a623;
+}
+
+.grid-time-header .end-time-label {
+  position: absolute;
+  right: 0;
+  top: 17px;
+  transform: translateX(50%);
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  z-index: 3;
+}
+
 .grid-empty-header {
-  width: 220px;
+  width: var(--label-width);
   height: 56px;
   background: #b8eef6;
   border-bottom: 1px solid #dbe4ea;
@@ -171,7 +194,7 @@
 
 /* Cột tên sân */
 .grid-field-name-label {
-  width: 220px;
+  width: var(--label-width);
   height: 64px;
   background: #d8f8e6;
   color: #14532d;
@@ -189,7 +212,7 @@
 
 /* Các ô slot */
 .grid-slot-box {
-  width: 62px;
+  width: var(--slot-width);
   height: 64px;
   background: #ffffff;
   border-right: 1px solid #9ca3af;
@@ -314,7 +337,8 @@
   }
 
   .grid-matrix-container {
-    grid-template-columns: 180px repeat(37, 56px);
+    --label-width: 180px;
+    --slot-width: 56px;
   }
 
   .grid-empty-header,
@@ -325,6 +349,10 @@
   .grid-time-header,
   .grid-slot-box {
     width: 56px;
+  }
+
+  .grid-time-header.last-time-header::after {
+    box-shadow: var(--slot-width) 0 0 #f5a623;
   }
 }
 
@@ -378,7 +406,8 @@
   }
 
   .grid-matrix-container {
-    grid-template-columns: 150px repeat(37, 50px);
+    --label-width: 150px;
+    --slot-width: 50px;
   }
 
   .grid-empty-header,
@@ -395,6 +424,10 @@
   .grid-time-header,
   .grid-slot-box {
     width: 50px;
+  }
+
+  .grid-time-header.last-time-header::after {
+    box-shadow: var(--slot-width) 0 0 #f5a623;
   }
 
   .grid-time-header::before {

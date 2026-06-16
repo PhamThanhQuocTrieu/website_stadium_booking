@@ -9,7 +9,8 @@ import {
   UserCircle,
   TicketPercent,
   ShoppingBasket,
-  MessageSquare
+  MessageSquare,
+  ScrollText
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -45,6 +46,7 @@ const AdminLayout = () => {
     { path: '/admin/services', icon: <ShoppingBasket size={20} />, label: 'Dịch vụ đi kèm' },
     { path: '/admin/reviews', icon: <MessageSquare size={20} />, label: 'Đánh giá' },
     { path: '/admin/profile', icon: <UserCircle size={20} />, label: 'Thông tin cá nhân' }
+    ,{ path: '/admin/policies', icon: <ScrollText size={20} />, label: 'Điều khoản & bảo mật' }
   ];
 
   return (

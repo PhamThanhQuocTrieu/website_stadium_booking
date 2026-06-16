@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, InputGroup, Spinner } from 'react-bootstrap';
-import { Eye, EyeSlash, Person, Lock, Stars, Trophy, ArrowLeft } from 'react-bootstrap-icons';
+import { Eye, EyeSlash, Person, Lock, Stars, Trophy, ArrowLeft, LightningCharge, ShieldCheck, Clock } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import '../styles/LoginPage.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -39,21 +40,19 @@ const LoginPage = () => {
         showConfirmButton: false
       });
 
-      // 🌟 FIX: Điều hướng tới /admin để khớp với index route trong App.js
-      setTimeout(() => {
-        if (isAdmin) {
-          navigate('/admin'); 
-        } else {
-          navigate('/');
-        }
-      }, 1500);
+      setTimeout(() => navigate(isAdmin ? '/admin' : '/'), 1500);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.account.trim() || !formData.password) {
-      return Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập Email và Mật khẩu.', confirmButtonColor: '#198754' });
+      return Swal.fire({
+        icon: 'warning',
+        title: 'Thiếu thông tin',
+        text: 'Vui lòng nhập Email và Mật khẩu.',
+        confirmButtonColor: '#198754'
+      });
     }
 
     setLoading(true);
@@ -64,7 +63,12 @@ const LoginPage = () => {
       });
       handleLoginSuccess(data);
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Lỗi', text: err.response?.data?.message || 'Đăng nhập thất bại.', confirmButtonColor: '#d33' });
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: err.response?.data?.message || 'Đăng nhập thất bại.',
+        confirmButtonColor: '#d33'
+      });
     } finally {
       setLoading(false);
     }
@@ -86,59 +90,106 @@ const LoginPage = () => {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-      <Container fluid className="p-0" style={{ height: '100vh' }}>
-        <Row className="g-0" style={{ height: '100vh' }}>
-          <Col lg={5} className="d-none d-lg-flex flex-column justify-content-between p-5 text-white" 
-               style={{ background: 'linear-gradient(135deg, #111b24 0%, #1c2e3d 100%)' }}>
-            <Link to="/" className="text-white text-decoration-none d-flex align-items-center opacity-75">
+      <Container fluid className="auth-page p-0">
+        <Row className="auth-shell g-0">
+          <Col lg={5} className="auth-brand-panel d-none d-lg-flex">
+            <Link to="/" className="auth-back-link">
               <ArrowLeft className="me-2" /> Quay về Trang chủ
             </Link>
-            <div>
-              <div className="d-flex align-items-center mb-5">
-                <div className="rounded-3 me-3 d-flex align-items-center justify-content-center" style={{ width: '52px', height: '52px', background: '#198754' }}>
-                  <Stars size={28} className="text-white" />
+
+            <div className="auth-brand-main">
+              <div className="auth-logo-row">
+                <div className="auth-logo-box"><Stars size={30} /></div>
+                <div>
+                  <div className="auth-brand-name">ARENA<span>HUB</span></div>
+                  <p>Kết nối đam mê - Bứt phá giới hạn</p>
                 </div>
-                <h1 className="fw-bold mb-0">ArenaHub</h1>
               </div>
-              <h2 className="fw-bold mb-4">Chào mừng bạn trở lại với <span className="text-success">ArenaHub</span></h2>
+
+              <div className="auth-hero-copy">
+                <h1>Sẵn sàng cho <span>trận đấu</span> tiếp theo?</h1>
+                <p>Đăng nhập để quản lý lịch đặt sân, theo dõi thanh toán và khám phá những khung giờ đẹp nhất trên ArenaHub.</p>
+              </div>
+
+              <div className="auth-mini-stats">
+                <div><LightningCharge /><strong>24/7</strong><span>Đặt sân nhanh mọi lúc</span></div>
+                <div><ShieldCheck /><strong>An toàn</strong><span>Thanh toán bảo mật</span></div>
+                <div><Clock /><strong>Tiết kiệm</strong><span>Giữ chỗ tự động 5 phút</span></div>
+              </div>
             </div>
-            <div className="pt-4 border-top border-secondary border-opacity-50 text-light opacity-75 small">
+
+            <div className="auth-brand-footer">
               <Trophy className="text-warning me-2" /> Tham gia ngay cộng đồng thể thao ArenaHub.
+              <span>Hơn 10.000+ thành viên đã đồng hành cùng chúng tôi.</span>
             </div>
           </Col>
 
-          <Col lg={7} className="d-flex align-items-center justify-content-center p-4 bg-white">
-            <div style={{ maxWidth: '420px', width: '100%' }}>
-              <h3 className="fw-bold mb-1">Đăng nhập</h3>
-              <p className="text-muted small mb-4">Sử dụng tài khoản ArenaHub của bạn.</p>
+          <Col lg={7} className="auth-form-panel">
+            <div className="auth-card auth-card-login">
+              <div className="auth-form-heading text-center">
+                <h3>Đăng nhập</h3>
+                <p>Chào mừng bạn trở lại <strong>ArenaHub</strong>.</p>
+              </div>
 
               <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="small fw-bold text-secondary">Email hoặc Số điện thoại</Form.Label>
-                  <InputGroup className="border rounded-3 overflow-hidden bg-light" style={{ height: '48px' }}>
-                    <InputGroup.Text className="bg-transparent border-0"><Person size={18} /></InputGroup.Text>
-                    <Form.Control name="account" value={formData.account} onChange={handleChange} className="border-0 bg-transparent shadow-none" />
+                <Form.Group className="auth-field">
+                  <Form.Label>Email hoặc Số điện thoại</Form.Label>
+                  <InputGroup className="auth-input-group">
+                    <InputGroup.Text><Person size={18} /></InputGroup.Text>
+                    <Form.Control
+                      name="account"
+                      placeholder="Nhập email hoặc số điện thoại"
+                      value={formData.account}
+                      onChange={handleChange}
+                      className="border-0 bg-transparent shadow-none"
+                    />
                   </InputGroup>
                 </Form.Group>
 
-                <Form.Group className="mb-4">
-                  <Form.Label className="small fw-bold text-secondary">Mật khẩu</Form.Label>
-                  <InputGroup className="border rounded-3 overflow-hidden bg-light" style={{ height: '48px' }}>
-                    <InputGroup.Text className="bg-transparent border-0"><Lock size={18} /></InputGroup.Text>
-                    <Form.Control type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} className="border-0 bg-transparent shadow-none" />
-                    <Button variant="link" onClick={() => setShowPassword(!showPassword)} className="text-muted border-0 shadow-none">
+                <Form.Group className="auth-field">
+                  <div className="auth-label-row">
+                    <Form.Label>Mật khẩu</Form.Label>
+                    <Link to="/login" tabIndex={-1}>Quên mật khẩu?</Link>
+                  </div>
+                  <InputGroup className="auth-input-group">
+                    <InputGroup.Text><Lock size={18} /></InputGroup.Text>
+                    <Form.Control
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Nhập mật khẩu"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="border-0 bg-transparent shadow-none"
+                    />
+                    <Button variant="link" onClick={() => setShowPassword(!showPassword)} className="auth-eye-btn">
                       {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
                     </Button>
                   </InputGroup>
                 </Form.Group>
 
-                <Button type="submit" variant="success" disabled={loading} className="w-100 rounded-pill fw-bold mb-3 shadow-sm" style={{ height: '48px', backgroundColor: '#198754' }}>
-                  {loading ? <Spinner animation="border" size="sm" /> : 'Đăng Nhập'}
+                <Button type="submit" variant="success" disabled={loading} className="auth-submit-btn">
+                  {loading ? <Spinner animation="border" size="sm" /> : 'Đăng nhập'}
                 </Button>
 
-                <div className="text-center mt-3">
-                  <p className="text-muted small mb-3">Hoặc đăng nhập với</p>
-                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => Swal.fire('Lỗi', 'Không thể kết nối Google.', 'error')} theme="outline" shape="pill" />
+                <div className="auth-divider"><span>Hoặc đăng nhập với</span></div>
+
+                <p className="auth-policy-note">
+                  Bằng việc đăng nhập, bạn đồng ý với <Link to="/terms">Điều khoản sử dụng</Link> và <Link to="/privacy">Chính sách bảo mật</Link>.
+                </p>
+
+                <div className="auth-google-wrap">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => Swal.fire('Lỗi', 'Không thể kết nối Google.', 'error')}
+                    theme="outline"
+                    shape="rectangular"
+                    text="continue_with"
+                    width="360"
+                  />
+                </div>
+
+                <div className="auth-switch-link">
+                  Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
                 </div>
               </Form>
             </div>

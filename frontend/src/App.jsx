@@ -13,6 +13,8 @@ import PaymentPage from './pages/PaymentPage';
 import VnpayReturnPage from './pages/VnpayReturnPage';
 import UserProfile from './pages/UserProfile';
 import MyBookingsPage from './pages/MyBookingsPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 import AdminLayout from './pages/Admin/AdminLayout';
 import Dashboard from './pages/Admin/Dashboard';
@@ -26,6 +28,7 @@ import AdminProfile from './pages/Admin/Profile';
 import VoucherManager from './pages/Admin/VoucherManager';
 import ServiceManager from './pages/Admin/ServiceManager';
 import ReviewManager from './pages/Admin/ReviewManager';
+import AdminPolicyManager from './pages/Admin/AdminPolicyManager';
 
 import './App.css';
 
@@ -78,6 +81,8 @@ function App() {
           <Route path="/payment/vnpay-return" element={<VnpayReturnPage />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/my-bookings" element={<MyBookingsPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
 
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
@@ -92,6 +97,7 @@ function App() {
             <Route path="vouchers" element={<VoucherManager />} />
             <Route path="services" element={<ServiceManager />} />
             <Route path="reviews" element={<ReviewManager />} />
+            <Route path="policies" element={<AdminPolicyManager />} />
             <Route path="payments" element={<BookingManager />} />
             <Route path="reports" element={<div>Bao cao doanh thu</div>} />
           </Route>

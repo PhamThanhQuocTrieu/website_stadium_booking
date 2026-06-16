@@ -8,6 +8,15 @@ import axiosClient from '../../api/axiosClient';
 import Swal from 'sweetalert2';
 import '../../styles/admin/addfield.css';
 
+const timeOptions = Array.from({ length: 39 }, (_, index) => {
+    const totalMinutes = 5 * 60 + index * 30;
+    if (totalMinutes >= 24 * 60) return '24:00';
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+});
+const startTimeOptions = timeOptions.filter(time => time !== '24:00');
+
 const UpdateFieldPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -50,7 +59,7 @@ const UpdateFieldPage = () => {
         setFormData({ ...formData, services: newServices });
     };
 
-    const addPricingRule = () => setFormData({ ...formData, pricingRules: [...(formData.pricingRules || []), { ruleName: '', dayType: 'Weekday', startTime: '05:00', endTime: '17:00', price: 0, isPeakHour: false }] });
+    const addPricingRule = () => setFormData({ ...formData, pricingRules: [...(formData.pricingRules || []), { ruleName: '', dayType: 'Weekday', startTime: '05:00', endTime: '24:00', price: 0, isPeakHour: false }] });
     const removePricingRule = (index) => setFormData({ ...formData, pricingRules: formData.pricingRules.filter((_, i) => i !== index) });
     const updatePricingRule = (index, field, value) => {
         const newRules = [...formData.pricingRules];
@@ -140,7 +149,7 @@ const UpdateFieldPage = () => {
                                 <Row key={i} className="align-items-center mb-3 p-3 border rounded bg-white shadow-sm" style={{ gap: '15px', marginLeft: 0, marginRight: 0 }}>
                                     <Col style={{ flex: '1 1 200px' }}><Form.Label className="small fw-bold mb-1">TÊN KHUNG GIỜ *</Form.Label><Form.Control size="sm" value={rule.ruleName || ''} onChange={(e) => updatePricingRule(i, 'ruleName', e.target.value)} /></Col>
                                     <Col style={{ flex: '0 0 140px' }}><Form.Label className="small fw-bold mb-1">NGÀY ÁP DỤNG</Form.Label><Form.Select size="sm" value={rule.dayType || 'Weekday'} onChange={(e) => updatePricingRule(i, 'dayType', e.target.value)}><option value="Weekday">Ngày thường</option><option value="Weekend">Cuối tuần</option></Form.Select></Col>
-                                    <Col style={{ flex: '1 1 200px' }}><Form.Label className="small fw-bold mb-1">THỜI GIAN</Form.Label><div className="d-flex align-items-center"><Form.Control size="sm" type="time" value={rule.startTime || ''} onChange={(e) => updatePricingRule(i, 'startTime', e.target.value)} /> — <Form.Control size="sm" type="time" value={rule.endTime || ''} onChange={(e) => updatePricingRule(i, 'endTime', e.target.value)} /></div></Col>
+                                    <Col style={{ flex: '1 1 200px' }}><Form.Label className="small fw-bold mb-1">THỜI GIAN</Form.Label><div className="d-flex align-items-center"><Form.Select size="sm" value={rule.startTime || '05:00'} onChange={(e) => updatePricingRule(i, 'startTime', e.target.value)}>{startTimeOptions.map(time => <option key={time} value={time}>{time}</option>)}</Form.Select><span className="px-2">-</span><Form.Select size="sm" value={rule.endTime || '24:00'} onChange={(e) => updatePricingRule(i, 'endTime', e.target.value)}>{timeOptions.map(time => <option key={time} value={time}>{time}</option>)}</Form.Select></div></Col>
                                     <Col style={{ flex: '0 0 120px' }}><Form.Label className="small fw-bold mb-1">GIÁ (VND/H)</Form.Label><Form.Control size="sm" type="number" value={rule.price || 0} onChange={(e) => updatePricingRule(i, 'price', e.target.value)} /></Col>
                                     <Col style={{ flex: '0 0 40px' }} className="text-center"><Button variant="link" className="text-danger p-0" onClick={() => removePricingRule(i)}><Trash2 size={18}/></Button></Col>
                                 </Row>

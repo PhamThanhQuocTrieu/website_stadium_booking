@@ -3,6 +3,10 @@ const { VNPay, ignoreLogger } = require('vnpay');
 const paymentUrl = process.env.VNPAY_PAYMENT_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 const parsedPaymentUrl = new URL(paymentUrl);
 
+if (!process.env.VNPAY_TMN_CODE || !process.env.VNPAY_HASH_SECRET) {
+  throw new Error('Thieu cau hinh VNPAY_TMN_CODE hoac VNPAY_HASH_SECRET trong file .env');
+}
+
 const vnpayConfig = {
   tmnCode: process.env.VNPAY_TMN_CODE,
   secureSecret: process.env.VNPAY_HASH_SECRET,

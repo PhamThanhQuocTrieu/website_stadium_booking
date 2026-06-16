@@ -1,15 +1,51 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, Col, Form, Modal, Row, Spinner, Table } from 'react-bootstrap';
-import { Eye, RefreshCw, Search } from 'lucide-react';
+import { Check, Eye, RefreshCw, Search, X } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import '../../styles/admin/bookingmanager.css';
 
 const paymentBadgeVariant = (status) => {
-  if (['PAID', 'SUCCESS', 'Paid'].includes(status)) return 'success';
-  if (['PENDING', 'Pending'].includes(status)) return 'warning';
-  if (['FAILED'].includes(status)) return 'danger';
-  if (['REFUNDED', 'CANCELLED'].includes(status)) return 'secondary';
+  const key = normalize(status);
+  if (['paid', 'success'].includes(key)) return 'success';
+  if (['pending', 'unpaid'].includes(key)) return 'warning';
+  if (['failed', 'cancelled'].includes(key)) return 'danger';
+  if (['refunded'].includes(key)) return 'secondary';
   return 'secondary';
+};
+
+const normalize = (value) => String(value || '').trim().toLowerCase();
+const mapStatusLabel = (type, status) => {
+  const key = normalize(status);
+  const paymentLabels = {
+    pending: 'Chờ thanh toán',
+    unpaid: 'Chờ thanh toán',
+    paid: 'Đã thanh toán',
+    success: 'Đã thanh toán',
+    failed: 'Thanh toán thất bại',
+    refunded: 'Đã hoàn tiền',
+    cancelled: 'Thanh toán thất bại'
+  };
+  const bookingLabels = {
+    pending: 'Chờ xử lý',
+    pending_payment: 'Chờ xử lý',
+    confirmed: 'Đã xác nhận',
+    playing: 'Đang diễn ra',
+    completed: 'Hoàn thành',
+    cancel_requested: 'Chờ xác nhận hủy',
+    cancelled: 'Đã hủy',
+    refunded: 'Đã hoàn tiền',
+    'da hoan thanh': 'Hoàn thành'
+  };
+  return (type === 'paymentStatus' ? paymentLabels : bookingLabels)[key] || 'Không xác định';
+};
+
+const bookingBadgeVariant = (status) => {
+  const key = normalize(status);
+  if (key === 'cancel_requested') return 'warning';
+  if (key === 'cancelled') return 'danger';
+  if (key === 'completed' || key === 'da hoan thanh') return 'secondary';
+  if (key === 'confirmed') return 'info';
+  return 'warning';
 };
 
 const formatMoney = (amount) => Number(amount || 0).toLocaleString('vi-VN');
@@ -50,6 +86,16 @@ const BookingManager = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateCancelRequest = async (booking, action) => {
+    const { data } = await axiosClient.patch(`/admin/bookings/${booking._id}/${action}-cancel`);
+    setBookings((prev) => prev.map((item) => (
+      item._id === booking._id ? { ...item, ...data.booking, field: item.field, fieldId: item.fieldId, user: item.user, userId: item.userId, payment: item.payment } : item
+    )));
+    if (selectedBooking?._id === booking._id) {
+      setSelectedBooking((prev) => ({ ...prev, ...data.booking }));
+    }
+  };
+
   const paymentRows = selectedBooking?.payment ? [
     ['Provider', selectedBooking.payment.provider || '-'],
     ['Method', selectedBooking.payment.method || selectedBooking.paymentMethod || '-'],
@@ -60,7 +106,7 @@ const BookingManager = () => {
     ['ResponseCode', selectedBooking.payment.responseCode || '-'],
     ['TransactionStatus', selectedBooking.payment.transactionStatus || '-'],
     ['PaidAt', formatDateTime(selectedBooking.payment.paidAt)],
-    ['Status', selectedBooking.payment.status || '-']
+    ['Status', mapStatusLabel('paymentStatus', selectedBooking.payment.status || selectedBooking.paymentStatus)]
   ] : [];
 
   return (
@@ -97,22 +143,21 @@ const BookingManager = () => {
               <Form.Label className="small fw-bold text-muted">Trang thai don</Form.Label>
               <Form.Select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}>
                 <option value="">Tat ca</option>
-                <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
-                <option value="CONFIRMED">CONFIRMED</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="pending">Chờ xử lý</option>
+                <option value="confirmed">Đã xác nhận</option>
+                <option value="cancel_requested">Chờ xác nhận hủy</option>
+                <option value="completed">Hoàn thành</option>
+                <option value="cancelled">Đã hủy</option>
               </Form.Select>
             </Col>
             <Col sm={6} lg={2}>
               <Form.Label className="small fw-bold text-muted">Thanh toan</Form.Label>
               <Form.Select value={filters.paymentStatus} onChange={(event) => updateFilter('paymentStatus', event.target.value)}>
                 <option value="">Tat ca</option>
-                <option value="UNPAID">UNPAID</option>
-                <option value="PENDING">PENDING</option>
-                <option value="PAID">PAID</option>
-                <option value="FAILED">FAILED</option>
-                <option value="REFUNDED">REFUNDED</option>
+                <option value="pending">Chờ thanh toán</option>
+                <option value="paid">Đã thanh toán</option>
+                <option value="failed">Thanh toán thất bại</option>
+                <option value="refunded">Đã hoàn tiền</option>
               </Form.Select>
             </Col>
             <Col sm={6} lg={2}>
@@ -147,7 +192,7 @@ const BookingManager = () => {
                     <th>TxnRef / GD</th>
                     <th>So tien TT</th>
                     <th>Thoi gian TT</th>
-                    <th></th>
+                    <th className="admin-action-col">Thao tac</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -163,18 +208,31 @@ const BookingManager = () => {
                         <div>{booking.date}</div>
                         <div className="text-muted small">{booking.startTime} - {booking.endTime}</div>
                       </td>
-                      <td><Badge bg="info">{booking.status}</Badge></td>
+                      <td><Badge bg={bookingBadgeVariant(booking.status)}>{mapStatusLabel('bookingStatus', booking.status)}</Badge></td>
                       <td>{booking.payment?.method || booking.paymentMethod || '-'}</td>
-                      <td><Badge bg={paymentBadgeVariant(booking.payment?.status || booking.paymentStatus)}>{booking.payment?.status || booking.paymentStatus}</Badge></td>
+                      <td><Badge bg={paymentBadgeVariant(booking.payment?.status || booking.paymentStatus)}>{mapStatusLabel('paymentStatus', booking.payment?.status || booking.paymentStatus)}</Badge></td>
                       <td>
                         <div className="txn-text">{booking.payment?.txnRef || '-'}</div>
                         <div className="text-muted small">{booking.payment?.transactionNo || '-'}</div>
                       </td>
                       <td>{formatMoney(booking.payment?.amount || booking.totalPrice)} d</td>
                       <td>{formatDateTime(booking.payment?.paidAt)}</td>
-                      <td className="text-end">
-                        <Button size="sm" variant="light" onClick={() => setSelectedBooking(booking)}>
+                      <td className="admin-action-cell">
+                        {normalize(booking.status) === 'cancel_requested' && (
+                          <div className="cancel-action-group">
+                            <Button size="sm" variant="success" className="cancel-action-btn" onClick={() => updateCancelRequest(booking, 'approve')}>
+                              <Check size={15} />
+                              <span>Duyet huy</span>
+                            </Button>
+                            <Button size="sm" variant="outline-danger" className="cancel-action-btn" onClick={() => updateCancelRequest(booking, 'reject')}>
+                              <X size={15} />
+                              <span>Tu choi</span>
+                            </Button>
+                          </div>
+                        )}
+                        <Button size="sm" variant="light" className="detail-action-btn" onClick={() => setSelectedBooking(booking)}>
                           <Eye size={16} />
+                          <span>Chi tiet</span>
                         </Button>
                       </td>
                     </tr>
@@ -201,9 +259,27 @@ const BookingManager = () => {
                 <Col md={6}><strong>Khach hang:</strong> {selectedBooking.user?.fullName || selectedBooking.userId?.fullName || '-'}</Col>
                 <Col md={6}><strong>San:</strong> {selectedBooking.field?.fieldName || selectedBooking.fieldId?.fieldName || '-'}</Col>
                 <Col md={6}><strong>Thoi gian:</strong> {selectedBooking.date} | {selectedBooking.startTime} - {selectedBooking.endTime}</Col>
+                <Col md={6}><strong>Trạng thái đơn:</strong> {mapStatusLabel('bookingStatus', selectedBooking.status)}</Col>
+                <Col md={6}><strong>Thanh toán:</strong> {mapStatusLabel('paymentStatus', selectedBooking.payment?.status || selectedBooking.paymentStatus)}</Col>
               </Row>
 
               <h6 className="fw-bold border-start border-4 border-success ps-2 mb-3">THONG TIN THANH TOAN</h6>
+              {normalize(selectedBooking.status) === 'cancel_requested' && (
+                <div className="cancel-review-panel mb-4">
+                  <div>
+                    <strong>Yeu cau huy dang cho xac nhan</strong>
+                    <p className="mb-0 text-muted small">Admin can duyet de huy don hoac tu choi de dua booking ve trang thai da xac nhan.</p>
+                  </div>
+                  <div className="cancel-review-actions">
+                    <Button variant="success" onClick={() => updateCancelRequest(selectedBooking, 'approve')}>
+                      <Check size={16} /> Duyet huy
+                    </Button>
+                    <Button variant="outline-danger" onClick={() => updateCancelRequest(selectedBooking, 'reject')}>
+                      <X size={16} /> Tu choi
+                    </Button>
+                  </div>
+                </div>
+              )}
               {paymentRows.length > 0 ? (
                 <div className="payment-detail-grid">
                   {paymentRows.map(([label, value]) => (

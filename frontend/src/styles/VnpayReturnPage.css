@@ -1,117 +1,536 @@
 .vnpay-return-page {
   min-height: 100vh;
   background: #f8fafc;
-  padding: 48px 0;
+  color: #0f172a;
+  padding: 28px 0 48px;
 }
 
-.vnpay-result-card {
-  max-width: 760px;
-  margin: 0 auto;
-  border-radius: 16px;
+.success-container {
+  max-width: 1180px;
 }
 
-.vnpay-result-card .card-body {
-  padding: 36px;
+.success-back-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.success-loader {
+  min-height: 72vh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  color: #15803d;
+}
+
+.success-hero,
+.success-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.success-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: clamp(28px, 5vw, 54px) 20px;
   text-align: center;
+  margin-bottom: 22px;
+  animation: success-fade-up 420ms ease both;
 }
 
-.result-icon {
-  width: 76px;
-  height: 76px;
+.success-hero.is-failed .success-icon-ring {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.success-confetti {
+  position: absolute;
+  inset: 18px 20% auto 20%;
+  height: 42px;
+  pointer-events: none;
+}
+
+.success-confetti span {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #86efac;
+  opacity: 0.75;
+}
+
+.success-confetti span:nth-child(1) { left: 8%; top: 22px; background: #22c55e; }
+.success-confetti span:nth-child(2) { left: 22%; top: 4px; background: #bae6fd; }
+.success-confetti span:nth-child(3) { left: 38%; top: 28px; background: #fde68a; }
+.success-confetti span:nth-child(4) { right: 38%; top: 8px; background: #bbf7d0; }
+.success-confetti span:nth-child(5) { right: 22%; top: 30px; background: #93c5fd; }
+.success-confetti span:nth-child(6) { right: 8%; top: 14px; background: #4ade80; }
+
+.success-icon-ring {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 18px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
+  color: #15803d;
+  background: #dcfce7;
+  border: 10px solid #f0fdf4;
+  box-shadow: 0 12px 26px rgba(22, 131, 58, 0.16);
 }
 
-.result-icon.success {
-  color: #059669;
-  background: #d1fae5;
+.success-hero h1 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.12;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
-.result-icon.failed {
-  color: #dc2626;
-  background: #fee2e2;
-}
-
-.result-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  text-align: left;
-  margin: 24px 0;
-}
-
-.result-info-grid > div {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px;
-  min-width: 0;
-}
-
-.result-info-grid span {
-  display: block;
+.success-hero p {
+  max-width: 620px;
+  margin: 0 auto;
   color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-  text-transform: uppercase;
+  font-size: 1rem;
 }
 
-.result-info-grid strong {
-  overflow-wrap: anywhere;
-}
-
-.result-actions {
+.success-pills {
   display: flex;
   justify-content: center;
   gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
 }
 
-@media (max-width: 1199px) {
-  .vnpay-return-page {
-    padding: 40px 0;
+.success-info-pill {
+  min-width: min(260px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.success-info-pill > span {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #15803d;
+  background: #ecfdf5;
+}
+
+.success-info-pill small {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.success-info-pill strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.cancelled-alert {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.success-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(300px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.success-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.success-card {
+  border-radius: 20px;
+  padding: 22px;
+  animation: success-fade-up 460ms ease both;
+}
+
+.success-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  color: #14532d;
+  font-size: 0.92rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.booking-summary {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.booking-summary img,
+.field-placeholder {
+  width: 100%;
+  min-height: 176px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.field-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #64748b;
+  font-weight: 700;
+  border: 1px dashed #cbd5e1;
+}
+
+.booking-summary-content h2 {
+  font-size: 1.22rem;
+  font-weight: 900;
+  margin: 0 0 8px;
+}
+
+.booking-summary-content p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  margin-bottom: 14px;
+}
+
+.booking-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.booking-facts > div,
+.payment-meta > div,
+.customer-list > div {
+  min-width: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.booking-facts svg,
+.customer-list svg {
+  color: #15803d;
+  margin-bottom: 6px;
+}
+
+.booking-facts span,
+.payment-meta span,
+.customer-list span {
+  display: block;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.booking-facts strong,
+.payment-meta strong,
+.customer-list strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.order-timeline {
+  display: grid;
+  gap: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  padding-bottom: 18px;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-marker {
+  position: relative;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  color: #64748b;
+}
+
+.timeline-item.active .timeline-marker {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.timeline-line {
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: 0;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+.timeline-item.active .timeline-line {
+  background: #86efac;
+}
+
+.timeline-item strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.timeline-item span {
+  display: block;
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.cancelled-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 900;
+}
+
+.payment-breakdown,
+.service-list,
+.customer-list,
+.payment-meta {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-breakdown {
+  margin-bottom: 14px;
+}
+
+.payment-breakdown > div,
+.service-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #eef2f7;
+  padding-bottom: 10px;
+}
+
+.payment-breakdown > div.total {
+  border-bottom: 0;
+  color: #15803d;
+  font-size: 1.02rem;
+  font-weight: 900;
+  padding-top: 4px;
+}
+
+.payment-breakdown span,
+.service-row span {
+  color: #64748b;
+}
+
+.payment-breakdown strong,
+.service-row b {
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.service-row strong {
+  display: block;
+  color: #0f172a;
+  margin-bottom: 3px;
+}
+
+.empty-state {
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  color: #64748b;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.success-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.success-actions .btn {
+  min-height: 44px;
+  border-radius: 12px;
+  padding-left: 20px;
+  padding-right: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.success-actions .btn-success {
+  background: #15803d !important;
+  border-color: #15803d !important;
+}
+
+.btn-soft-success {
+  background: #dcfce7 !important;
+  border-color: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.success-actions .btn:hover,
+.success-back-btn:hover,
+.success-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+}
+
+@keyframes success-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 @media (max-width: 991px) {
-  .vnpay-result-card .card-body {
-    padding: 30px;
+  .success-main-grid,
+  .success-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 767px) {
   .vnpay-return-page {
-    padding: 24px 0;
+    padding: 18px 0 34px;
   }
 
-  .vnpay-result-card {
-    border-radius: 12px;
+  .success-container {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
-  .vnpay-result-card .card-body {
-    padding: 22px 16px;
+  .success-hero {
+    border-radius: 20px;
+    padding: 28px 16px;
   }
 
-  .result-info-grid {
+  .success-icon-ring {
+    width: 64px;
+    height: 64px;
+    border-width: 8px;
+  }
+
+  .success-pills,
+  .booking-summary,
+  .booking-facts {
     grid-template-columns: 1fr;
   }
 
-  .result-actions {
-    flex-direction: column;
+  .success-pills {
+    display: grid;
   }
 
-  .result-actions .btn {
+  .success-info-pill {
     width: 100%;
-    min-height: 44px;
+  }
+
+  .booking-summary {
+    display: grid;
+    gap: 14px;
+  }
+
+  .success-card {
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .success-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .success-actions .btn {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .vnpay-return-page .container {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+  .payment-breakdown > div,
+  .service-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .payment-breakdown strong,
+  .service-row b {
+    white-space: normal;
   }
 }

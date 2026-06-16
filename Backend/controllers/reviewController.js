@@ -12,7 +12,10 @@ const reviewPopulate = [
 ];
 
 const normalizeObjectId = (value) => (value ? new mongoose.Types.ObjectId(value) : undefined);
-const isCompletedBooking = (booking) => COMPLETED_STATUSES.includes(booking.status);
+const isCompletedBooking = (booking) => {
+  const status = String(booking.status || '').trim().toLowerCase();
+  return status === 'completed' || status === 'da hoan thanh' || COMPLETED_STATUSES.includes(booking.status);
+};
 
 const validateReviewInput = ({ bookingId, rating, comment }) => {
   const numericRating = Number(rating);
@@ -54,6 +57,8 @@ exports.createReview = async (req, res) => {
       rating: Number(rating),
       comment: String(comment).trim()
     });
+    booking.reviewed = true;
+    await booking.save();
 
     const populated = await Review.findById(review._id).populate(reviewPopulate);
     return res.status(201).json({ success: true, data: populated });
@@ -122,6 +127,7 @@ exports.deleteReview = async (req, res) => {
     if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Ban khong co quyen xoa danh gia nay.' });
 
     await review.deleteOne();
+    await Booking.findByIdAndUpdate(review.booking, { reviewed: false });
     return res.json({ success: true, message: 'Da xoa danh gia.' });
   } catch (error) {
     return res.status(500).json({ message: error.message });

@@ -16,9 +16,13 @@ const bookingSchema = new mongoose.Schema({
   }],
 
   totalPrice: { type: Number, required: true },
+  subtotal: { type: Number, default: 0 },
+  serviceTotal: { type: Number, default: 0 },
+  discountAmount: { type: Number, default: 0 },
+  transactionFee: { type: Number, default: 0 },
   paymentStatus: {
     type: String,
-    enum: ['Pending', 'Paid', 'UNPAID', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+    enum: ['pending', 'paid', 'success', 'failed', 'refunded', 'Pending', 'Paid', 'UNPAID', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'],
     default: 'UNPAID'
   },
   paymentMethod: {
@@ -26,9 +30,18 @@ const bookingSchema = new mongoose.Schema({
     enum: ['CASH', 'VNPAY', 'VIETQR', null],
     default: null
   },
+  transactionId: String,
+  txnRef: String,
   status: {
     type: String,
     enum: [
+      'pending',
+      'confirmed',
+      'playing',
+      'completed',
+      'cancel_requested',
+      'cancelled',
+      'refunded',
       'Pending',
       'Confirmed',
       'Completed',
@@ -41,9 +54,34 @@ const bookingSchema = new mongoose.Schema({
       'COMPLETED'
     ],
     default: 'Confirmed'
-  }
+  },
+  cancelledAt: Date,
+  cancelReason: String,
+  holdExpiresAt: Date,
+  reviewed: { type: Boolean, default: false }
 }, { timestamps: true });
 
-bookingSchema.index({ field: 1, date: 1, startTime: 1 }, { unique: true });
+const activeSlotStatuses = [
+  'pending',
+  'confirmed',
+  'playing',
+  'completed',
+  'cancel_requested',
+  'Pending',
+  'Confirmed',
+  'Completed',
+  'PENDING_PAYMENT',
+  'CONFIRMED',
+  'COMPLETED'
+];
+
+bookingSchema.index(
+  { field: 1, date: 1, startTime: 1 },
+  {
+    unique: true,
+    name: 'unique_active_booking_slot',
+    partialFilterExpression: { status: { $in: activeSlotStatuses } }
+  }
+);
 
 module.exports = mongoose.model('Booking', bookingSchema);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Button, Modal, Spinner } from 'react-bootstrap';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -12,6 +12,48 @@ import { getRulePrice, normalizeTime } from '../utils/pricing';
 const socket = io('http://localhost:5000');
 
 const formatCurrency = (amount) => Number(amount || 0).toLocaleString('vi-VN');
+const DEFAULT_OPEN_TIME = '05:00';
+const DEFAULT_CLOSE_TIME = '24:00';
+
+const timeToMinutesValue = (time) => {
+    const [hour = 0, minute = 0] = normalizeTime(time).split(':').map(Number);
+    return hour * 60 + minute;
+};
+
+const minutesToDisplayTime = (totalMinutes) => {
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    return `${hour}:${String(minute).padStart(2, '0')}`;
+};
+
+const getScheduleRange = (rules = []) => {
+    const validRules = rules.filter(rule => rule?.startTime && rule?.endTime);
+    if (!validRules.length) {
+        return { start: DEFAULT_OPEN_TIME, end: DEFAULT_CLOSE_TIME };
+    }
+
+    const start = Math.min(...validRules.map(rule => timeToMinutesValue(rule.startTime)));
+    let end = Math.max(...validRules.map(rule => timeToMinutesValue(rule.endTime)));
+
+    if (end <= start) end = timeToMinutesValue(DEFAULT_CLOSE_TIME);
+
+    return {
+        start: minutesToDisplayTime(start),
+        end: minutesToDisplayTime(end)
+    };
+};
+
+const buildBookableSlots = (startTime, endTime) => {
+    const start = timeToMinutesValue(startTime);
+    const end = timeToMinutesValue(endTime);
+    const slots = [];
+
+    for (let current = start; current < end; current += 30) {
+        slots.push(minutesToDisplayTime(current));
+    }
+
+    return slots.length ? slots : buildBookableSlots(DEFAULT_OPEN_TIME, DEFAULT_CLOSE_TIME);
+};
 
 const BookingPage = () => {
     const navigate = useNavigate();
@@ -28,11 +70,9 @@ const BookingPage = () => {
     const [bookedSlots, setBookedSlots] = useState([]);
     const [pricingRules, setPricingRules] = useState([]);
 
-    const timeSlots = [];
-    for (let hour = 6; hour <= 23; hour++) {
-        timeSlots.push(`${hour}:00`, `${hour}:30`);
-    }
-    timeSlots.push("24:00");
+    const scheduleRange = React.useMemo(() => getScheduleRange(pricingRules), [pricingRules]);
+    const bookableSlots = React.useMemo(() => buildBookableSlots(scheduleRange.start, scheduleRange.end), [scheduleRange]);
+    const timeHeaders = bookableSlots;
 
     const formatDateStr = useCallback((dateObj) => {
         const year = dateObj.getFullYear();
@@ -189,22 +229,31 @@ const BookingPage = () => {
             <div className="booking-note-panel">
                 <Container>
                     <div className="booking-note-content">
-                        <div><span className="note-label">Lưu ý:</span> Hỗ trợ khách hàng đặt lịch giờ nhỏ:</div>
-                        <div>17h-19h / 18h30-20h30 / 18h30-21h / 19h-21h / 19h30-22h / 20h30-22h30 / 19h-22h</div>
-                        <div>Vui lòng liên hệ zalo/sđt: 0355867906</div>
-                        <div>- Quý khách đặt lịch cố định / tháng vui lòng liên hệ: 0355867906 để được hỗ trợ tư vấn khuyến mại</div>
-                        <div>- Quý khách vui lòng kiểm tra kỹ lịch đặt sân, Catchy chỉ hỗ trợ hoàn tiền/hủy trong vòng 1 tiếng từ khi lịch xác nhận và hoàn thành thanh toán</div>
+                        <div><span className="note-label">Lưu ý:</span> Hỗ trợ khách hàng đặt lịch giờ</div>
+                        {/* <div>17h-19h / 18h30-20h30 / 18h30-21h / 19h-21h / 19h30-22h / 20h30-22h30 / 19h-22h</div> */}
+                        <div>Vui lòng liên hệ zalo/sđt: 0389603429</div>
+                        <div>- Quý khách đặt lịch cố định / tháng vui lòng liên hệ: 0389603429 để được hỗ trợ tư vấn khuyến mại</div>
+                        <div>- Quý khách vui lòng kiểm tra kỹ lịch đặt sân trước khi thanh toán</div>
                     </div>
                 </Container>
             </div>
 
             <Container fluid className="px-4">
                 <div className="matrix-wrapper">
-                    <div className="grid-matrix-container">
+                    <div className="grid-matrix-container" style={{ '--slot-count': bookableSlots.length }}>
                         <div className="grid-empty-header"></div>
-                        {timeSlots.map(time => <div key={time} className="grid-time-header" data-time={time}></div>)}
+                        {timeHeaders.map((time, index) => (
+                            <div
+                                key={time}
+                                className={`grid-time-header ${index === timeHeaders.length - 1 ? 'last-time-header' : ''}`}
+                                data-time={time}
+                                data-end-time={index === timeHeaders.length - 1 ? scheduleRange.end : ''}
+                            >
+                                {index === timeHeaders.length - 1 && <span className="end-time-label">{scheduleRange.end}</span>}
+                            </div>
+                        ))}
                         <div className="grid-field-name-label">{fieldData.fieldName}</div>
-                        {timeSlots.map(time => (
+                        {bookableSlots.map(time => (
                             <div key={time} className={`grid-slot-box ${getSlotStatus(time)} ${selectedSlots.includes(time) ? 'active' : ''}`} onClick={() => handleSlotClick(time)} />
                         ))}
                     </div>
@@ -232,11 +281,18 @@ const BookingPage = () => {
             {selectedSlots.length > 0 && (
                 <div className="payment-bar-v3">
                     <Container className="d-flex align-items-center justify-content-between">
-                        <div className="text-white">
-                            <span className="d-block fw-bold">Tổng thời gian: {(selectedSlots.length * 0.5)} giờ</span>
-                            <h4 className="fw-bold mb-0" style={{ color: '#ffeb3b' }}>Tổng tiền: {formatCurrency(calculateTotalAmount())} đ</h4>
+                        <div>
+                            {/* Đã cập nhật font-size và thêm letter-spacing cho tinh tế */}
+                            <span className="d-block fw-bold" style={{ color: '#ffffff', fontSize: '1.2rem', letterSpacing: '0.5px' }}>
+                                Tổng thời gian: {(selectedSlots.length * 0.5)} giờ
+                            </span>
+                            <h4 className="fw-bold mb-0" style={{ color: '#ffeb3b', fontSize: '1.6rem' }}>
+                                Tổng tiền: {formatCurrency(calculateTotalAmount())} đ
+                            </h4>
                         </div>
-                        <Button className="btn-next-v3" onClick={handleProcessBooking}>TIẾP THEO</Button>
+                        <Button className="btn-next-v3" onClick={handleProcessBooking}>
+                            TIẾP THEO
+                        </Button>
                     </Container>
                 </div>
             )}

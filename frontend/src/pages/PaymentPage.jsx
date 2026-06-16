@@ -60,6 +60,9 @@ const PaymentPage = () => {
           ? await axios.get(`http://localhost:5000/api/services?fieldId=${fieldId}`)
           : { data: [] };
         setBookingDetail(bookingRes.data);
+        if (Array.isArray(bookingRes.data?.services)) {
+          setSelectedServices(bookingRes.data.services);
+        }
         setServices(servicesRes.data);
         setIsLoading(false);
       } catch (err) {

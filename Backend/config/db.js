@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const ensureBookingIndexes = require('../utils/ensureBookingIndexes');
+const ensureDefaultPolicies = require('../utils/ensureDefaultPolicies');
 
 const connectDB = async () => {
   try {
@@ -8,6 +10,8 @@ const connectDB = async () => {
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`.cyan.underline);
+    await ensureBookingIndexes();
+    await ensureDefaultPolicies();
   } catch (error) {
     console.error(`❌ Lỗi kết nối Database: ${error.message}`.red.bold);
     // Lời khuyên: Ở môi trường Local, nếu lỗi kết nối DB thì nên dừng để kiểm tra lại Compass
