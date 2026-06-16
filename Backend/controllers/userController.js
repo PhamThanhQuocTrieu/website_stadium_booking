@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
+const { assignNewUserVouchers } = require('../services/voucherService');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -30,6 +31,7 @@ exports.googleLogin = async (req, res) => {
     const { email, name, picture } = ticket.getPayload();
 
     let user = await User.findOne({ email });
+    let isNewUser = false;
     if (!user) {
       const role = (email === 'maulanhlun@gmail.com') ? 'admin' : 'user';
       const randomPassword = await hashPassword(Math.random().toString(36).slice(-8));
@@ -41,6 +43,11 @@ exports.googleLogin = async (req, res) => {
         avatar: picture,
         role: role // Lưu role xuống DB
       });
+      isNewUser = true;
+    }
+
+    if (isNewUser && user.role === 'user') {
+      await assignNewUserVouchers(user, req.app.get('io'));
     }
 
     res.status(200).json({
@@ -65,6 +72,7 @@ exports.registerUser = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
     const user = await User.create({ fullName, phone, email: email.toLowerCase().trim(), password: hashedPassword, role: 'user' });
+    await assignNewUserVouchers(user, req.app.get('io'));
 
     req.app.get('io')?.emit('userUpdated');
     res.status(201).json({ _id: user._id, fullName: user.fullName, email: user.email, role: user.role, token: generateToken(user) });

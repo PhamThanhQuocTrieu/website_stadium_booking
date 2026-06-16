@@ -16,9 +16,14 @@ const bookingSchema = new mongoose.Schema({
   }],
 
   totalPrice: { type: Number, required: true },
+  originalAmount: { type: Number, default: 0 },
   subtotal: { type: Number, default: 0 },
   serviceTotal: { type: Number, default: 0 },
   discountAmount: { type: Number, default: 0 },
+  finalAmount: { type: Number, default: 0 },
+  voucherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Voucher' },
+  voucherCode: String,
+  voucherAppliedAt: Date,
   transactionFee: { type: Number, default: 0 },
   paymentStatus: {
     type: String,

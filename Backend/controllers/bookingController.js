@@ -4,6 +4,8 @@ const Field = require('../models/Field');
 const Review = require('../models/Review');
 const Payment = require('../models/Payment');
 const cron = require('node-cron');
+const { createNotification } = require('../services/notificationService');
+const { validateVoucherForBooking } = require('../services/voucherService');
 
 const normalizeTime = (time) => {
   const [hour, minute] = String(time).split(':').map(Number);
@@ -86,6 +88,21 @@ const isPaidBooking = (booking, payment) => {
     paidLikeStatusSet.includes(normalizeStatus(booking?.paymentStatus));
 };
 const getBookingEndDate = (booking) => new Date(`${booking.date}T${normalizeTime(booking.endTime)}:00`);
+const getFieldName = (field) => field?.fieldName || field?.name || 'sân';
+const calculateFieldAmount = (field, date, startTime, endTime) => {
+  const dateObj = new Date(date);
+  const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+  let total = 0;
+  let current = normalizeTime(startTime);
+  const normalizedEnd = normalizeTime(endTime);
+
+  while (current < normalizedEnd) {
+    total += getRulePrice(field.pricingRules || [], current, isWeekend) / 2;
+    current = addMinutes(current, 30);
+  }
+
+  return total;
+};
 
 const cancelExpiredPendingBookings = async () => {
   return Booking.updateMany(
@@ -221,9 +238,11 @@ exports.reserveSlots = async (req, res) => {
       startTime,
       endTime,
       totalPrice,
+      originalAmount: totalPrice,
       subtotal: totalPrice,
       serviceTotal: 0,
       discountAmount: 0,
+      finalAmount: totalPrice,
       transactionFee: 0,
       holdExpiresAt: getHoldExpiresAt(),
       paymentStatus: 'Pending',
@@ -231,6 +250,15 @@ exports.reserveSlots = async (req, res) => {
     };
 
     const newBooking = await Booking.create(bookingData);
+    await createNotification({
+      user: newBooking.user,
+      title: 'Đặt sân thành công',
+      message: `Bạn đã đặt sân ${getFieldName(field)} vào lúc ${startTime} ngày ${date}.`,
+      type: 'booking',
+      relatedId: newBooking._id,
+      relatedModel: 'Booking',
+      io: req.app.get('io')
+    });
 
     const io = req.app.get('io');
     if (io) io.emit('slot_booked_success', { fieldId, date, slots: selectedSlots });
@@ -301,23 +329,59 @@ exports.getMyBookings = async (req, res) => {
 
 exports.updateBookingInfo = async (req, res) => {
   try {
-    const { services, totalPrice } = req.body;
+    const { services, voucherCode } = req.body;
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
     if (String(booking.user) !== String(req.user.id)) {
       return res.status(403).json({ message: 'Ban khong co quyen cap nhat don nay.' });
     }
+    if (paidLikeStatusSet.includes(normalizeStatus(booking.paymentStatus))) {
+      return res.status(400).json({ message: 'Booking da thanh toan, khong the cap nhat.' });
+    }
+
+    const field = await Field.findById(booking.field);
+    if (!field) return res.status(404).json({ message: 'Khong tim thay san!' });
+
+    const subtotal = calculateFieldAmount(field, booking.date, booking.startTime, booking.endTime);
+    let serviceTotal = Number(booking.serviceTotal || 0);
 
     if (Array.isArray(services)) {
       booking.services = services;
-      booking.serviceTotal = services.reduce((sum, service) => {
+      serviceTotal = services.reduce((sum, service) => {
         return sum + (Number(service.price || 0) * Number(service.quantity || 1));
       }, 0);
     }
-    if (totalPrice !== undefined) {
-      booking.totalPrice = Number(totalPrice);
-      booking.subtotal = Math.max(0, Number(totalPrice) - Number(booking.serviceTotal || 0));
+
+    const originalAmount = Math.max(0, Math.round(subtotal + serviceTotal));
+    booking.subtotal = Math.round(subtotal);
+    booking.serviceTotal = Math.round(serviceTotal);
+    booking.originalAmount = originalAmount;
+    booking.discountAmount = 0;
+    booking.finalAmount = originalAmount;
+    booking.totalPrice = originalAmount;
+    booking.voucherId = undefined;
+    booking.voucherCode = '';
+    booking.voucherAppliedAt = undefined;
+
+    if (voucherCode) {
+      const validation = await validateVoucherForBooking({
+        userId: req.user.id,
+        code: voucherCode,
+        fieldId: booking.field,
+        sportType: field.type,
+        bookingDate: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        originalAmount
+      });
+
+      booking.voucherId = validation.response.voucherId;
+      booking.voucherCode = validation.response.voucherCode;
+      booking.discountAmount = validation.response.discountAmount;
+      booking.finalAmount = validation.response.finalAmount;
+      booking.totalPrice = validation.response.finalAmount;
     }
+
     await booking.save();
 
     return res.json(booking);
@@ -355,6 +419,15 @@ exports.cancelBooking = async (req, res) => {
       booking.paymentStatus = 'FAILED';
     }
     await booking.save();
+    await createNotification({
+      user: booking.user,
+      title: 'Hủy sân thành công',
+      message: 'Yêu cầu hủy sân của bạn đã được ghi nhận thành công.',
+      type: 'cancellation',
+      relatedId: booking._id,
+      relatedModel: 'Booking',
+      io: req.app.get('io')
+    });
 
     const latestPayment = await Payment.findOne({ bookingId: booking._id }).sort({ createdAt: -1 });
     if (latestPayment && latestPayment.status === 'PENDING') {
@@ -402,6 +475,17 @@ exports.requestCancelBooking = async (req, res) => {
       }
     }
     await booking.save();
+    await createNotification({
+      user: booking.user,
+      title: paid ? 'Đã gửi yêu cầu hủy sân' : 'Hủy sân thành công',
+      message: paid
+        ? 'Yêu cầu hủy sân của bạn đang chờ admin xác nhận.'
+        : 'Yêu cầu hủy sân của bạn đã được ghi nhận thành công.',
+      type: 'cancellation',
+      relatedId: booking._id,
+      relatedModel: 'Booking',
+      io: req.app.get('io')
+    });
 
     const io = req.app.get('io');
     if (io) io.emit('booking_cancel_requested', { bookingId: booking._id, fieldId: booking.field, date: booking.date, status: booking.status });
@@ -425,6 +509,15 @@ exports.approveCancelBooking = async (req, res) => {
     booking.holdExpiresAt = undefined;
     if (req.body?.reason) booking.cancelReason = req.body.reason;
     await booking.save();
+    await createNotification({
+      user: booking.user,
+      title: 'Hủy sân thành công',
+      message: 'Yêu cầu hủy sân của bạn đã được admin xác nhận.',
+      type: 'cancellation',
+      relatedId: booking._id,
+      relatedModel: 'Booking',
+      io: req.app.get('io')
+    });
 
     const io = req.app.get('io');
     if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
@@ -446,6 +539,15 @@ exports.rejectCancelBooking = async (req, res) => {
     booking.status = 'confirmed';
     if (req.body?.reason) booking.cancelReason = req.body.reason;
     await booking.save();
+    await createNotification({
+      user: booking.user,
+      title: 'Yêu cầu hủy sân bị từ chối',
+      message: 'Admin đã từ chối yêu cầu hủy sân của bạn.',
+      type: 'cancellation',
+      relatedId: booking._id,
+      relatedModel: 'Booking',
+      io: req.app.get('io')
+    });
 
     return res.json({ success: true, booking });
   } catch (error) {

@@ -10,6 +10,8 @@ import {
   TicketPercent,
   ShoppingBasket,
   MessageSquare,
+  Mail,
+  BellRing,
   ScrollText
 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -45,6 +47,8 @@ const AdminLayout = () => {
     { path: '/admin/vouchers', icon: <TicketPercent size={20} />, label: 'Mã giảm giá' },
     { path: '/admin/services', icon: <ShoppingBasket size={20} />, label: 'Dịch vụ đi kèm' },
     { path: '/admin/reviews', icon: <MessageSquare size={20} />, label: 'Đánh giá' },
+    { path: '/admin/contacts', icon: <Mail size={20} />, label: 'Quản lý liên hệ' },
+    { path: '/admin/notifications', icon: <BellRing size={20} />, label: 'Quản lý thông báo' },
     { path: '/admin/profile', icon: <UserCircle size={20} />, label: 'Thông tin cá nhân' }
     ,{ path: '/admin/policies', icon: <ScrollText size={20} />, label: 'Điều khoản & bảo mật' }
   ];

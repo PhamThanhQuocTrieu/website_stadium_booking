@@ -9,6 +9,7 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 const userRoutes = require('./routes/userRoutes');
+const userVoucherRoutes = require('./routes/userVoucherRoutes');
 const adminFieldRoutes = require('./routes/adminFieldRoutes');
 const userFieldRoutes = require('./routes/userFieldRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
@@ -18,6 +19,9 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const policyRoutes = require('./routes/policyRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const adminNotificationRoutes = require('./routes/adminNotificationRoutes');
 connectDB();
 
 const app = express();
@@ -52,15 +56,20 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/users', userRoutes);
+app.use('/api/user', userVoucherRoutes);
 app.use('/api/admin/fields', adminFieldRoutes);
 app.use('/api/fields', userFieldRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin/bookings', adminBookingRoutes);
 app.use('/api/admin/vouchers', voucherRoutes);
+app.use('/api/vouchers', voucherRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/policies', policyRoutes);
+app.use('/api/contacts', contactRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin/notifications', adminNotificationRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Loi Server: '.red, err.stack);

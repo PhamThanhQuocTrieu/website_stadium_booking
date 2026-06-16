@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Payment = require('../models/Payment');
 const { vnpay, vnpayConfig } = require('../config/vnpay');
+const { createNotification } = require('../services/notificationService');
+const { markVoucherUsed } = require('../services/voucherService');
 
 const paidStatuses = ['PAID', 'Paid'];
 const cancelledStatuses = ['CANCELLED', 'Cancelled'];
@@ -25,7 +27,9 @@ const attachPaymentToBooking = async (booking) => {
   return { ...bookingData, payment };
 };
 
-const applySuccessPayment = async (payment, query) => {
+const applySuccessPayment = async (payment, query, io) => {
+  const shouldNotify = payment.status !== 'SUCCESS';
+
   if (payment.status !== 'SUCCESS') {
     payment.status = 'SUCCESS';
     payment.transactionNo = query.vnp_TransactionNo;
@@ -45,6 +49,21 @@ const applySuccessPayment = async (payment, query) => {
     booking.txnRef = query.vnp_TxnRef;
     booking.holdExpiresAt = undefined;
     await booking.save();
+    if (shouldNotify) {
+      await markVoucherUsed(booking, io);
+    }
+
+    if (shouldNotify) {
+      await createNotification({
+        user: booking.user,
+        title: 'Thanh toán thành công',
+        message: 'Thanh toán cho đơn đặt sân của bạn đã thành công.',
+        type: 'payment',
+        relatedId: booking._id,
+        relatedModel: 'Booking',
+        io
+      });
+    }
   }
 
   return booking;
@@ -89,6 +108,7 @@ exports.createVnpayPayment = async (req, res) => {
       status: 'PENDING'
     }).sort({ createdAt: -1 });
 
+    const isNewPendingPayment = !existingPending;
     const payment = existingPending || await Payment.create({
       bookingId: booking._id,
       userId: req.user.id,
@@ -103,6 +123,17 @@ exports.createVnpayPayment = async (req, res) => {
     booking.paymentMethod = 'VNPAY';
     booking.status = 'PENDING_PAYMENT';
     await booking.save();
+    if (isNewPendingPayment) {
+      await createNotification({
+        user: booking.user,
+        title: 'Chờ thanh toán',
+        message: 'Đơn đặt sân của bạn đang chờ thanh toán.',
+        type: 'payment',
+        relatedId: booking._id,
+        relatedModel: 'Booking',
+        io: req.app.get('io')
+      });
+    }
 
     const paymentUrl = vnpay.buildPaymentUrl({
       vnp_Amount: payment.amount,
@@ -134,7 +165,7 @@ exports.handleVnpayReturn = async (req, res) => {
     const isSuccess = req.query.vnp_ResponseCode === '00' && req.query.vnp_TransactionStatus === '00';
 
     if (isSuccess) {
-      booking = await applySuccessPayment(payment, req.query);
+      booking = await applySuccessPayment(payment, req.query, req.app.get('io'));
       booking = await Booking.findById(payment.bookingId).populate('field user');
     } else if (payment.status !== 'SUCCESS') {
       payment.status = 'FAILED';

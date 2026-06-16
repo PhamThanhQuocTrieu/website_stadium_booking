@@ -15,6 +15,9 @@ import UserProfile from './pages/UserProfile';
 import MyBookingsPage from './pages/MyBookingsPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import ContactPage from './pages/ContactPage';
+import NotificationsPage from './pages/NotificationsPage';
+import MyVouchersPage from './pages/MyVouchersPage';
 
 import AdminLayout from './pages/Admin/AdminLayout';
 import Dashboard from './pages/Admin/Dashboard';
@@ -29,6 +32,8 @@ import VoucherManager from './pages/Admin/VoucherManager';
 import ServiceManager from './pages/Admin/ServiceManager';
 import ReviewManager from './pages/Admin/ReviewManager';
 import AdminPolicyManager from './pages/Admin/AdminPolicyManager';
+import ContactManager from './pages/Admin/ContactManager';
+import AdminNotificationManager from './pages/Admin/AdminNotificationManager';
 
 import './App.css';
 
@@ -83,6 +88,9 @@ function App() {
           <Route path="/my-bookings" element={<MyBookingsPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/my-vouchers" element={<MyVouchersPage />} />
 
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
@@ -98,6 +106,8 @@ function App() {
             <Route path="services" element={<ServiceManager />} />
             <Route path="reviews" element={<ReviewManager />} />
             <Route path="policies" element={<AdminPolicyManager />} />
+            <Route path="contacts" element={<ContactManager />} />
+            <Route path="notifications" element={<AdminNotificationManager />} />
             <Route path="payments" element={<BookingManager />} />
             <Route path="reports" element={<div>Bao cao doanh thu</div>} />
           </Route>

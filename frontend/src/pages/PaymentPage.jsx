@@ -6,6 +6,8 @@ import {
   Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash, CreditCard2Front, QrCode 
 } from 'react-bootstrap-icons';
 import axios from 'axios';
+import Swal from 'sweetalert2';
+import api from '../api/api';
 import '../styles/PaymentPage.css';
 
 const PaymentPage = () => {
@@ -24,7 +26,11 @@ const PaymentPage = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [bookingDetail, setBookingDetail] = useState(null);
+  const [voucherCode, setVoucherCode] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [myVouchers, setMyVouchers] = useState([]);
 
   // State quản lý form người đặt
   const [formData, setFormData] = useState({
@@ -64,6 +70,12 @@ const PaymentPage = () => {
           setSelectedServices(bookingRes.data.services);
         }
         setServices(servicesRes.data);
+        try {
+          const voucherRes = await api.get('/user/vouchers');
+          setMyVouchers(Array.isArray(voucherRes.data) ? voucherRes.data : []);
+        } catch (voucherErr) {
+          setMyVouchers([]);
+        }
         setIsLoading(false);
       } catch (err) {
         console.error("Lỗi tải thông tin:", err);
@@ -76,6 +88,7 @@ const PaymentPage = () => {
 
   // --- LOGIC XỬ LÝ DỊCH VỤ ---
   const handleAddService = (service) => {
+    setAppliedVoucher(null);
     setSelectedServices(prev => {
       const exists = prev.find(item => item.serviceId === service._id);
       if (exists) {
@@ -86,10 +99,12 @@ const PaymentPage = () => {
   };
 
   const removeService = (serviceId) => {
+    setAppliedVoucher(null);
     setSelectedServices(prev => prev.filter(item => item.serviceId !== serviceId));
   };
 
   const updateServiceQuantity = (serviceId, delta) => {
+    setAppliedVoucher(null);
     setSelectedServices(prev => (
       prev
         .map(item => (
@@ -122,11 +137,45 @@ const PaymentPage = () => {
     return '14:00 - 15:00';
   };
 
-  const calculateFinalTotal = () => {
+  const calculateOriginalTotal = () => {
     const serviceTotal = selectedServices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     return (totalAmount || 0) + serviceTotal;
   };
+  const calculateFinalTotal = () => appliedVoucher?.finalAmount ?? calculateOriginalTotal();
+  const calculateDiscount = () => appliedVoucher?.discountAmount ?? 0;
   // ---------------------------
+
+  const handleApplyVoucher = async (codeToApply = voucherCode) => {
+    const normalizedCode = String(codeToApply || '').trim().toUpperCase();
+    if (!normalizedCode || isApplyingVoucher) return;
+
+    setIsApplyingVoucher(true);
+    try {
+      const field = bookingDetail?.fieldId || bookingDetail?.field || {};
+      const res = await api.post('/vouchers/validate', {
+        code: normalizedCode,
+        fieldId: field?._id || field,
+        sportType: field?.type,
+        bookingDate: bookingDetail?.date,
+        startTime: bookingDetail?.startTime,
+        endTime: bookingDetail?.endTime,
+        originalAmount: calculateOriginalTotal()
+      });
+      setVoucherCode(normalizedCode);
+      setAppliedVoucher(res.data);
+      Swal.fire('Thanh cong', res.data.message || 'Da ap dung ma giam gia', 'success');
+    } catch (err) {
+      setAppliedVoucher(null);
+      Swal.fire('Khong ap dung duoc', err.response?.data?.message || 'Ma giam gia khong hop le', 'error');
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const clearVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode('');
+  };
 
   // Xử lý gửi yêu cầu thanh toán tích hợp VNPay Sandbox
   const handleConfirmPayment = async (e) => {
@@ -141,7 +190,7 @@ const PaymentPage = () => {
       await axios.put(`http://localhost:5000/api/bookings/${bookingId}/update-info`, {
         ...formData,
         services: selectedServices,
-        totalPrice: calculateFinalTotal()
+        voucherCode: appliedVoucher?.voucherCode || ''
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -158,7 +207,7 @@ const PaymentPage = () => {
         window.location.href = res.data.paymentUrl;
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Hệ thống VNPay đang bảo trì, vui lòng thử lại sau!");
+      Swal.fire('Loi thanh toan', err.response?.data?.message || "He thong VNPay dang bao tri, vui long thu lai sau!", 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -314,6 +363,44 @@ const PaymentPage = () => {
                   />
                 </Form.Group>
 
+                <div className="voucher-box mb-4">
+                  <div className="small fw-bold text-secondary mb-3">MA GIAM GIA</div>
+                  <div className="d-flex gap-2 flex-wrap">
+                    <Form.Control
+                      className="custom-input-box flex-grow-1"
+                      placeholder="Nhap ma voucher"
+                      value={voucherCode}
+                      onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setAppliedVoucher(null); }}
+                    />
+                    <Button type="button" variant="success" disabled={isApplyingVoucher || !voucherCode.trim()} onClick={() => handleApplyVoucher()}>
+                      {isApplyingVoucher ? <Spinner animation="border" size="sm" /> : 'Ap dung'}
+                    </Button>
+                    {appliedVoucher && <Button type="button" variant="outline-secondary" onClick={clearVoucher}>Bo ma</Button>}
+                  </div>
+
+                  {myVouchers.length > 0 && (
+                    <div className="my-voucher-strip mt-3">
+                      {myVouchers.filter((voucher) => voucher.status === 'available').slice(0, 4).map((voucher) => (
+                        <button
+                          type="button"
+                          key={voucher._id}
+                          className="mini-voucher"
+                          onClick={() => handleApplyVoucher(voucher.code)}
+                        >
+                          <span className="fw-bold">{voucher.code}</span>
+                          <small>{voucher.discountType === 'fixed' ? `${Number(voucher.discountValue || 0).toLocaleString('vi-VN')}d` : `${voucher.discountValue}%`}</small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {appliedVoucher && (
+                    <div className="voucher-success mt-3">
+                      Da ap dung {appliedVoucher.voucherCode}, giam {Number(appliedVoucher.discountAmount || 0).toLocaleString('vi-VN')}d
+                    </div>
+                  )}
+                </div>
+
                 <div className="policy-box-v3 mb-4">
                   <div className="d-flex align-items-center gap-2 text-danger fw-bold small mb-2"><InfoCircle /> HƯỚNG DẪN AN TOÀN GIAO DỊCH</div>
                   <ul className="text-muted small ps-3 mb-0" style={{ lineHeight: '1.6' }}>
@@ -323,7 +410,11 @@ const PaymentPage = () => {
                   </ul>
                 </div>
 
-                <div className="h4 text-success fw-bold mt-4">Tổng cộng: {calculateFinalTotal().toLocaleString()} đ</div>
+                <div className="payment-total-box mt-4 mb-4">
+                  <div><span>Tạm tính</span><strong>{calculateOriginalTotal().toLocaleString()} đ</strong></div>
+                  <div><span>Giảm giá</span><strong className="text-danger">- {calculateDiscount().toLocaleString()} đ</strong></div>
+                  <div className="final"><span>Tổng thanh toán</span><strong>{calculateFinalTotal().toLocaleString()} đ</strong></div>
+                </div>
                 <div className="payment-method-box mb-4">
                   <div className="small fw-bold text-secondary mb-3">PHƯƠNG THỨC THANH TOÁN</div>
                   <div className="payment-method-grid">

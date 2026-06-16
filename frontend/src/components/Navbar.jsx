@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Form, NavDropdown, Image } from 'react-bootstrap';
-import { Search, BoxArrowRight, Person, ListCheck, Bell, ShieldLock } from 'react-bootstrap-icons';
+import { Search, BoxArrowRight, Person, ListCheck, ShieldLock } from 'react-bootstrap-icons';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode"; // Nhớ cài đặt: npm install jwt-decode
 import myLogo from '../assets/logo.png';
+import NotificationBell from './NotificationBell';
 import '../styles/navbar.css'; 
 
 const Navigation = () => {
@@ -78,7 +79,7 @@ const Navigation = () => {
             <NavLink to="/" end className="fw-bold text-decoration-none nav-link-custom">Trang chủ</NavLink>
             <NavLink to="/fields" className="fw-bold text-decoration-none nav-link-custom">Sân tập</NavLink>
             <NavLink to="/news" className="fw-bold text-decoration-none nav-link-custom">Tin tức</NavLink>
-            <NavLink to="/support" className="fw-bold text-decoration-none nav-link-custom">Hỗ trợ</NavLink>
+            <NavLink to="/contact" className="fw-bold text-decoration-none nav-link-custom">Liên hệ</NavLink>
           </Nav>
 
           <div className="navbar-actions d-flex align-items-center gap-3">
@@ -91,10 +92,7 @@ const Navigation = () => {
             
             {user ? (
               <div className="d-flex align-items-center gap-3">
-                <Button variant="link" className="p-0 text-dark position-relative">
-                  <Bell size={20} />
-                  <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                </Button>
+                <NotificationBell user={user} />
 
                 <NavDropdown 
                   show={showDropdown}
@@ -122,6 +120,12 @@ const Navigation = () => {
                   <NavDropdown.Item as={Link} to={profileLink} onClick={() => setShowDropdown(false)}>
                       <Person className="me-2" size={16} /> Thông tin cá nhân
                   </NavDropdown.Item>
+
+                  {!isAdmin && (
+                    <NavDropdown.Item as={Link} to="/my-vouchers" onClick={() => setShowDropdown(false)}>
+                        <ListCheck className="me-2" size={16} /> Voucher cua toi
+                    </NavDropdown.Item>
+                  )}
 
                   {!isAdmin && (
                     <NavDropdown.Item as={Link} to="/my-bookings" onClick={() => setShowDropdown(false)}>

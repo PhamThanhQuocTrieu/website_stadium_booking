@@ -321,6 +321,54 @@
   font-weight: 800;
 }
 
+.booking-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid rgba(15, 82, 61, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.07);
+  color: #64748b;
+  font-weight: 800;
+}
+
+.booking-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.booking-pagination-controls button {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid #dbe7e2;
+  border-radius: 12px;
+  color: #0f5132;
+  background: #fff;
+  font-weight: 850;
+  transition: 160ms ease;
+}
+
+.booking-pagination-controls button:hover:not(:disabled),
+.booking-pagination-controls button.active {
+  color: #fff;
+  border-color: #0f5132;
+  background: #0f5132;
+}
+
+.booking-pagination-controls button:disabled {
+  color: #94a3b8;
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
 .rating-star-button {
   border: 0;
   background: transparent;
@@ -461,6 +509,19 @@
   .booking-card-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .booking-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .booking-pagination-controls {
+    justify-content: flex-start;
+  }
+
+  .booking-pagination-controls button {
+    flex: 1 1 auto;
   }
 }
 

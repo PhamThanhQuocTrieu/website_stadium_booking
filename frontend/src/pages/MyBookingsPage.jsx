@@ -59,6 +59,8 @@ const filters = [
   { key: 'cancelled', label: 'Đã hủy' }
 ];
 
+const BOOKINGS_PER_PAGE = 4;
+
 const getField = (booking) => booking?.fieldId || booking?.field || {};
 const getFieldId = (booking) => {
   const field = getField(booking);
@@ -138,6 +140,7 @@ const MyBookingsPage = () => {
   const [error, setError] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [detailBooking, setDetailBooking] = useState(null);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
@@ -191,6 +194,23 @@ const MyBookingsPage = () => {
       return matchesFilter && (!keyword || haystack.includes(keyword));
     });
   }, [bookings, activeFilter, searchTerm]);
+
+  const totalPages = Math.max(Math.ceil(visibleBookings.length / BOOKINGS_PER_PAGE), 1);
+
+  const paginatedBookings = useMemo(() => {
+    const startIndex = (currentPage - 1) * BOOKINGS_PER_PAGE;
+    return visibleBookings.slice(startIndex, startIndex + BOOKINGS_PER_PAGE);
+  }, [visibleBookings, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchTerm]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const updateBookingInList = (bookingId, data) => {
     setBookings((prev) => prev.map((item) => (
@@ -352,8 +372,9 @@ const MyBookingsPage = () => {
             </Card.Body>
           </Card>
         ) : (
+          <>
           <Row className="g-4">
-            {visibleBookings.map((booking) => {
+            {paginatedBookings.map((booking) => {
               const field = getField(booking);
               const fieldId = getFieldId(booking);
               const bookingStatus = getBookingStatus(booking);
@@ -410,6 +431,41 @@ const MyBookingsPage = () => {
               );
             })}
           </Row>
+
+          {totalPages > 1 && (
+            <div className="booking-pagination">
+              <div>
+                Hiển thị {paginatedBookings.length} / {visibleBookings.length} đơn
+              </div>
+              <div className="booking-pagination-controls">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                >
+                  Trang trước
+                </button>
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                  <button
+                    type="button"
+                    key={page}
+                    className={currentPage === page ? 'active' : ''}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
+                >
+                  Trang sau
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </Container>
 

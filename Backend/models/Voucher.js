@@ -1,57 +1,88 @@
 const mongoose = require('mongoose');
 
 const voucherSchema = new mongoose.Schema({
-  code: { 
-    type: String, 
-    required: [true, 'Mã code là bắt buộc'], 
-    unique: true, 
+  code: {
+    type: String,
+    required: [true, 'Ma code la bat buoc'],
+    unique: true,
     uppercase: true,
-    trim: true 
+    trim: true
   },
-  name: { type: String, required: [true, 'Tên chương trình là bắt buộc'] },
-  discountPercent: { type: Number, required: [true, 'Phần trăm giảm là bắt buộc'], min: 0, max: 100 },
-  maxDiscount: { type: Number, required: [true, 'Giá trị giảm tối đa là bắt buộc'] },
+  name: { type: String, required: [true, 'Ten chuong trinh la bat buoc'], trim: true },
+
+  discountType: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
+  discountValue: { type: Number, min: 0 },
+  discountPercent: { type: Number, min: 0, max: 100 },
+  maxDiscount: { type: Number, default: 0 },
+
+  minOrderAmount: { type: Number, default: 0 },
   minOrderValue: { type: Number, default: 0 },
-  
-  // Ràng buộc áp dụng
-  applicableFields: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Field' 
-  }], 
-  
-  applicableUsers: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
-  }],
 
   usageLimit: { type: Number, default: 100 },
+  usedCount: { type: Number, default: 0 },
   usageCount: { type: Number, default: 0 },
-  startDate: { type: Date, required: [true, 'Ngày bắt đầu là bắt buộc'] },
-  endDate: { type: Date, required: [true, 'Ngày kết thúc là bắt buộc'] },
-  status: { 
-    type: String, 
-    enum: ['Active', 'Expired', 'Pending'],
-    default: 'Active' 
-  }
+  perUserLimit: { type: Number, default: 1 },
+
+  applyType: {
+    type: String,
+    enum: ['all', 'new_user', 'field', 'sport_type', 'time_slot'],
+    default: 'all'
+  },
+  fieldIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Field' }],
+  applicableFields: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Field' }],
+  applicableUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  sportTypes: [{ type: String, trim: true }],
+  validDays: [{ type: Number, min: 0, max: 6 }],
+  validTimeFrom: { type: String, default: '' },
+  validTimeTo: { type: String, default: '' },
+  autoAssignNewUser: { type: Boolean, default: false },
+
+  status: {
+    type: String,
+    enum: ['draft', 'active', 'inactive', 'expired', 'pending', 'Active', 'Expired', 'Pending'],
+    default: 'active'
+  },
+  startDate: { type: Date, required: [true, 'Ngay bat dau la bat buoc'] },
+  endDate: { type: Date, required: [true, 'Ngay ket thuc la bat buoc'] }
 }, { timestamps: true });
 
-// Middleware kiểm tra trạng thái linh hoạt
-// Lưu ý: Phải dùng function() {} truyền thống để 'this' trỏ đúng vào document
-voucherSchema.pre('save', function(next) {
+voucherSchema.pre('save', function() {
   const now = new Date();
-  
-  if (this.endDate < now) {
-    this.status = 'Expired';
-  } else if (this.startDate > now) {
-    this.status = 'Pending';
-  } else {
-    this.status = 'Active';
+
+  if (this.discountValue === undefined || this.discountValue === null) {
+    this.discountValue = Number(this.discountPercent || 0);
+  }
+  if (this.discountPercent === undefined || this.discountPercent === null) {
+    this.discountPercent = this.discountType === 'percent' ? Number(this.discountValue || 0) : 0;
+  }
+  if (this.minOrderAmount === undefined || this.minOrderAmount === null) {
+    this.minOrderAmount = Number(this.minOrderValue || 0);
+  }
+  if (this.minOrderValue === undefined || this.minOrderValue === null) {
+    this.minOrderValue = Number(this.minOrderAmount || 0);
+  }
+  if (this.usedCount === undefined || this.usedCount === null) {
+    this.usedCount = Number(this.usageCount || 0);
+  }
+  if (this.usageCount === undefined || this.usageCount === null) {
+    this.usageCount = Number(this.usedCount || 0);
+  }
+  if ((!this.fieldIds || this.fieldIds.length === 0) && this.applicableFields?.length) {
+    this.fieldIds = this.applicableFields;
+  }
+  if ((!this.applicableFields || this.applicableFields.length === 0) && this.fieldIds?.length) {
+    this.applicableFields = this.fieldIds;
   }
 
-  // Gọi next() để Mongoose tiếp tục tiến trình lưu
-  if (typeof next === 'function') {
-    next();
+  const status = String(this.status || '').toLowerCase();
+  if (!['draft', 'inactive'].includes(status)) {
+    if (this.endDate < now) this.status = 'expired';
+    else if (this.startDate > now) this.status = 'pending';
+    else this.status = 'active';
+  } else {
+    this.status = status;
   }
+
 });
 
 module.exports = mongoose.model('Voucher', voucherSchema);
