@@ -3,6 +3,7 @@ const Notification = require('../models/Notification');
 const { NOTIFICATION_TYPES } = require('../models/Notification');
 const User = require('../models/User');
 const { createNotification } = require('../services/notificationService');
+const { ensureWelcomeVoucherForEligibleUser } = require('../services/voucherService');
 
 const getUserId = (req) => req.user?.id || req.user?._id;
 const isObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -10,6 +11,10 @@ const isObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 exports.getMyNotifications = async (req, res) => {
   try {
     const userId = getUserId(req);
+    if (userId) {
+      await ensureWelcomeVoucherForEligibleUser(userId, req.app.get('io'));
+    }
+
     const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 10, 1), 50);
     const type = String(req.query.type || '').trim();

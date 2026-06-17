@@ -7,13 +7,13 @@ import api from '../../api/api';
 
 const sportOptions = ['Bóng đá', 'Cầu lông', 'Tennis', 'Pickleball'];
 const dayOptions = [
-  { value: 1, label: 'Thu 2' },
-  { value: 2, label: 'Thu 3' },
-  { value: 3, label: 'Thu 4' },
-  { value: 4, label: 'Thu 5' },
-  { value: 5, label: 'Thu 6' },
-  { value: 6, label: 'Thu 7' },
-  { value: 0, label: 'CN' }
+  { value: 1, label: 'Thứ 2' },
+  { value: 2, label: 'Thứ 3' },
+  { value: 3, label: 'Thứ 4' },
+  { value: 4, label: 'Thứ 5' },
+  { value: 5, label: 'Thứ 6' },
+  { value: 6, label: 'Thứ 7' },
+  { value: 0, label: 'Chủ nhật' }
 ];
 
 const initialForm = {
@@ -55,12 +55,12 @@ const getStatusBadge = (status) => {
   return map[status] || 'secondary';
 };
 const getScopeLabel = (type) => ({
-  all: 'Toan he thong',
-  new_user: 'Khach hang moi',
-  field: 'Theo san',
-  sport_type: 'Theo mon',
-  time_slot: 'Theo khung gio'
-}[type] || 'Toan he thong');
+  all: 'Toàn hệ thống',
+  new_user: 'Khách hàng mới',
+  field: 'Theo sân',
+  sport_type: 'Theo môn',
+  time_slot: 'Theo khung giờ'
+}[type] || 'Toàn hệ thống');
 
 const normalizeVoucherToForm = (voucher) => ({
   ...initialForm,
@@ -129,17 +129,18 @@ const VoucherManager = () => {
   const openNewUserVoucherTemplate = () => {
     const today = new Date();
     const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + 3);
+    endDate.setFullYear(endDate.getFullYear() + 1);
     setEditingId(null);
     setFormData({
       ...initialForm,
       code: 'WELCOME20',
-      name: 'Voucher khach hang moi',
+      name: 'Ưu đãi khách hàng mới',
       discountType: 'percent',
       discountValue: 20,
       maxDiscount: 50000,
-      minOrderAmount: 0,
-      usageLimit: 1000,
+      minOrderAmount: 100000,
+      usageLimit: 999999,
+      usedCount: 0,
       perUserLimit: 1,
       applyType: 'new_user',
       autoAssignNewUser: true,
@@ -272,10 +273,10 @@ const VoucherManager = () => {
         </InputGroup>
         <div className="d-flex flex-wrap gap-2">
           <Button variant="outline-success" onClick={openNewUserVoucherTemplate}>
-            Mau khach hang moi
+            Mẫu khách hàng mới
           </Button>
           <Button variant="success" onClick={() => openModal()} className="d-inline-flex align-items-center gap-2">
-            <Plus size={20} /> Tao ma moi
+            <Plus size={20} /> Tạo mã mới
           </Button>
         </div>
       </div>
@@ -284,15 +285,15 @@ const VoucherManager = () => {
         <Table hover responsive className="align-middle mb-0">
           <thead className="bg-light">
             <tr>
-              <th>Ma</th>
-              <th>Ten chuong trinh</th>
-              <th>Loai giam</th>
-              <th>Gia tri</th>
-              <th>Pham vi</th>
-              <th>Da dung / Gioi han</th>
-              <th>Ngay het han</th>
-              <th>Trang thai</th>
-              <th>Thao tac</th>
+              <th>Mã</th>
+              <th>Tên chương trình</th>
+              <th>Loại giảm</th>
+              <th>Giá trị</th>
+              <th>Phạm vi</th>
+              <th>Đã dùng / Giới hạn</th>
+              <th>Ngày hết hạn</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -308,7 +309,7 @@ const VoucherManager = () => {
                   <motion.tr key={voucher._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <td className="fw-bold text-primary">{voucher.code}</td>
                     <td>{voucher.name}</td>
-                    <td>{voucher.discountType === 'fixed' ? 'So tien co dinh' : 'Theo %'}</td>
+                    <td>{voucher.discountType === 'fixed' ? 'Số tiền cố định' : 'Theo %'}</td>
                     <td>{voucher.discountType === 'fixed' ? `${formatCurrency(discountValue)}d` : `${discountValue}%`}</td>
                     <td>{getScopeLabel(voucher.applyType)}</td>
                     <td>{voucher.usedCount ?? voucher.usageCount ?? 0}/{voucher.usageLimit || 0}</td>
@@ -328,30 +329,30 @@ const VoucherManager = () => {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" scrollable>
         <Modal.Header closeButton>
-          <Modal.Title>{editingId ? 'Chinh sua ma' : 'Tao ma moi'}</Modal.Title>
+          <Modal.Title>{editingId ? 'Chỉnh sửa mã' : 'Tạo mã mới'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
-            <h6 className="fw-bold text-success mb-3">Thong tin ma</h6>
+            <h6 className="fw-bold text-success mb-3">Thông tin mã</h6>
             <Row>
-              <Col md={5}><Form.Group className="mb-3"><Form.Label>Ma code</Form.Label><Form.Control value={formData.code} onChange={(e) => updateForm('code', e.target.value.toUpperCase())} /></Form.Group></Col>
-              <Col md={7}><Form.Group className="mb-3"><Form.Label>Ten chuong trinh</Form.Label><Form.Control value={formData.name} onChange={(e) => updateForm('name', e.target.value)} /></Form.Group></Col>
+              <Col md={5}><Form.Group className="mb-3"><Form.Label>Mã code</Form.Label><Form.Control value={formData.code} onChange={(e) => updateForm('code', e.target.value.toUpperCase())} /></Form.Group></Col>
+              <Col md={7}><Form.Group className="mb-3"><Form.Label>Tên chương trình</Form.Label><Form.Control value={formData.name} onChange={(e) => updateForm('name', e.target.value)} /></Form.Group></Col>
             </Row>
 
-            <h6 className="fw-bold text-success mt-2 mb-3">Dieu kien giam</h6>
+            <h6 className="fw-bold text-success mt-2 mb-3">Điều kiện giảm</h6>
             <Row>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Loai giam</Form.Label><Form.Select value={formData.discountType} onChange={(e) => updateForm('discountType', e.target.value)}><option value="percent">Giam theo %</option><option value="fixed">Giam so tien co dinh</option></Form.Select></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Gia tri giam</Form.Label><Form.Control type="number" min="0" value={formData.discountValue} onChange={(e) => updateForm('discountValue', e.target.value)} /></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Giam toi da</Form.Label><Form.Control type="number" min="0" value={formData.maxDiscount} onChange={(e) => updateForm('maxDiscount', e.target.value)} disabled={formData.discountType === 'fixed'} /></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Min don</Form.Label><Form.Control type="number" min="0" value={formData.minOrderAmount} onChange={(e) => updateForm('minOrderAmount', e.target.value)} /></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Luot dung</Form.Label><Form.Control type="number" min="1" value={formData.usageLimit} onChange={(e) => updateForm('usageLimit', e.target.value)} /></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Moi user toi da</Form.Label><Form.Control type="number" min="1" value={formData.perUserLimit} onChange={(e) => updateForm('perUserLimit', e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Loại giảm</Form.Label><Form.Select value={formData.discountType} onChange={(e) => updateForm('discountType', e.target.value)}><option value="percent">Giảm theo %</option><option value="fixed">Giảm số tiền cố định</option></Form.Select></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Giá trị giảm</Form.Label><Form.Control type="number" min="0" value={formData.discountValue} onChange={(e) => updateForm('discountValue', e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Giảm tối đa</Form.Label><Form.Control type="number" min="0" value={formData.maxDiscount} onChange={(e) => updateForm('maxDiscount', e.target.value)} disabled={formData.discountType === 'fixed'} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Min đơn</Form.Label><Form.Control type="number" min="0" value={formData.minOrderAmount} onChange={(e) => updateForm('minOrderAmount', e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Lượt dùng</Form.Label><Form.Control type="number" min="1" value={formData.usageLimit} onChange={(e) => updateForm('usageLimit', e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Giới hạn user tối đa</Form.Label><Form.Control type="number" min="1" value={formData.perUserLimit} onChange={(e) => updateForm('perUserLimit', e.target.value)} /></Form.Group></Col>
             </Row>
 
-            <h6 className="fw-bold text-success mt-2 mb-3">Pham vi ap dung</h6>
+            <h6 className="fw-bold text-success mt-2 mb-3">Phạm vi áp dụng</h6>
             <Row>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Loai ap dung</Form.Label><Form.Select value={formData.applyType} onChange={(e) => updateForm('applyType', e.target.value)}><option value="all">Toan he thong</option><option value="new_user">Khach hang moi</option><option value="field">Theo san</option><option value="sport_type">Theo mon the thao</option><option value="time_slot">Theo khung gio</option></Form.Select></Form.Group></Col>
-              <Col md={6} className="d-flex align-items-end"><Form.Check className="mb-3" type="checkbox" label="Tu dong tang cho user moi" checked={formData.autoAssignNewUser} disabled={formData.applyType !== 'new_user'} onChange={(e) => updateForm('autoAssignNewUser', e.target.checked)} /></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label>Loại áp dụng</Form.Label><Form.Select value={formData.applyType} onChange={(e) => updateForm('applyType', e.target.value)}><option value="all">Toàn hệ thống</option><option value="new_user">Khách hàng mới</option><option value="field">Theo sân</option><option value="sport_type">Theo môn thể thao</option><option value="time_slot">Theo khung giờ</option></Form.Select></Form.Group></Col>
+              <Col md={6} className="d-flex align-items-end"><Form.Check className="mb-3" type="checkbox" label="Tự động tặng cho user mới" checked={formData.autoAssignNewUser} disabled={formData.applyType !== 'new_user'} onChange={(e) => updateForm('autoAssignNewUser', e.target.checked)} /></Col>
             </Row>
 
             {formData.applyType === 'field' && (
@@ -377,7 +378,7 @@ const VoucherManager = () => {
 
             {formData.applyType === 'sport_type' && (
               <Form.Group className="mb-3">
-                <Form.Label>Mon the thao ap dung</Form.Label>
+                <Form.Label>Môn thể thao áp dụng</Form.Label>
                 <div className="d-flex flex-wrap gap-3">
                   {sportOptions.map((sport) => <Form.Check key={sport} type="checkbox" label={sport} checked={formData.sportTypes.includes(sport)} onChange={() => toggleArrayValue('sportTypes', sport)} />)}
                 </div>
@@ -387,31 +388,31 @@ const VoucherManager = () => {
             {formData.applyType === 'time_slot' && (
               <>
                 <Form.Group className="mb-3">
-                  <Form.Label>Ngay ap dung</Form.Label>
+                  <Form.Label>Ngày áp dụng</Form.Label>
                   <div className="d-flex flex-wrap gap-3">
                     {dayOptions.map((day) => <Form.Check key={day.value} type="checkbox" label={day.label} checked={formData.validDays.includes(day.value)} onChange={() => toggleArrayValue('validDays', day.value)} />)}
                   </div>
                 </Form.Group>
                 <Row>
-                  <Col md={6}><Form.Group className="mb-3"><Form.Label>Tu gio</Form.Label><Form.Control type="time" value={formData.validTimeFrom} onChange={(e) => updateForm('validTimeFrom', e.target.value)} /></Form.Group></Col>
-                  <Col md={6}><Form.Group className="mb-3"><Form.Label>Den gio</Form.Label><Form.Control type="time" value={formData.validTimeTo} onChange={(e) => updateForm('validTimeTo', e.target.value)} /></Form.Group></Col>
+                  <Col md={6}><Form.Group className="mb-3"><Form.Label>Từ giờ</Form.Label><Form.Control type="time" value={formData.validTimeFrom} onChange={(e) => updateForm('validTimeFrom', e.target.value)} /></Form.Group></Col>
+                  <Col md={6}><Form.Group className="mb-3"><Form.Label>Đến giờ</Form.Label><Form.Control type="time" value={formData.validTimeTo} onChange={(e) => updateForm('validTimeTo', e.target.value)} /></Form.Group></Col>
                 </Row>
               </>
             )}
 
-            <h6 className="fw-bold text-success mt-2 mb-3">Thoi gian & trang thai</h6>
+            <h6 className="fw-bold text-success mt-2 mb-3">Thời gian & trạng thái</h6>
             <Row>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Ngay bat dau</Form.Label><Form.Control type="date" value={formData.startDate} onChange={(e) => updateForm('startDate', e.target.value)} /></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Ngay ket thuc</Form.Label><Form.Control type="date" value={formData.endDate} onChange={(e) => updateForm('endDate', e.target.value)} /></Form.Group></Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Trang thai</Form.Label><Form.Select value={formData.status} onChange={(e) => updateForm('status', e.target.value)}><option value="draft">Draft</option><option value="active">Active</option><option value="inactive">Inactive</option></Form.Select></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Ngày bắt đầu</Form.Label><Form.Control type="date" value={formData.startDate} onChange={(e) => updateForm('startDate', e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Ngày kết thúc</Form.Label><Form.Control type="date" value={formData.endDate} onChange={(e) => updateForm('endDate', e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group className="mb-3"><Form.Label>Trạng thái</Form.Label><Form.Select value={formData.status} onChange={(e) => updateForm('status', e.target.value)}><option value="draft">Draft</option><option value="active">Active</option><option value="inactive">Inactive</option></Form.Select></Form.Group></Col>
             </Row>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Huy</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
           <Button variant="success" onClick={handleSave} disabled={submitting} className="d-inline-flex align-items-center gap-2">
             {submitting ? <Spinner animation="border" size="sm" /> : <Save size={18} />}
-            {editingId ? 'Cap nhat' : 'Luu ma'}
+            {editingId ? 'Cập nhật' : 'Lưu mã'}
           </Button>
         </Modal.Footer>
       </Modal>

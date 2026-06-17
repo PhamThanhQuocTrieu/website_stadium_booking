@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Button, Card, Col, Form, Row, Spinner, Table } from 'react-bootstrap';
-import { Trash2 } from 'lucide-react';
+import { Star, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
 
@@ -60,6 +60,26 @@ const ReviewManager = () => {
     }
   };
 
+  const getReviewRating = (review) => Number(review.overallRating ?? review.rating ?? 0);
+
+  const renderStars = (rating) => {
+    const score = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+
+    return (
+      <span className="d-inline-flex align-items-center gap-1" aria-label={`${score} sao`} title={`${score} sao`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            size={14}
+            fill={star <= score ? 'currentColor' : 'none'}
+            strokeWidth={2.4}
+            aria-hidden="true"
+          />
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -84,7 +104,7 @@ const ReviewManager = () => {
               <Form.Label className="small fw-bold">Số sao</Form.Label>
               <Form.Select value={filters.rating} onChange={(e) => setFilters({ ...filters, rating: e.target.value })}>
                 <option value="">Tất cả</option>
-                {[5, 4, 3, 2, 1].map((star) => <option key={star} value={star}>{star} sao</option>)}
+                {[5, 4, 3, 2, 1].map((star) => <option key={star} value={star}>{'★'.repeat(star)}</option>)}
               </Form.Select>
             </Col>
             <Col md={3}>
@@ -123,7 +143,7 @@ const ReviewManager = () => {
                       <div className="text-muted small">{review.user?.email}</div>
                     </td>
                     <td>{review.field?.fieldName || '-'}</td>
-                    <td><Badge bg="warning" text="dark">{review.rating} sao</Badge></td>
+                    <td><Badge bg="warning" text="dark">{renderStars(getReviewRating(review))}</Badge></td>
                     <td style={{ maxWidth: 360 }}>{review.comment}</td>
                     <td>{new Date(review.createdAt).toLocaleDateString('vi-VN')}</td>
                     <td className="text-end">

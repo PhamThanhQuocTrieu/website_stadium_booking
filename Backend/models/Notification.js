@@ -6,7 +6,8 @@ const NOTIFICATION_TYPES = [
   'cancellation',
   'reminder',
   'system',
-  'promotion'
+  'promotion',
+  'voucher'
 ];
 
 const notificationSchema = new mongoose.Schema(
@@ -41,6 +42,15 @@ const notificationSchema = new mongoose.Schema(
       trim: true,
       default: ''
     },
+    link: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    metadata: {
+      type: Object,
+      default: {}
+    },
     isRead: {
       type: Boolean,
       default: false
@@ -51,6 +61,7 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ type: 1, createdAt: -1 });
+notificationSchema.index({ user: 1, type: 1, 'metadata.voucherCode': 1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);
 module.exports.NOTIFICATION_TYPES = NOTIFICATION_TYPES;

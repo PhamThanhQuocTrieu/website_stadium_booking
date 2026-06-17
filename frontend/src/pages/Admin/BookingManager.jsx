@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Badge, Button, Card, Col, Form, Modal, Row, Spinner, Table } from 'react-bootstrap';
-import { Check, Eye, RefreshCw, Search, X } from 'lucide-react';
+import { Badge, Button, Card, Col, Form, Modal, Pagination, Row, Spinner, Table } from 'react-bootstrap';
+import { Check, ChevronLeft, ChevronRight, Eye, RefreshCw, Search, X } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import '../../styles/admin/bookingmanager.css';
 
@@ -55,6 +55,10 @@ const BookingManager = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalBookings, setTotalBookings] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -69,8 +73,12 @@ const BookingManager = () => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
+      params.append('page', page);
+      params.append('limit', limit);
       const { data } = await axiosClient.get(`/bookings/admin/list?${params.toString()}`);
       setBookings(data.bookings || []);
+      setTotalBookings(data.total || 0);
+      setTotalPages(data.totalPages || 1);
     } finally {
       setLoading(false);
     }
@@ -78,13 +86,37 @@ const BookingManager = () => {
 
   useEffect(() => {
     fetchBookings();
-  }, [filters.status, filters.paymentStatus, filters.paymentMethod]);
+  }, [filters.status, filters.paymentStatus, filters.paymentMethod, page, limit]);
 
   const visibleBookings = useMemo(() => bookings, [bookings]);
 
   const updateFilter = (key, value) => {
+    setPage(1);
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
+
+  const handleSearch = () => {
+    if (page === 1) {
+      fetchBookings();
+      return;
+    }
+    setPage(1);
+  };
+
+  const handleLimitChange = (value) => {
+    setPage(1);
+    setLimit(Number(value));
+  };
+
+  const paginationItems = useMemo(() => {
+    const maxVisiblePages = 5;
+    const half = Math.floor(maxVisiblePages / 2);
+    let start = Math.max(page - half, 1);
+    const end = Math.min(start + maxVisiblePages - 1, totalPages);
+    start = Math.max(end - maxVisiblePages + 1, 1);
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  }, [page, totalPages]);
 
   const updateCancelRequest = async (booking, action) => {
     const { data } = await axiosClient.patch(`/admin/bookings/${booking._id}/${action}-cancel`);
@@ -113,11 +145,11 @@ const BookingManager = () => {
     <div className="admin-booking-page">
       <div className="admin-booking-header">
         <div>
-          <h3 className="fw-bold mb-1">Quan ly don dat san</h3>
-          <p className="text-muted mb-0">Theo doi booking va trang thai thanh toan VNPAY.</p>
+          <h3 className="fw-bold mb-1">Quản lý đơn đặt sân</h3>
+          <p className="text-muted mb-0">Theo dõi booking và trạng thái thanh toán VNPAY.</p>
         </div>
         <Button variant="outline-success" onClick={fetchBookings}>
-          <RefreshCw size={16} className="me-2" /> Lam moi
+          <RefreshCw size={16} className="me-2" /> Làm mới
         </Button>
       </div>
 
@@ -125,7 +157,7 @@ const BookingManager = () => {
         <Card.Body>
           <Row className="g-3">
             <Col lg={4}>
-              <Form.Label className="small fw-bold text-muted">Tim kiem</Form.Label>
+              <Form.Label className="small fw-bold text-muted">Tìm kiếm</Form.Label>
               <div className="admin-booking-search">
                 <Search size={16} />
                 <Form.Control
@@ -133,16 +165,16 @@ const BookingManager = () => {
                   placeholder="Ten, SDT, ma don, txnRef..."
                   onChange={(event) => updateFilter('search', event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') fetchBookings();
+                    if (event.key === 'Enter') handleSearch();
                   }}
                 />
-                <Button variant="success" onClick={fetchBookings}>Tim</Button>
+                <Button variant="success" onClick={handleSearch}>Tìm</Button>
               </div>
             </Col>
             <Col sm={6} lg={2}>
-              <Form.Label className="small fw-bold text-muted">Trang thai don</Form.Label>
+              <Form.Label className="small fw-bold text-muted">Trạng thái đơn</Form.Label>
               <Form.Select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}>
-                <option value="">Tat ca</option>
+                <option value="">Tất cả</option>
                 <option value="pending">Chờ xử lý</option>
                 <option value="confirmed">Đã xác nhận</option>
                 <option value="cancel_requested">Chờ xác nhận hủy</option>
@@ -151,9 +183,9 @@ const BookingManager = () => {
               </Form.Select>
             </Col>
             <Col sm={6} lg={2}>
-              <Form.Label className="small fw-bold text-muted">Thanh toan</Form.Label>
+              <Form.Label className="small fw-bold text-muted">Thanh toán</Form.Label>
               <Form.Select value={filters.paymentStatus} onChange={(event) => updateFilter('paymentStatus', event.target.value)}>
-                <option value="">Tat ca</option>
+                <option value="">Tất cả</option>
                 <option value="pending">Chờ thanh toán</option>
                 <option value="paid">Đã thanh toán</option>
                 <option value="failed">Thanh toán thất bại</option>
@@ -161,12 +193,20 @@ const BookingManager = () => {
               </Form.Select>
             </Col>
             <Col sm={6} lg={2}>
-              <Form.Label className="small fw-bold text-muted">Phuong thuc</Form.Label>
+              <Form.Label className="small fw-bold text-muted">Phương thức</Form.Label>
               <Form.Select value={filters.paymentMethod} onChange={(event) => updateFilter('paymentMethod', event.target.value)}>
-                <option value="">Tat ca</option>
+                <option value="">Tất cả</option>
                 <option value="VNPAY">VNPAY</option>
                 <option value="VIETQR">VIETQR</option>
                 <option value="CASH">CASH</option>
+              </Form.Select>
+            </Col>
+            <Col sm={6} lg={2}>
+              <Form.Label className="small fw-bold text-muted">Số đơn mỗi trang</Form.Label>
+              <Form.Select value={limit} onChange={(event) => handleLimitChange(event.target.value)}>
+                <option value="10">10 đơn</option>
+                <option value="20">20 đơn</option>
+                <option value="50">50 đơn</option>
               </Form.Select>
             </Col>
           </Row>
@@ -182,17 +222,17 @@ const BookingManager = () => {
               <Table hover responsive className="admin-booking-table align-middle mb-0">
                 <thead>
                   <tr>
-                    <th>Ma don</th>
-                    <th>Khach hang</th>
-                    <th>San</th>
-                    <th>Lich dat</th>
-                    <th>Trang thai don</th>
-                    <th>Phuong thuc</th>
-                    <th>Trang thai TT</th>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Sân</th>
+                    <th>Lịch đặt</th>
+                    <th>Trạng thái đơn</th>
+                    <th>Phương thức</th>
+                    <th>Trạng thái TT</th>
                     <th>TxnRef / GD</th>
-                    <th>So tien TT</th>
-                    <th>Thoi gian TT</th>
-                    <th className="admin-action-col">Thao tac</th>
+                    <th>Số tiền TT</th>
+                    <th>Thời gian TT</th>
+                    <th className="admin-action-col">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,13 +278,45 @@ const BookingManager = () => {
                     </tr>
                   ))}
                   {visibleBookings.length === 0 && (
-                    <tr><td colSpan="11" className="text-center text-muted py-4">Khong co booking phu hop.</td></tr>
+                    <tr><td colSpan="11" className="text-center text-muted py-4">Không có booking phù hợp.</td></tr>
                   )}
                 </tbody>
               </Table>
             </div>
           )}
         </Card.Body>
+        {!loading && totalBookings > 0 && (
+          <Card.Footer className="admin-booking-pagination-footer">
+            <div className="admin-booking-page-summary">
+              Hiển thị {((page - 1) * limit) + 1}-{Math.min(page * limit, totalBookings)} trong {totalBookings} đơn
+            </div>
+            <Pagination className="admin-booking-pagination mb-0">
+              <Pagination.Prev disabled={page === 1} onClick={() => setPage((current) => Math.max(current - 1, 1))}>
+                <ChevronLeft size={16} />
+              </Pagination.Prev>
+              {paginationItems[0] > 1 && (
+                <>
+                  <Pagination.Item onClick={() => setPage(1)}>1</Pagination.Item>
+                  {paginationItems[0] > 2 && <Pagination.Ellipsis disabled />}
+                </>
+              )}
+              {paginationItems.map((item) => (
+                <Pagination.Item key={item} active={item === page} onClick={() => setPage(item)}>
+                  {item}
+                </Pagination.Item>
+              ))}
+              {paginationItems[paginationItems.length - 1] < totalPages && (
+                <>
+                  {paginationItems[paginationItems.length - 1] < totalPages - 1 && <Pagination.Ellipsis disabled />}
+                  <Pagination.Item onClick={() => setPage(totalPages)}>{totalPages}</Pagination.Item>
+                </>
+              )}
+              <Pagination.Next disabled={page === totalPages} onClick={() => setPage((current) => Math.min(current + 1, totalPages))}>
+                <ChevronRight size={16} />
+              </Pagination.Next>
+            </Pagination>
+          </Card.Footer>
+        )}
       </Card>
 
       <Modal show={!!selectedBooking} onHide={() => setSelectedBooking(null)} size="lg" centered>
@@ -255,27 +327,27 @@ const BookingManager = () => {
           {selectedBooking && (
             <>
               <Row className="g-3 mb-4">
-                <Col md={6}><strong>Ma don:</strong> {selectedBooking._id}</Col>
-                <Col md={6}><strong>Khach hang:</strong> {selectedBooking.user?.fullName || selectedBooking.userId?.fullName || '-'}</Col>
-                <Col md={6}><strong>San:</strong> {selectedBooking.field?.fieldName || selectedBooking.fieldId?.fieldName || '-'}</Col>
-                <Col md={6}><strong>Thoi gian:</strong> {selectedBooking.date} | {selectedBooking.startTime} - {selectedBooking.endTime}</Col>
+                <Col md={6}><strong>Mã đơn:</strong> {selectedBooking._id}</Col>
+                <Col md={6}><strong>Khách hàng:</strong> {selectedBooking.user?.fullName || selectedBooking.userId?.fullName || '-'}</Col>
+                <Col md={6}><strong>Sân:</strong> {selectedBooking.field?.fieldName || selectedBooking.fieldId?.fieldName || '-'}</Col>
+                <Col md={6}><strong>Thời gian:</strong> {selectedBooking.date} | {selectedBooking.startTime} - {selectedBooking.endTime}</Col>
                 <Col md={6}><strong>Trạng thái đơn:</strong> {mapStatusLabel('bookingStatus', selectedBooking.status)}</Col>
                 <Col md={6}><strong>Thanh toán:</strong> {mapStatusLabel('paymentStatus', selectedBooking.payment?.status || selectedBooking.paymentStatus)}</Col>
               </Row>
 
-              <h6 className="fw-bold border-start border-4 border-success ps-2 mb-3">THONG TIN THANH TOAN</h6>
+              <h6 className="fw-bold border-start border-4 border-success ps-2 mb-3">THÔNG TIN THANH TOÁN</h6>
               {normalize(selectedBooking.status) === 'cancel_requested' && (
                 <div className="cancel-review-panel mb-4">
                   <div>
-                    <strong>Yeu cau huy dang cho xac nhan</strong>
-                    <p className="mb-0 text-muted small">Admin can duyet de huy don hoac tu choi de dua booking ve trang thai da xac nhan.</p>
+                    <strong>Yêu cầu hủy đang chờ xác nhận</strong>
+                    <p className="mb-0 text-muted small">Admin cần duyệt để hủy đơn hoặc từ chối để đưa booking về trạng thái đã xác nhận.</p>
                   </div>
                   <div className="cancel-review-actions">
                     <Button variant="success" onClick={() => updateCancelRequest(selectedBooking, 'approve')}>
-                      <Check size={16} /> Duyet huy
+                      <Check size={16} /> Duyệt hủy
                     </Button>
                     <Button variant="outline-danger" onClick={() => updateCancelRequest(selectedBooking, 'reject')}>
-                      <X size={16} /> Tu choi
+                      <X size={16} /> Từ chối
                     </Button>
                   </div>
                 </div>
@@ -290,7 +362,7 @@ const BookingManager = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-muted">Booking chua co giao dich thanh toan.</div>
+                <div className="text-muted">Booking chưa có giao dịch thanh toán.</div>
               )}
             </>
           )}

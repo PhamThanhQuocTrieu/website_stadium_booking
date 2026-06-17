@@ -22,6 +22,8 @@ const policyRoutes = require('./routes/policyRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const adminNotificationRoutes = require('./routes/adminNotificationRoutes');
+const adminScheduleRoutes = require('./routes/adminScheduleRoutes');
+const { setSocket } = require('./utils/socket');
 connectDB();
 
 const app = express();
@@ -40,14 +42,23 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true
   }
 });
 
 app.set('io', io);
+setSocket(io);
 
 io.on('connection', (socket) => {
   console.log(`Client ket noi: ${socket.id}`.cyan);
+  socket.on('join', ({ userId, role } = {}) => {
+    const normalizedRole = String(role || '').toLowerCase();
+    if (normalizedRole === 'admin' || normalizedRole === 'super admin') {
+      socket.join('admin');
+    }
+    if (userId) socket.join(`user:${userId}`);
+  });
   socket.on('disconnect', () => console.log('Client ngat ket noi'.gray));
 });
 
@@ -70,6 +81,7 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin/notifications', adminNotificationRoutes);
+app.use('/api/admin', adminScheduleRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Loi Server: '.red, err.stack);

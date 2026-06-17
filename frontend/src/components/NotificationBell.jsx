@@ -3,6 +3,7 @@ import { Button, Spinner } from 'react-bootstrap';
 import { Bell, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import socket, { joinSocketRoom } from '../socket';
 import { formatTimeAgo, getNotificationIcon } from '../utils/notificationUtils';
 
 const NotificationBell = ({ user }) => {
@@ -18,8 +19,18 @@ const NotificationBell = ({ user }) => {
     try {
       setLoading(true);
       const { data } = await axiosClient.get('/notifications?limit=5&page=1');
-      setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
-      setUnreadCount(data.unreadCount || 0);
+      let nextNotifications = Array.isArray(data.notifications) ? data.notifications : [];
+      let nextUnreadCount = data.unreadCount || 0;
+
+      if (nextNotifications.length === 0 && nextUnreadCount === 0) {
+        await axiosClient.get('/user/vouchers');
+        const retry = await axiosClient.get('/notifications?limit=5&page=1');
+        nextNotifications = Array.isArray(retry.data.notifications) ? retry.data.notifications : [];
+        nextUnreadCount = retry.data.unreadCount || 0;
+      }
+
+      setNotifications(nextNotifications);
+      setUnreadCount(nextUnreadCount);
     } catch (error) {
       if (error.response?.status !== 401) {
         console.error('Không thể tải thông báo', error);
@@ -34,6 +45,17 @@ const NotificationBell = ({ user }) => {
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    joinSocketRoom(user);
+    const handleNewNotification = (notification) => {
+      setNotifications((prev) => [notification, ...prev].slice(0, 5));
+      setUnreadCount((prev) => prev + 1);
+    };
+    socket.on('notification:new', handleNewNotification);
+    return () => socket.off('notification:new', handleNewNotification);
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -65,7 +87,11 @@ const NotificationBell = ({ user }) => {
       )));
       setUnreadCount((prev) => Math.max(prev - (notification.isRead ? 0 : 1), 0));
       setOpen(false);
-      if (notification.relatedModel === 'Booking' || ['booking', 'payment', 'cancellation'].includes(notification.type)) {
+      if (notification.link) {
+        navigate(notification.link);
+      } else if (notification.type === 'voucher') {
+        navigate('/my-vouchers');
+      } else if (notification.relatedModel === 'Booking' || ['booking', 'payment', 'cancellation'].includes(notification.type)) {
         navigate('/my-bookings');
       } else {
         navigate('/notifications');

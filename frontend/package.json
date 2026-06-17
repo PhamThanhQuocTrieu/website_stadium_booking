@@ -17,6 +17,7 @@
     "@fullcalendar/resource": "^6.1.20",
     "@fullcalendar/resource-daygrid": "^6.1.20",
     "@fullcalendar/resource-timegrid": "^6.1.20",
+    "@fullcalendar/resource-timeline": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
     "@react-oauth/google": "^0.13.5",
     "aos": "^2.3.4",

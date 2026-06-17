@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const { emitToUser } = require('../utils/socket');
 
 const createNotification = async ({
   user,
@@ -7,6 +8,8 @@ const createNotification = async ({
   type = 'system',
   relatedId,
   relatedModel,
+  link,
+  metadata,
   io
 }) => {
   if (!user || !title || !message) return null;
@@ -17,17 +20,12 @@ const createNotification = async ({
     message,
     type,
     relatedId,
-    relatedModel
+    relatedModel,
+    link,
+    metadata
   });
 
-  // Socket user rooms are not wired in this project yet. This event is harmless
-  // and gives a clear upgrade point once authenticated socket rooms are added.
-  if (io) {
-    io.emit('notification:new', {
-      user: String(user),
-      notification
-    });
-  }
+  emitToUser(user, 'notification:new', notification);
 
   return notification;
 };

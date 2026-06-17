@@ -14,7 +14,8 @@ export const notificationTypeLabels = {
   cancellation: 'Hủy sân',
   reminder: 'Nhắc lịch',
   system: 'Hệ thống',
-  promotion: 'Khuyến mãi'
+  promotion: 'Khuyến mãi',
+  voucher: 'Voucher'
 };
 
 export const notificationFilters = [
@@ -23,6 +24,7 @@ export const notificationFilters = [
   { value: 'booking', label: 'Đặt sân' },
   { value: 'payment', label: 'Thanh toán' },
   { value: 'cancellation', label: 'Hủy sân' },
+  { value: 'voucher', label: 'Voucher' },
   { value: 'system', label: 'Hệ thống' }
 ];
 
@@ -32,7 +34,8 @@ export const notificationTypeIcons = {
   cancellation: RotateCcw,
   reminder: Bell,
   system: ShieldCheck,
-  promotion: Tag
+  promotion: Tag,
+  voucher: Tag
 };
 
 export const getNotificationIcon = (type) => notificationTypeIcons[type] || Megaphone;

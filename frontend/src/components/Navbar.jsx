@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Form, NavDropdown, Image } from 'react-bootstrap';
 import { Search, BoxArrowRight, Person, ListCheck, ShieldLock } from 'react-bootstrap-icons';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode"; // Nhớ cài đặt: npm install jwt-decode
 import myLogo from '../assets/logo.png';
 import NotificationBell from './NotificationBell';
@@ -11,6 +11,7 @@ const Navigation = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const updateUserInfo = () => {
@@ -65,6 +66,7 @@ const Navigation = () => {
   const role = String(user?.role || '').toLowerCase();
   const isAdmin = role === 'admin' || role === 'super admin';
   const profileLink = isAdmin ? '/admin/profile' : '/profile';
+  const isFieldsSection = location.pathname === '/fields' || location.pathname.startsWith('/field-detail/');
 
   return (
     <Navbar expand="lg" className="shadow-sm fixed-top py-2 custom-navbar">
@@ -77,7 +79,12 @@ const Navigation = () => {
           
           <Nav className="mx-auto gap-3 nav-links-wrap">
             <NavLink to="/" end className="fw-bold text-decoration-none nav-link-custom">Trang chủ</NavLink>
-            <NavLink to="/fields" className="fw-bold text-decoration-none nav-link-custom">Sân tập</NavLink>
+            <NavLink
+              to="/fields"
+              className={`fw-bold text-decoration-none nav-link-custom ${isFieldsSection ? 'active' : ''}`}
+            >
+              Sân tập
+            </NavLink>
             <NavLink to="/news" className="fw-bold text-decoration-none nav-link-custom">Tin tức</NavLink>
             <NavLink to="/contact" className="fw-bold text-decoration-none nav-link-custom">Liên hệ</NavLink>
           </Nav>

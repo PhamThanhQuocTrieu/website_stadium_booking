@@ -123,6 +123,25 @@
   font-size: 0.9rem;
 }
 
+.admin-notification-table .badge {
+  min-width: 96px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  color: #ffffff !important;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.admin-notification-table .badge.bg-success {
+  background-color: #15803d !important;
+}
+
+.admin-notification-table .badge.bg-secondary {
+  background-color: #475569 !important;
+}
+
 .admin-notification-table td span {
   display: block;
   max-width: 260px;

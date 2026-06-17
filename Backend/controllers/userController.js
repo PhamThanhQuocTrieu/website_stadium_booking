@@ -2,7 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const { assignNewUserVouchers } = require('../services/voucherService');
+const { assignNewUserVouchers, ensureWelcomeVoucherForEligibleUser } = require('../services/voucherService');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -48,6 +48,8 @@ exports.googleLogin = async (req, res) => {
 
     if (isNewUser && user.role === 'user') {
       await assignNewUserVouchers(user, req.app.get('io'));
+    } else if (!isNewUser && user.role === 'user') {
+      await ensureWelcomeVoucherForEligibleUser(user._id, req.app.get('io'));
     }
 
     res.status(200).json({
@@ -88,6 +90,10 @@ exports.loginUser = async (req, res) => {
     if (user && (await user.matchPassword(password))) {
       if (user.isActive === false) return res.status(403).json({ message: `Tài khoản đã bị khóa.` });
       
+      if (String(user.role || '').toLowerCase() === 'user') {
+        await ensureWelcomeVoucherForEligibleUser(user._id, req.app.get('io'));
+      }
+
       res.json({ 
         _id: user._id, fullName: user.fullName, email: user.email, phone: user.phone,
         avatar: user.avatar, dob: user.dob, role: user.role, token: generateToken(user) 

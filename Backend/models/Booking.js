@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   field: { type: mongoose.Schema.Types.ObjectId, ref: 'Field', required: true },
 
   date: { type: String, required: true },
@@ -27,7 +27,7 @@ const bookingSchema = new mongoose.Schema({
   transactionFee: { type: Number, default: 0 },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'paid', 'success', 'failed', 'refunded', 'Pending', 'Paid', 'UNPAID', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+    enum: ['pending', 'unpaid', 'deposit', 'paid', 'success', 'failed', 'refunded', 'Pending', 'Paid', 'UNPAID', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'],
     default: 'UNPAID'
   },
   paymentMethod: {
@@ -63,7 +63,32 @@ const bookingSchema = new mongoose.Schema({
   cancelledAt: Date,
   cancelReason: String,
   holdExpiresAt: Date,
-  reviewed: { type: Boolean, default: false }
+  reviewed: { type: Boolean, default: false },
+  rescheduleHistory: [{
+    oldCourt: { type: mongoose.Schema.Types.ObjectId, ref: 'Field' },
+    newCourt: { type: mongoose.Schema.Types.ObjectId, ref: 'Field' },
+    oldDate: String,
+    newDate: String,
+    oldStartTime: String,
+    oldEndTime: String,
+    newStartTime: String,
+    newEndTime: String,
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reason: String,
+    changedAt: { type: Date, default: Date.now }
+  }],
+  isRecurring: { type: Boolean, default: false },
+  recurringGroupId: { type: String, default: null },
+  recurringInfo: {
+    startDate: String,
+    endDate: String,
+    daysOfWeek: [Number],
+    startTime: String,
+    endTime: String,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
+  customerName: String,
+  customerPhone: String
 }, { timestamps: true });
 
 const activeSlotStatuses = [

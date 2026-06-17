@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   MapPinned,
   CalendarDays,
+  CalendarClock,
   Users,
   LogOut,
   UserCircle,
@@ -43,40 +44,49 @@ const AdminLayout = () => {
     { path: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/admin/fields', icon: <MapPinned size={20} />, label: 'Quản lý sân' },
     { path: '/admin/bookings', icon: <CalendarDays size={20} />, label: 'Đơn đặt sân' },
+    { path: '/admin/schedule-manager', icon: <CalendarClock size={20} />, label: 'Quản lý lịch sân' },
     { path: '/admin/users', icon: <Users size={20} />, label: 'Người dùng' },
     { path: '/admin/vouchers', icon: <TicketPercent size={20} />, label: 'Mã giảm giá' },
     { path: '/admin/services', icon: <ShoppingBasket size={20} />, label: 'Dịch vụ đi kèm' },
     { path: '/admin/reviews', icon: <MessageSquare size={20} />, label: 'Đánh giá' },
     { path: '/admin/contacts', icon: <Mail size={20} />, label: 'Quản lý liên hệ' },
     { path: '/admin/notifications', icon: <BellRing size={20} />, label: 'Quản lý thông báo' },
-    { path: '/admin/profile', icon: <UserCircle size={20} />, label: 'Thông tin cá nhân' }
-    ,{ path: '/admin/policies', icon: <ScrollText size={20} />, label: 'Điều khoản & bảo mật' }
+    { path: '/admin/profile', icon: <UserCircle size={20} />, label: 'Thông tin cá nhân' },
+    { path: '/admin/policies', icon: <ScrollText size={20} />, label: 'Điều khoản & bảo mật' }
   ];
 
   return (
-    <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      <div className="bg-dark text-white p-3 position-fixed sidebar">
-        <h4 className="text-success fw-bold mb-5 text-center">ArenaHub Admin</h4>
-        <div className="nav flex-column">
+    <div className="admin-layout">
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-brand">
+          <span className="admin-sidebar-brand-icon">
+            <LayoutDashboard size={20} />
+          </span>
+          <h4>ARENAHUB ADMIN</h4>
+        </div>
+
+        <nav className="admin-sidebar-menu" aria-label="Admin navigation">
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-link text-white d-flex align-items-center gap-3 mb-2 ${location.pathname === item.path ? 'active-menu' : ''}`}
+              className={`admin-sidebar-link ${location.pathname === item.path ? 'active-menu' : ''}`}
             >
-              {item.icon} {item.label}
+              <span className="admin-sidebar-link-icon">{item.icon}</span>
+              <span className="admin-sidebar-link-text">{item.label}</span>
             </Link>
           ))}
-        </div>
-        <div className="logout-fixed">
-          <button onClick={handleLogout} className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
-            <LogOut size={18} /> Đăng xuất
+
+          <button onClick={handleLogout} className="admin-sidebar-logout">
+            <LogOut size={19} />
+            <span>Đăng xuất</span>
           </button>
-        </div>
-      </div>
-      <div style={{ marginLeft: '260px', width: 'calc(100% - 260px)', padding: '30px' }}>
+        </nav>
+      </aside>
+
+      <main className="admin-main-content">
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 };

@@ -2,14 +2,30 @@ const mongoose = require('mongoose');
 const Voucher = require('../models/Voucher');
 const UserVoucher = require('../models/UserVoucher');
 const Booking = require('../models/Booking');
+const Notification = require('../models/Notification');
 const { createNotification } = require('./notificationService');
+
+const WELCOME_VOUCHER_CODE = 'WELCOME20';
+const WELCOME_VOUCHER_LINK = '/my-vouchers';
+const WELCOME_VOUCHER_TITLE = 'Bạn có voucher mới';
+const WELCOME_VOUCHER_MESSAGE = 'Bạn vừa nhận voucher WELCOME20 - Giảm 20% cho lần đặt sân đầu tiên.';
+
+const successfulBookingStatuses = ['paid', 'confirmed', 'completed'];
+const successfulPaymentStatuses = ['paid', 'success'];
+const unfinishedPaymentStatuses = ['pending', 'unpaid', 'failed', 'cancelled', 'refunded'];
+const statusVariants = (statuses) => statuses.flatMap((status) => [
+  status,
+  status.toUpperCase(),
+  status[0].toUpperCase() + status.slice(1)
+]);
 
 const successfulBookingQuery = (userId, extra = {}) => ({
   user: userId,
   ...extra,
+  paymentStatus: { $nin: statusVariants(unfinishedPaymentStatuses) },
   $or: [
-    { paymentStatus: { $in: ['paid', 'success', 'PAID', 'SUCCESS', 'Paid'] } },
-    { status: { $in: ['completed', 'COMPLETED', 'Completed'] } }
+    { paymentStatus: { $in: statusVariants(successfulPaymentStatuses) } },
+    { status: { $in: statusVariants(successfulBookingStatuses) } }
   ]
 });
 
@@ -55,6 +71,47 @@ const getPublicStatus = (voucher) => {
   if (status === 'active' || status === 'inactive' || status === 'draft') return status;
   if (status === 'expired' || status === 'pending') return status;
   return status === 'active' ? 'active' : status;
+};
+
+const getActiveWelcomeVoucher = () => {
+  const now = new Date();
+  return Voucher.findOne({
+    code: WELCOME_VOUCHER_CODE,
+    applyType: 'new_user',
+    autoAssignNewUser: true,
+    status: { $in: ['active', 'Active'] },
+    startDate: { $lte: now },
+    endDate: { $gte: now }
+  });
+};
+
+const ensureWelcomeVoucher = async () => {
+  const existingVoucher = await Voucher.findOne({ code: WELCOME_VOUCHER_CODE });
+  if (existingVoucher) return existingVoucher;
+
+  const now = new Date();
+  const endDate = new Date(now);
+  endDate.setFullYear(endDate.getFullYear() + 1);
+
+  return Voucher.create({
+    code: WELCOME_VOUCHER_CODE,
+    name: 'Ưu đãi khách hàng mới',
+    discountType: 'percent',
+    discountValue: 20,
+    discountPercent: 20,
+    maxDiscount: 50000,
+    minOrderAmount: 100000,
+    minOrderValue: 100000,
+    usageLimit: 999999,
+    usedCount: 0,
+    usageCount: 0,
+    perUserLimit: 1,
+    applyType: 'new_user',
+    autoAssignNewUser: true,
+    status: 'active',
+    startDate: now,
+    endDate
+  });
 };
 
 const normalizeVoucherPayload = (body = {}) => {
@@ -156,11 +213,18 @@ const validateVoucherForBooking = async ({
   const amount = Number(originalAmount || 0);
   const minOrderAmount = getMinOrderAmount(voucher);
   if (amount < minOrderAmount) {
-    throw makeError('Don hang chua dat gia tri toi thieu.');
+    throw makeError('Đơn hàng chưa đạt giá trị tối thiểu để dùng mã.');
   }
 
   const userVoucher = await UserVoucher.findOne({ userId, voucherId: voucher._id });
-  if (userVoucher && userVoucher.status !== 'available') {
+  if (voucher.applyType === 'new_user' && voucher.autoAssignNewUser) {
+    if (!userVoucher) {
+      throw makeError('Bạn chưa được cấp mã giảm giá này.');
+    }
+    if (userVoucher.status !== 'available') {
+      throw makeError(userVoucher.status === 'expired' ? 'Mã giảm giá đã hết hạn.' : 'Mã giảm giá đã được sử dụng.');
+    }
+  } else if (userVoucher && userVoucher.status !== 'available') {
     throw makeError(userVoucher.status === 'expired' ? 'Ma da het han.' : 'Ma nay da duoc su dung.');
   }
   if (userVoucher && new Date(voucher.endDate) < now) {
@@ -177,7 +241,7 @@ const validateVoucherForBooking = async ({
   const applyType = voucher.applyType || 'all';
   if (applyType === 'new_user') {
     const successfulBooking = await Booking.exists(successfulBookingQuery(userId));
-    if (successfulBooking) throw makeError('Ma chi ap dung cho khach hang moi.');
+    if (successfulBooking) throw makeError('Mã giảm giá chỉ áp dụng cho lần đặt sân đầu tiên.');
   }
   if (applyType === 'field') {
     if (!fieldId || !getFieldIds(voucher).has(String(fieldId))) {
@@ -250,7 +314,52 @@ const markVoucherUsed = async (booking, io) => {
   return { voucher, userVoucher };
 };
 
+const createWelcomeVoucherNotification = async (userId, voucher, io) => {
+  const existingNotification = await Notification.findOne({
+    user: userId,
+    type: 'voucher',
+    'metadata.voucherCode': WELCOME_VOUCHER_CODE
+  });
+  if (existingNotification) return existingNotification;
+
+  return createNotification({
+    user: userId,
+    title: WELCOME_VOUCHER_TITLE,
+    message: WELCOME_VOUCHER_MESSAGE,
+    type: 'voucher',
+    relatedId: voucher._id,
+    relatedModel: 'Voucher',
+    link: WELCOME_VOUCHER_LINK,
+    metadata: {
+      voucherCode: WELCOME_VOUCHER_CODE,
+      voucherId: voucher._id
+    },
+    io
+  });
+};
+
+const assignWelcomeVoucherToUser = async (userId, voucher, io) => {
+  const userVoucher = await UserVoucher.findOneAndUpdate(
+    { userId, voucherId: voucher._id },
+    {
+      $setOnInsert: {
+        userId,
+        voucherId: voucher._id,
+        code: voucher.code,
+        status: 'available',
+        usedCount: 0,
+        assignedAt: new Date()
+      }
+    },
+    { upsert: true, new: true }
+  );
+
+  await createWelcomeVoucherNotification(userId, voucher, io);
+  return userVoucher;
+};
+
 const assignNewUserVouchers = async (user, io) => {
+  await ensureWelcomeVoucher();
   const now = new Date();
   const vouchers = await Voucher.find({
     autoAssignNewUser: true,
@@ -262,9 +371,24 @@ const assignNewUserVouchers = async (user, io) => {
 
   const assigned = [];
   for (const voucher of vouchers) {
+    if (voucher.code === WELCOME_VOUCHER_CODE) {
+      const userVoucher = await assignWelcomeVoucherToUser(user._id, voucher, io);
+      assigned.push(userVoucher);
+      continue;
+    }
+
     const userVoucher = await UserVoucher.findOneAndUpdate(
       { userId: user._id, voucherId: voucher._id },
-      { $setOnInsert: { userId: user._id, voucherId: voucher._id, code: voucher.code } },
+      {
+        $setOnInsert: {
+          userId: user._id,
+          voucherId: voucher._id,
+          code: voucher.code,
+          status: 'available',
+          usedCount: 0,
+          assignedAt: new Date()
+        }
+      },
       { upsert: true, new: true }
     );
     assigned.push(userVoucher);
@@ -282,8 +406,29 @@ const assignNewUserVouchers = async (user, io) => {
   return assigned;
 };
 
+const ensureWelcomeVoucherForEligibleUser = async (userId, io) => {
+  await ensureWelcomeVoucher();
+  const welcomeVoucher = await getActiveWelcomeVoucher();
+  if (!welcomeVoucher) return null;
+
+  const existingUserVoucher = await UserVoucher.findOne({ userId, voucherId: welcomeVoucher._id });
+  if (existingUserVoucher) {
+    await createWelcomeVoucherNotification(userId, welcomeVoucher, io);
+    return existingUserVoucher;
+  }
+
+  const successfulBooking = await Booking.exists(successfulBookingQuery(userId));
+  if (successfulBooking) return null;
+
+  return assignWelcomeVoucherToUser(userId, welcomeVoucher, io);
+};
+
 module.exports = {
   assignNewUserVouchers,
+  assignWelcomeVoucherToUser,
+  createWelcomeVoucherNotification,
+  ensureWelcomeVoucher,
+  ensureWelcomeVoucherForEligibleUser,
   getPublicStatus,
   markVoucherUsed,
   normalizeVoucherPayload,

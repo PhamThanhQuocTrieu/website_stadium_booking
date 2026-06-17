@@ -19,11 +19,11 @@ const formatDiscount = (voucher) => (
 );
 const conditionText = (voucher) => {
   const labels = {
-    all: 'Ap dung toan he thong',
-    new_user: 'Chi ap dung cho khach hang moi',
-    field: 'Ap dung theo san duoc chon',
-    sport_type: `Ap dung mon: ${(voucher.sportTypes || []).join(', ')}`,
-    time_slot: `Ap dung ${voucher.validTimeFrom || '--:--'} - ${voucher.validTimeTo || '--:--'}`
+    all: 'Áp dụng toàn hệ thống',
+    new_user: 'Chỉ áp dụng cho khách hàng mới',
+    field: 'Áp dụng theo sân được chọn',
+    sport_type: `Áp dụng môn: ${(voucher.sportTypes || []).join(', ')}`,
+    time_slot: `Áp dụng ${voucher.validTimeFrom || '--:--'} - ${voucher.validTimeTo || '--:--'}`
   };
   return labels[voucher.applyType] || labels.all;
 };
@@ -43,13 +43,13 @@ const VoucherCard = ({ voucher, onUse }) => (
         <Badge bg={voucher.status === 'available' ? 'success' : voucher.status === 'used' ? 'secondary' : 'danger'}>{voucher.status}</Badge>
       </div>
       <div className="voucher-meta">
-        <span>Don toi thieu: {formatCurrency(voucher.minOrderAmount)}d</span>
-        <span>Giam toi da: {formatCurrency(voucher.maxDiscount)}d</span>
-        <span>Han dung: {voucher.endDate ? new Date(voucher.endDate).toLocaleDateString('vi-VN') : '-'}</span>
-        <span>{conditionText(voucher)}</span>
+        <span>Đơn tối thiểu: {formatCurrency(voucher.minOrderAmount)}d</span>
+        <span>Giảm tối đa: {formatCurrency(voucher.maxDiscount)}d</span>
+        <span>Hạn dùng: {voucher.endDate ? new Date(voucher.endDate).toLocaleDateString('vi-VN') : '-'}</span>
+        <span>{voucher.description || conditionText(voucher)}</span>
       </div>
       <Button variant="success" disabled={voucher.status !== 'available'} onClick={onUse}>
-        Dung ngay
+        Dùng ngay
       </Button>
     </div>
   </div>
@@ -85,9 +85,9 @@ const MyVouchersPage = () => {
         <div className="voucher-page-header">
           <div>
             <div className="eyebrow"><WalletCards size={18} /> ArenaHub rewards</div>
-            <h2>Voucher cua toi</h2>
+            <h2>Voucher của tôi</h2>
           </div>
-          <Button variant="outline-success" onClick={() => navigate('/fields')}>Dat san ngay</Button>
+          <Button variant="outline-success" onClick={() => navigate('/fields')}>Đặt sân ngay</Button>
         </div>
 
         <div className="voucher-tabs">
@@ -103,8 +103,8 @@ const MyVouchersPage = () => {
         ) : grouped[activeTab].length === 0 ? (
           <div className="empty-voucher-state">
             <CalendarDays size={40} />
-            <h5>Chua co voucher trong muc nay</h5>
-            <p>Voucher duoc tang tu dong se xuat hien o day.</p>
+            <h5>Chưa có voucher trong mục này</h5>
+            <p>Voucher được tặng tự động sẽ xuất hiện ở đây.</p>
           </div>
         ) : (
           <Row className="g-4">

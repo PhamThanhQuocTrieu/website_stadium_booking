@@ -1,6 +1,7 @@
 const Voucher = require('../models/Voucher');
 const UserVoucher = require('../models/UserVoucher');
 const {
+  ensureWelcomeVoucherForEligibleUser,
   normalizeVoucherPayload,
   serializeVoucher,
   validateVoucherPayload,
@@ -117,6 +118,8 @@ exports.checkVoucher = async (req, res) => {
 
 exports.getMyVouchers = async (req, res) => {
   try {
+    await ensureWelcomeVoucherForEligibleUser(req.user.id, req.app.get('io'));
+
     const rows = await UserVoucher.find({ userId: req.user.id })
       .populate('voucherId')
       .sort({ assignedAt: -1 });
@@ -149,6 +152,7 @@ exports.getMyVouchers = async (req, res) => {
         endDate: voucher.endDate,
         status,
         applyType: normalized.applyType,
+        description: normalized.applyType === 'new_user' ? 'Áp dụng cho lần đặt sân đầu tiên' : '',
         sportTypes: normalized.sportTypes || [],
         validDays: normalized.validDays || [],
         validTimeFrom: normalized.validTimeFrom || '',

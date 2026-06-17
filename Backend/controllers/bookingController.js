@@ -591,12 +591,21 @@ exports.adminGetBookings = async (req, res) => {
     if (paymentStatus) query.paymentStatus = { $in: paymentStatusGroups[normalizeStatus(paymentStatus)] || [paymentStatus] };
     if (paymentMethod) query.paymentMethod = paymentMethod;
 
-    const bookings = await Booking.find(query)
+    const safePage = Math.max(Number(page) || 1, 1);
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const skip = (safePage - 1) * safeLimit;
+    const normalizedSearch = String(search).trim().toLowerCase();
+
+    const bookingQuery = Booking.find(query)
       .populate('user', 'fullName email phone')
       .populate('field', 'fieldName address type')
-      .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
+      .sort({ createdAt: -1 });
+
+    if (!normalizedSearch) {
+      bookingQuery.limit(safeLimit).skip(skip);
+    }
+
+    const bookings = await bookingQuery;
 
     const bookingIds = bookings.map((booking) => booking._id);
     const payments = await Payment.find({ bookingId: { $in: bookingIds } }).sort({ createdAt: -1 });
@@ -606,7 +615,6 @@ exports.adminGetBookings = async (req, res) => {
       if (!latestPaymentByBooking.has(key)) latestPaymentByBooking.set(key, payment);
     });
 
-    const normalizedSearch = String(search).trim().toLowerCase();
     const rows = bookings
       .map((booking) => {
         const bookingData = booking.toObject();
@@ -634,7 +642,16 @@ exports.adminGetBookings = async (req, res) => {
         return haystack.includes(normalizedSearch);
       });
 
-    return res.json({ bookings: rows, total: rows.length });
+    const total = normalizedSearch ? rows.length : await Booking.countDocuments(query);
+    const paginatedRows = normalizedSearch ? rows.slice(skip, skip + safeLimit) : rows;
+
+    return res.json({
+      bookings: paginatedRows,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.max(Math.ceil(total / safeLimit), 1)
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

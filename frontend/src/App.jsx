@@ -25,6 +25,7 @@ import FieldManager from './pages/Admin/FieldManager';
 import AddFieldPage from './pages/Admin/AddFieldPage';
 import UpdateFieldPage from './pages/Admin/UpdateFieldPage';
 import BookingCalendar from './pages/Admin/BookingCalendar';
+import ScheduleManager from './pages/Admin/ScheduleManager';
 import BookingManager from './pages/Admin/BookingManager';
 import UserManager from './pages/Admin/UserManager';
 import AdminProfile from './pages/Admin/Profile';
@@ -99,6 +100,7 @@ function App() {
             <Route path="addField" element={<AddFieldPage />} />
             <Route path="updateField/:id" element={<UpdateFieldPage />} />
             <Route path="calendar" element={<BookingCalendar />} />
+            <Route path="schedule-manager" element={<ScheduleManager />} />
             <Route path="bookings" element={<BookingManager />} />
             <Route path="users" element={<UserManager />} />
             <Route path="profile" element={<AdminProfile />} />
