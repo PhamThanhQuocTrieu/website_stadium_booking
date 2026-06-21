@@ -19,7 +19,9 @@ import banner4 from '../assets/banner2.png';
 const HomePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [bannerLoading, setBannerLoading] = useState(true);
   const [allFields, setAllFields] = useState([]); 
+  const [homeBanners, setHomeBanners] = useState([]);
   
   // State quản trị dữ liệu cho thanh tìm kiếm đa năng
   const [searchParams, setSearchParams] = useState({
@@ -40,8 +42,22 @@ const HomePage = () => {
     }
   };
 
+  const fetchHomeBanners = async (showLoading = true) => {
+    try {
+      if (showLoading) setBannerLoading(true);
+      const res = await axios.get('http://localhost:5000/api/banners/home');
+      setHomeBanners(Array.isArray(res.data) ? res.data : res.data.banners || []);
+    } catch (err) {
+      console.error("Lỗi lấy banner trang chủ:", err);
+      setHomeBanners([]);
+    } finally {
+      setBannerLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData(); // Gọi hàm khởi tạo dữ liệu lần đầu tiên khi truy cập trang
+    fetchHomeBanners();
     AOS.init({ duration: 1000, once: true });
 
     // ⚡ KHỞI TẠO CỔNG SOCKET THỜI GIAN THỰC AN TOÀN TRONG VÒNG ĐỜI COMPONENT
@@ -59,9 +75,14 @@ const HomePage = () => {
       fetchData();
     });
 
+    socket.on('banner_updated', () => {
+      fetchHomeBanners(false);
+    });
+
     return () => {
       socket.off('field_updated');
       socket.off('slot_booked_success');
+      socket.off('banner_updated');
       socket.disconnect(); 
     };
   }, []);
@@ -77,10 +98,33 @@ const HomePage = () => {
   const pickleballFields = allFields.filter(f => f.type === 'Pickleball').slice(0, 4);
   const tennisFields = allFields.filter(f => f.type === 'Tennis').slice(0, 4); 
 
+  const fallbackHeroBanners = [banner1, banner2, banner3, banner4].map((image, index) => ({
+    _id: `fallback-${index}`,
+    image,
+    title: '',
+    subtitle: '',
+    description: '',
+    buttonText: '',
+    buttonLink: '',
+    voucherCode: ''
+  }));
+  const heroBanners = homeBanners.filter(banner => banner.position === 'home_hero');
+  const promoBanners = homeBanners.filter(banner => banner.position === 'home_promo');
+  const displayHeroBanners = heroBanners.length > 0 ? heroBanners : fallbackHeroBanners;
+
   // Điều hướng tìm kiếm nâng cao sang tệp danh mục FieldsPage kèm Query Params
   const handleSearch = () => {
     const query = new URLSearchParams(searchParams).toString();
     navigate(`/fields?${query}`);
+  };
+
+  const handleBannerClick = (link) => {
+    if (!link) return;
+    if (/^https?:\/\//i.test(link)) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    navigate(link.startsWith('/') ? link : `/${link}`);
   };
 
   // Thành phần Card hiển thị chi tiết tài nguyên sân
@@ -130,7 +174,7 @@ const HomePage = () => {
     );
   };
 
-  if (loading) return (
+  if (loading || bannerLoading) return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
       <div className="text-center">
         <Spinner animation="border" variant="success" className="mb-2" />
@@ -143,11 +187,11 @@ const HomePage = () => {
     <div className="homepage-container">
       {/* 1. BANNER CHẠY CAROUSEL HERO */}
       <section className="banner-top-section position-relative">
-        <Carousel indicators={true} interval={4000} fade pause={false}>
-          {[banner1, banner2, banner3, banner4].map((imgSrc, idx) => (
-            <Carousel.Item key={idx}>
+        <Carousel indicators={displayHeroBanners.length > 1} controls={displayHeroBanners.length > 1} interval={4500} fade pause={false}>
+          {displayHeroBanners.map((banner, idx) => (
+            <Carousel.Item key={banner._id || idx}>
               <div className="banner-container">
-                <img src={imgSrc} alt="ArenaHub Promo Banner" className="banner-img" />
+                <img src={banner.image} alt={banner.title || 'ArenaHub Promo Banner'} className="banner-img" />
               </div>
             </Carousel.Item>
           ))}
@@ -200,6 +244,36 @@ const HomePage = () => {
 
       {/* KHỐI HIỂN THỊ DANH MỤC CÁC PHÂN HỆ SÂN BÃI TRỰC TUYẾN */}
       <Container fluid className="homepage-container-fluid homepage-main-content" style={{ marginTop: '90px', paddingBottom: '50px' }}>
+        {promoBanners.length > 0 && (
+          <div className="home-promo-section" data-aos="fade-up">
+            <div className="section-heading-row d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <span className="text-success fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>Ưu đãi ArenaHub</span>
+                <h2 className="fw-bold text-dark mt-1">Khuyến mãi đang diễn ra</h2>
+              </div>
+            </div>
+            <Row className="g-3">
+              {promoBanners.map((banner) => (
+                <Col md={6} xl={4} key={banner._id}>
+                  <Card className="home-promo-card border-0 shadow-sm overflow-hidden h-100" onClick={() => handleBannerClick(banner.buttonLink)}>
+                    <div className="home-promo-image">
+                      <img src={banner.image} alt={banner.title} />
+                    </div>
+                    <Card.Body>
+                      <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <h5>{banner.title}</h5>
+                        {banner.voucherCode && <Badge bg="warning" text="dark">{banner.voucherCode}</Badge>}
+                      </div>
+                      {banner.subtitle && <strong>{banner.subtitle}</strong>}
+                      {banner.description && <p>{banner.description}</p>}
+                      {banner.buttonText && <Button variant="link" className="p-0 text-success fw-bold">{banner.buttonText} <ArrowRight /></Button>}
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        )}
         
         {/* 3. DANH MỤC SÂN NỔI BẬT */}
         {featuredFields.length > 0 && (

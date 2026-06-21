@@ -12,8 +12,12 @@ const bookingSchema = new mongoose.Schema({
     serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
     name: String,
     price: Number,
-    quantity: { type: Number, default: 1 }
+    quantity: { type: Number, default: 1 },
+    image: String,
+    inventoryType: { type: String, enum: ['rental', 'consumable'], default: 'rental' }
   }],
+  serviceStockReserved: { type: Boolean, default: false },
+  rentableServicesReturned: { type: Boolean, default: false },
 
   totalPrice: { type: Number, required: true },
   originalAmount: { type: Number, default: 0 },
@@ -64,6 +68,8 @@ const bookingSchema = new mongoose.Schema({
   cancelReason: String,
   holdExpiresAt: Date,
   reviewed: { type: Boolean, default: false },
+  isReviewed: { type: Boolean, default: false },
+  reviewId: { type: mongoose.Schema.Types.ObjectId, ref: 'Review' },
   rescheduleHistory: [{
     oldCourt: { type: mongoose.Schema.Types.ObjectId, ref: 'Field' },
     newCourt: { type: mongoose.Schema.Types.ObjectId, ref: 'Field' },

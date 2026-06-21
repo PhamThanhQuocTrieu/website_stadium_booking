@@ -17,6 +17,12 @@ const timeOptions = Array.from({ length: 39 }, (_, index) => {
 });
 const startTimeOptions = timeOptions.filter(time => time !== '24:00');
 
+const removeCanteenService = (services = []) => (
+    Array.isArray(services)
+        ? services.filter(service => String(service?.name || '').trim().toLowerCase() !== 'canteen')
+        : []
+);
+
 const UpdateFieldPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -28,7 +34,10 @@ const UpdateFieldPage = () => {
         const fetchField = async () => {
             try {
                 const res = await axiosClient.get(`/admin/fields/${id}`);
-                setFormData(res.data);
+                setFormData({
+                    ...res.data,
+                    services: removeCanteenService(res.data?.services)
+                });
             } catch (err) {
                 Swal.fire('Lỗi', 'Không thể tải thông tin sân.', 'error');
                 navigate('/admin/fields');
@@ -74,7 +83,10 @@ const UpdateFieldPage = () => {
             // Hiển thị thông báo chờ
             Swal.fire({ title: 'Đang cập nhật...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
-            await axiosClient.put(`/admin/fields/${id}`, formData);
+            await axiosClient.put(`/admin/fields/${id}`, {
+                ...formData,
+                services: removeCanteenService(formData.services)
+            });
             
             // Thông báo thành công
             Swal.fire({

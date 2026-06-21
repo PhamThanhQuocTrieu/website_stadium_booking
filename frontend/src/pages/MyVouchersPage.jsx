@@ -1,29 +1,38 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Col, Container, Row, Spinner } from 'react-bootstrap';
-import { Ticket, CalendarDays, WalletCards } from 'lucide-react';
+import { CalendarDays, Ticket, WalletCards } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import '../styles/MyVouchersPage.css';
 
 const tabs = [
-  { key: 'available', label: 'Kha dung' },
-  { key: 'used', label: 'Da dung' },
-  { key: 'expired', label: 'Het han' }
+  { key: 'available', label: 'Khả dụng' },
+  { key: 'used', label: 'Đã dùng' },
+  { key: 'expired', label: 'Hết hạn' }
 ];
 
+const statusLabels = {
+  available: 'Khả dụng',
+  used: 'Đã dùng',
+  expired: 'Hết hạn'
+};
+
 const formatCurrency = (amount) => Number(amount || 0).toLocaleString('vi-VN');
+
 const formatDiscount = (voucher) => (
   voucher.discountType === 'fixed'
-    ? `Giam ${formatCurrency(voucher.discountValue)}d`
-    : `Giam ${voucher.discountValue}%`
+    ? `Giảm ${formatCurrency(voucher.discountValue)}đ`
+    : `Giảm ${voucher.discountValue}%`
 );
+
 const conditionText = (voucher) => {
   const labels = {
     all: 'Áp dụng toàn hệ thống',
     new_user: 'Chỉ áp dụng cho khách hàng mới',
     field: 'Áp dụng theo sân được chọn',
     sport_type: `Áp dụng môn: ${(voucher.sportTypes || []).join(', ')}`,
-    time_slot: `Áp dụng ${voucher.validTimeFrom || '--:--'} - ${voucher.validTimeTo || '--:--'}`
+    time_slot: `Áp dụng ${voucher.validTimeFrom || '--:--'} - ${voucher.validTimeTo || '--:--'}`,
+    weekend: 'Chỉ áp dụng thứ 7 và chủ nhật'
   };
   return labels[voucher.applyType] || labels.all;
 };
@@ -40,11 +49,13 @@ const VoucherCard = ({ voucher, onUse }) => (
           <h5>{voucher.name}</h5>
           <p className="voucher-discount">{formatDiscount(voucher)}</p>
         </div>
-        <Badge bg={voucher.status === 'available' ? 'success' : voucher.status === 'used' ? 'secondary' : 'danger'}>{voucher.status}</Badge>
+        <Badge bg={voucher.status === 'available' ? 'success' : voucher.status === 'used' ? 'secondary' : 'danger'}>
+          {statusLabels[voucher.status] || voucher.status}
+        </Badge>
       </div>
       <div className="voucher-meta">
-        <span>Đơn tối thiểu: {formatCurrency(voucher.minOrderAmount)}d</span>
-        <span>Giảm tối đa: {formatCurrency(voucher.maxDiscount)}d</span>
+        <span>Đơn tối thiểu: {formatCurrency(voucher.minOrderAmount)}đ</span>
+        <span>Giảm tối đa: {formatCurrency(voucher.maxDiscount)}đ</span>
         <span>Hạn dùng: {voucher.endDate ? new Date(voucher.endDate).toLocaleDateString('vi-VN') : '-'}</span>
         <span>{voucher.description || conditionText(voucher)}</span>
       </div>
@@ -64,7 +75,7 @@ const MyVouchersPage = () => {
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
-        const res = await api.get('/user/vouchers');
+        const res = await api.get('/user/vouchers', { params: { includePublic: true } });
         setVouchers(Array.isArray(res.data) ? res.data : []);
       } finally {
         setLoading(false);
@@ -109,7 +120,7 @@ const MyVouchersPage = () => {
         ) : (
           <Row className="g-4">
             {grouped[activeTab].map((voucher) => (
-              <Col lg={6} key={voucher._id}>
+              <Col lg={6} key={`${voucher.voucherId || voucher._id}-${voucher.status}`}>
                 <VoucherCard voucher={voucher} onUse={() => navigate('/fields')} />
               </Col>
             ))}

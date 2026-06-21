@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Row, Col, Card, Table, Button, Form, Modal, Badge, Spinner, InputGroup } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Form, Modal, Badge, Spinner, InputGroup, Pagination } from 'react-bootstrap';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, BarChart3, CheckCircle, Edit2, Plus, Save, Search, Ticket, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../api/api';
+import '../../styles/admin/admin-common.css';
+
+const ITEMS_PER_PAGE = 8;
 
 const sportOptions = ['Bóng đá', 'Cầu lông', 'Tennis', 'Pickleball'];
 const dayOptions = [
@@ -59,7 +62,8 @@ const getScopeLabel = (type) => ({
   new_user: 'Khách hàng mới',
   field: 'Theo sân',
   sport_type: 'Theo môn',
-  time_slot: 'Theo khung giờ'
+  time_slot: 'Theo khung giờ',
+  weekend: 'Cuối tuần'
 }[type] || 'Toàn hệ thống');
 
 const normalizeVoucherToForm = (voucher) => ({
@@ -87,6 +91,7 @@ const VoucherManager = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(initialForm);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchVouchers();
@@ -99,7 +104,7 @@ const VoucherManager = () => {
       const res = await api.get('/admin/vouchers');
       setVouchers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      Swal.fire('Loi', 'Khong tai duoc danh sach voucher', 'error');
+      Swal.fire('Loi', 'Không tải được danh sách voucher', 'error');
     } finally {
       setLoading(false);
     }
@@ -115,7 +120,7 @@ const VoucherManager = () => {
         setAllFields(getFieldsFromResponse(fallbackRes.data));
       } catch (fallbackErr) {
         setAllFields([]);
-        console.error('Khong lay duoc danh sach san');
+        console.error('Không tải được danh sách sân:', fallbackErr);
       }
     }
   };
@@ -151,6 +156,30 @@ const VoucherManager = () => {
     setShowModal(true);
   };
 
+  const openWeekendVoucherTemplate = () => {
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 3);
+    setEditingId(null);
+    setFormData({
+      ...initialForm,
+      code: 'WEEKEND25',
+      name: 'Ưu đãi cuối tuần',
+      discountType: 'percent',
+      discountValue: 25,
+      maxDiscount: 0,
+      minOrderAmount: 0,
+      usageLimit: 200,
+      usedCount: 0,
+      perUserLimit: 1,
+      applyType: 'weekend',
+      status: 'active',
+      startDate: today.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    });
+    setShowModal(true);
+  };
+
   const updateForm = (key, value) => {
     setFormData((prev) => {
       const next = { ...prev, [key]: value };
@@ -176,7 +205,7 @@ const VoucherManager = () => {
 
   const handleSave = async () => {
     if (formData.applyType === 'field' && (!Array.isArray(formData.fieldIds) || formData.fieldIds.length === 0)) {
-      Swal.fire('Thieu thong tin', 'Vui lòng chọn ít nhất một sân áp dụng.', 'warning');
+      Swal.fire('Thiếu thông tin', 'Vui lòng chọn ít nhất một sân áp dụng.', 'warning');
       return;
     }
 
@@ -199,15 +228,15 @@ const VoucherManager = () => {
 
       if (editingId) {
         await api.put(`/admin/vouchers/${editingId}`, payload);
-        Swal.fire('Thanh cong', 'Da cap nhat ma thanh cong', 'success');
+        Swal.fire('Thành công', 'Đã cập nhật mã thành công', 'success');
       } else {
         await api.post('/admin/vouchers', payload);
-        Swal.fire('Thanh cong', 'Da tao ma moi thanh cong', 'success');
+        Swal.fire('Thành công', 'Đã tạo mã mới thành công', 'success');
       }
       setShowModal(false);
       fetchVouchers();
     } catch (err) {
-      Swal.fire('Loi', err.response?.data?.message || 'Co loi xay ra', 'error');
+      Swal.fire(' lỗi', err.response?.data?.message || 'Có lỗi xảy ra', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -215,21 +244,21 @@ const VoucherManager = () => {
 
   const handleDelete = async (id, code) => {
     const result = await Swal.fire({
-      title: 'Xac nhan xoa?',
-      text: `Ban co chac muon xoa ma ${code}?`,
+      title: 'Xác nhận xóa?',
+      text: `Bạn có chắc muốn xóa mã ${code}?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
-      confirmButtonText: 'Xoa'
+      confirmButtonText: 'Xóa'
     });
     if (!result.isConfirmed) return;
 
     try {
       await api.delete(`/admin/vouchers/${id}`);
-      Swal.fire('Da xoa', 'Ma da duoc xoa thanh cong', 'success');
+      Swal.fire('Đã xóa', 'Mã đã được xóa thành công', 'success');
       fetchVouchers();
     } catch (err) {
-      Swal.fire('Loi', 'Khong the xoa ma nay', 'error');
+      Swal.fire(' lỗi', 'Không thể xóa mã này', 'error');
     }
   };
 
@@ -241,15 +270,37 @@ const VoucherManager = () => {
     ));
   }, [vouchers, searchTerm]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredVouchers.length / ITEMS_PER_PAGE));
+  const paginatedVouchers = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredVouchers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredVouchers, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
   const metrics = useMemo(() => ([
-    { title: 'Tong ma', value: vouchers.length, icon: <Ticket />, color: 'text-primary' },
-    { title: 'Dang hoat dong', value: vouchers.filter((v) => getStatus(v) === 'active').length, icon: <CheckCircle />, color: 'text-success' },
-    { title: 'Het han', value: vouchers.filter((v) => getStatus(v) === 'expired').length, icon: <AlertTriangle />, color: 'text-danger' },
-    { title: 'Tong luot dung', value: vouchers.reduce((acc, v) => acc + Number(v.usedCount ?? v.usageCount ?? 0), 0), icon: <BarChart3 />, color: 'text-info' }
+    { title: 'Tổng mã', value: vouchers.length, icon: <Ticket />, color: 'text-primary' },
+    { title: 'Đang hoạt động', value: vouchers.filter((v) => getStatus(v) === 'active').length, icon: <CheckCircle />, color: 'text-success' },
+    { title: 'Đã hết hạn', value: vouchers.filter((v) => getStatus(v) === 'expired').length, icon: <AlertTriangle />, color: 'text-danger' },
+    { title: 'Tổng lượt dùng', value: vouchers.reduce((acc, v) => acc + Number(v.usedCount ?? v.usageCount ?? 0), 0), icon: <BarChart3 />, color: 'text-info' }
   ]), [vouchers]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4">
+      <div className="admin-page-heading">
+        <div>
+          <span>ARENAHUB ADMIN</span>
+          <h1>Quản lý mã giảm giá</h1>
+          <p>Tạo, theo dõi và quản lý các chương trình ưu đãi dành cho người dùng.</p>
+        </div>
+      </div>
+
       <Row className="mb-4 g-3">
         {metrics.map((item) => (
           <Col md={3} sm={6} key={item.title}>
@@ -269,11 +320,14 @@ const VoucherManager = () => {
       <div className="d-flex flex-wrap justify-content-between gap-3 mb-4">
         <InputGroup style={{ maxWidth: 340 }}>
           <InputGroup.Text><Search size={18} /></InputGroup.Text>
-          <Form.Control placeholder="Tim ma hoac ten chuong trinh..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Form.Control placeholder="Tìm mã hoặc tên chương trình..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </InputGroup>
         <div className="d-flex flex-wrap gap-2">
           <Button variant="outline-success" onClick={openNewUserVoucherTemplate}>
             Mẫu khách hàng mới
+          </Button>
+          <Button variant="outline-success" onClick={openWeekendVoucherTemplate}>
+            Mẫu cuối tuần
           </Button>
           <Button variant="success" onClick={() => openModal()} className="d-inline-flex align-items-center gap-2">
             <Plus size={20} /> Tạo mã mới
@@ -301,8 +355,8 @@ const VoucherManager = () => {
               {loading ? (
                 <tr><td colSpan="9" className="text-center p-5"><Spinner animation="border" /></td></tr>
               ) : filteredVouchers.length === 0 ? (
-                <tr><td colSpan="9" className="text-center text-muted p-5">Chua co voucher phu hop</td></tr>
-              ) : filteredVouchers.map((voucher) => {
+                <tr><td colSpan="9" className="text-center text-muted p-5">Chưa có voucher phù hợp</td></tr>
+              ) : paginatedVouchers.map((voucher) => {
                 const status = getStatus(voucher);
                 const discountValue = voucher.discountValue ?? voucher.discountPercent ?? 0;
                 return (
@@ -325,6 +379,22 @@ const VoucherManager = () => {
             </AnimatePresence>
           </tbody>
         </Table>
+        {!loading && filteredVouchers.length > ITEMS_PER_PAGE && (
+          <Card.Footer className="bg-white border-0 pt-0">
+            <div className="admin-pagination-shell">
+              <span>Hiển thị {paginatedVouchers.length} / {filteredVouchers.length} mã giảm giá</span>
+              <Pagination className="admin-pagination">
+                <Pagination.Prev disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} />
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                  <Pagination.Item key={page} active={page === currentPage} onClick={() => setCurrentPage(page)}>
+                    {page}
+                  </Pagination.Item>
+                ))}
+                <Pagination.Next disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} />
+              </Pagination>
+            </div>
+          </Card.Footer>
+        )}
       </Card>
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" scrollable>
@@ -351,7 +421,7 @@ const VoucherManager = () => {
 
             <h6 className="fw-bold text-success mt-2 mb-3">Phạm vi áp dụng</h6>
             <Row>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Loại áp dụng</Form.Label><Form.Select value={formData.applyType} onChange={(e) => updateForm('applyType', e.target.value)}><option value="all">Toàn hệ thống</option><option value="new_user">Khách hàng mới</option><option value="field">Theo sân</option><option value="sport_type">Theo môn thể thao</option><option value="time_slot">Theo khung giờ</option></Form.Select></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label>Loại áp dụng</Form.Label><Form.Select value={formData.applyType} onChange={(e) => updateForm('applyType', e.target.value)}><option value="all">Toàn hệ thống</option><option value="new_user">Khách hàng mới</option><option value="field">Theo sân</option><option value="sport_type">Theo môn thể thao</option><option value="time_slot">Theo khung giờ</option><option value="weekend">Cuối tuần - thứ 7 & chủ nhật</option></Form.Select></Form.Group></Col>
               <Col md={6} className="d-flex align-items-end"><Form.Check className="mb-3" type="checkbox" label="Tự động tặng cho user mới" checked={formData.autoAssignNewUser} disabled={formData.applyType !== 'new_user'} onChange={(e) => updateForm('autoAssignNewUser', e.target.checked)} /></Col>
             </Row>
 

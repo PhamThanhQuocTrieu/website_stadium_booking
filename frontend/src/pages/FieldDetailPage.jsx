@@ -1,14 +1,15 @@
-// File: Frontend/src/pages/FieldDetailPage.jsx
+﻿// File: Frontend/src/pages/FieldDetailPage.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Container, Row, Col, Badge, Button, Spinner, ProgressBar } from 'react-bootstrap';
 import { 
   StarFill, GeoAltFill, ArrowRight, HeartFill, CheckCircleFill, 
-  ChatLeftDotsFill, Star, StarHalf
+  ChatLeftDotsFill, Star, StarHalf, Wifi, CarFrontFill, CupStraw,
+  DropletFill, Tools, BagCheckFill, PatchCheckFill
 } from 'react-bootstrap-icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
-import Swal from 'sweetalert2'; // 🌟 THÊM MỚI: Thư viện thông báo popup cao cấp
+import Swal from 'sweetalert2'; // ðŸŒŸ THÃŠM Má»šI: ThÆ° viá»‡n thÃ´ng bÃ¡o popup cao cáº¥p
 import { findPricingRule } from '../utils/pricing';
 import '../styles/FieldDetailPage.css'; 
 
@@ -16,21 +17,27 @@ const FieldDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [field, setField] = useState(null);
-  const [reviews, setReviews] = useState([]); // State lưu danh sách reviews thực tế từ CSDL Local
+  const [reviews, setReviews] = useState([]); // State lÆ°u danh sÃ¡ch reviews thá»±c táº¿ tá»« CSDL Local
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [mainImage, setMainImage] = useState('');
 
   const fetchFieldDetail = async () => {
     try {
-      // Gọi API Backend (API này trả về dạng: { field, reviews })
-      const res = await axios.get(`http://localhost:5000/api/fields/${id}`);
-      setField(res.data.field);
-      setReviews(res.data.reviews || []);
-      setMainImage(res.data.field?.image || '');
+      // Gá»i API Backend (API nÃ y tráº£ vá» dáº¡ng: { field, reviews })
+      const [fieldRes, reviewRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/fields/${id}`),
+        axios.get(`http://localhost:5000/api/reviews/field/${id}`).catch(() => ({ data: null }))
+      ]);
+      const fieldData = fieldRes.data.field || fieldRes.data;
+      const reviewData = Array.isArray(reviewRes.data) ? reviewRes.data : fieldRes.data.reviews || [];
+
+      setField(fieldData);
+      setReviews(reviewData);
+      setMainImage(fieldData?.image || '');
       setLoading(false);
     } catch (err) {
-      console.error("Lỗi lấy chi tiết sân:", err);
+      console.error("Loi lay chi tiet san:", err);
       setLoading(false);
     }
   };
@@ -39,16 +46,22 @@ const FieldDetailPage = () => {
     window.scrollTo(0, 0);
     fetchFieldDetail();
 
-    // Khởi tạo và ngắt socket an toàn trong vòng đời component
+    // Khá»Ÿi táº¡o vÃ  ngáº¯t socket an toÃ n trong vÃ²ng Ä‘á»i component
     const socket = io('http://localhost:5000');
     socket.on('field_updated', (data) => {
       if (data.id === id || data.data?._id === id) {
         fetchFieldDetail();
       }
     });
+    socket.on('review_updated', (data) => {
+      if (String(data?.fieldId || '') === String(id)) {
+        fetchFieldDetail();
+      }
+    });
 
     return () => {
       socket.off('field_updated');
+      socket.off('review_updated');
       socket.disconnect();
     };
   }, [id]);
@@ -73,6 +86,36 @@ const FieldDetailPage = () => {
     });
   };
 
+  const reviewCriteria = [
+    { key: 'fieldQuality', label: 'Chất lượng sân' },
+    { key: 'serviceQuality', label: 'Dịch vụ' },
+    { key: 'cleanliness', label: 'Vệ sinh' },
+    { key: 'priceReasonable', label: 'Giá cả' }
+  ];
+
+  const getServiceIcon = (serviceName = '') => {
+    const normalizedName = String(serviceName)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    if (normalizedName.includes('wifi') || normalizedName.includes('wi-fi') || normalizedName.includes('internet')) return Wifi;
+    if (normalizedName.includes('xe') || normalizedName.includes('bai dau') || normalizedName.includes('giu xe') || normalizedName.includes('parking')) return CarFrontFill;
+    if (normalizedName.includes('nuoc') || normalizedName.includes('uống') || normalizedName.includes('uong') || normalizedName.includes('drink')) return CupStraw;
+    if (normalizedName.includes('tam') || normalizedName.includes('voi sen') || normalizedName.includes('shower')) return DropletFill;
+    if (normalizedName.includes('vot') || normalizedName.includes('bong') || normalizedName.includes('thue') || normalizedName.includes('dung cu')) return Tools;
+    if (normalizedName.includes('tu do') || normalizedName.includes('locker') || normalizedName.includes('do dung')) return BagCheckFill;
+    return PatchCheckFill;
+  };
+
+  const getReviewAverage = (review) => {
+    const scores = reviewCriteria
+      .map((item) => Number(review?.[item.key] || 0))
+      .filter((value) => value >= 1 && value <= 5);
+    if (scores.length === 0) return 0;
+    return scores.reduce((sum, value) => sum + value, 0) / scores.length;
+  };
+
   // Tinh diem trung binh va phan bo sao theo cach cac he thong review nhu Google hien thi.
   const summaryRating = useMemo(() => {
     const distribution = [5, 4, 3, 2, 1].map((starValue) => ({
@@ -87,7 +130,7 @@ const FieldDetailPage = () => {
     
     let totalOverall = 0;
     reviews.forEach(r => {
-      const rating = Number(r.rating || 0);
+      const rating = getReviewAverage(r);
       const bucketRating = Math.min(5, Math.max(1, Math.round(rating)));
       totalOverall += rating;
 
@@ -123,13 +166,13 @@ const FieldDetailPage = () => {
     <div className="field-detail-scroll-page pb-5">
       <Container>
         
-        {/* --- KHỐI 1: HÌNH ẢNH & THÔNG TIN TỔNG QUAN --- */}
+        {/* --- KHá»I 1: HÃŒNH áº¢NH & THÃ”NG TIN Tá»”NG QUAN --- */}
         <div className="bg-white p-4 rounded-4 shadow-sm mb-4 border-0">
           <Row className="g-4">
             <Col lg={8}>
               <div className="main-image-container shadow-sm mb-3">
                 <img src={mainImage || 'https://via.placeholder.com/800x600?text=ArenaHub'} alt="Main Arena" className="main-image" />
-                <Badge bg="dark" className="image-label">PREMIUM ARENA • {summaryRating.overall} ★</Badge>
+                <Badge bg="dark" className="image-label">PREMIUM ARENA - {summaryRating.overall} sao</Badge>
               </div>
               <div className="thumbnail-list d-flex gap-3 overflow-auto pb-2 custom-scrollbar">
                 <div className={`thumbnail ${mainImage === field.image ? 'active' : ''}`} onClick={() => setMainImage(field.image)}>
@@ -146,7 +189,7 @@ const FieldDetailPage = () => {
             <Col lg={4}>
               <div className="ps-lg-2 h-100 d-flex flex-column">
                 <Badge bg="success" className="mb-2 bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill w-fit-content">
-                  {field.status === 'Active' ? 'ĐANG HOẠT ĐỘNG' : 'BẢO TRÌ'}
+                  {field.status === 'Active' ? 'DANG HOAT DONG' : 'BAO TRI'}
                 </Badge>
                 <h2 className="fw-bold text-dark mb-2">{field.fieldName}</h2>
                 <div className="d-flex align-items-center gap-2 mb-3 text-warning">
@@ -158,14 +201,14 @@ const FieldDetailPage = () => {
                 <div className="price-box p-3 rounded-4 border mb-4">
                   <div className="d-flex align-items-baseline gap-2">
                     <h3 className="fw-bold text-success mb-0">
-                      {currentPricingRule?.price ? `${Number(currentPricingRule.price).toLocaleString('vi-VN')}đ` : 'Liên hệ'}
+                      {currentPricingRule?.price ? `${Number(currentPricingRule.price).toLocaleString('vi-VN')}d` : 'Lien he'}
                     </h3>
-                    <span className="text-muted fw-bold">/giờ</span>
+                    <span className="text-muted fw-bold">/gio</span>
                   </div>
                   <small className="text-muted fst-italic">
                     {currentPricingRule
-                      ? `* ${currentPricingRule.ruleName || 'Khung giờ hiện tại'}: ${currentPricingRule.startTime} - ${currentPricingRule.endTime}`
-                      : '* Giá biến động linh hoạt theo ngày thường, cuối tuần và ngày lễ.'}
+                      ? `* ${currentPricingRule.ruleName || 'Khung gio hien tai'}: ${currentPricingRule.startTime} - ${currentPricingRule.endTime}`
+                      : '* Gia bien dong linh hoat theo ngay thuong, cuoi tuan va ngay le.'}
                   </small>
                 </div>
 
@@ -187,18 +230,18 @@ const FieldDetailPage = () => {
           </Row>
         </div>
 
-        {/* --- KHỐI 2: GIỚI THIỆU TÀI NGUYÊN --- */}
+        {/* --- KHá»I 2: GIá»šI THIá»†U TÃ€I NGUYÃŠN --- */}
         <div className="info-section-card bg-white p-4 rounded-4 shadow-sm mb-4">
           <h5 className="fw-bold mb-4 d-flex align-items-center gap-2 text-dark">
-            <div className="bg-success" style={{width:4, height:20, borderRadius:2}}></div> GIỚI THIỆU SÂN TẬP
+            <div className="bg-success" style={{width:4, height:20, borderRadius:2}}></div> GIỚI THIỆU TÀI NGUYÊN SÂN TẬP
           </h5>
           <div 
             className="rich-text-content"
-            dangerouslySetInnerHTML={{ __html: field.description || '<p>Thông tin giới thiệu đang được cập nhật...</p>' }}
+            dangerouslySetInnerHTML={{ __html: field.description || '<p>Thong tin gioi thieu dang duoc cap nhat...</p>' }}
           />
         </div>
 
-        {/* --- KHỐI 3: DỊCH VỤ TIỆN ÍCH --- */}
+        {/* --- KHá»I 3: Dá»ŠCH Vá»¤ TIá»†N ÃCH --- */}
         <div className="info-section-card bg-white p-4 rounded-4 shadow-sm mb-4">
           <h5 className="fw-bold mb-4 d-flex align-items-center gap-2 text-dark">
             <div className="bg-success" style={{width:4, height:20, borderRadius:2}}></div> CÁC DỊCH VỤ & TIỆN ÍCH TRONG KHU VỰC
@@ -207,10 +250,8 @@ const FieldDetailPage = () => {
             {field.services?.filter(s => s.isAvailable).map((s, i) => (
               <Col md={3} key={i}>
                 <div className="service-item p-3 rounded-4 border d-flex align-items-center gap-3 bg-light bg-opacity-50">
-                  <div className="icon-circle shadow-xs">
-                     {s.name.toLowerCase().includes('xe') ? '🚗' : 
-                      s.name.toLowerCase().includes('vợt') || s.name.toLowerCase().includes('bóng') ? '🎾' : 
-                      s.name.toLowerCase().includes('nước') ? '🥤' : '🚿'}
+                  <div className="service-icon-circle shadow-xs">
+                    {React.createElement(getServiceIcon(s.name), { size: 21 })}
                   </div>
                   <span className="fw-bold small text-secondary">{s.name}</span>
                   <CheckCircleFill className="ms-auto text-success" size={14} />
@@ -220,7 +261,7 @@ const FieldDetailPage = () => {
           </Row>
         </div>
 
-        {/* --- KHỐI 4: BẢNG GIÁ CHI TIẾT THEO MÔ HÌNH BÓC TÁCH --- */}
+        {/* --- KHá»I 4: Báº¢NG GIÃ CHI TIáº¾T THEO MÃ” HÃŒNH BÃ“C TÃCH --- */}
         <div className="info-section-card bg-white p-4 rounded-4 shadow-sm mb-4">
           <h5 className="fw-bold mb-4 d-flex align-items-center gap-2 text-dark">
             <div className="bg-success" style={{width:4, height:20, borderRadius:2}}></div> BẢNG GIÁ CHI TIẾT HỆ THỐNG
@@ -232,7 +273,7 @@ const FieldDetailPage = () => {
                   <th className="py-3 fw-medium">LOẠI NGÀY ÁP DỤNG</th>
                   <th className="py-3 fw-medium">TÊN KHUNG GIỜ</th>
                   <th className="py-3 fw-medium">KHUNG GIỜ HOẠT ĐỘNG</th>
-                  <th className="py-3 fw-medium">ĐƠN GIÁ NIÊM YẾT</th>
+                  <th className="py-3 fw-medium">ĐƠN GIÁ NIỀM YẾT</th>
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -240,11 +281,11 @@ const FieldDetailPage = () => {
                   field.pricingRules.map((rule, idx) => (
                     <tr key={idx} className="border-bottom">
                       <td className="fw-bold py-3 text-secondary">
-                        {rule.dayType === 'Weekday' ? 'Ngày thường (T2-T6)' : rule.dayType === 'Weekend' ? 'Cuối tuần (T7-CN)' : 'Ngày Lễ Tết'}
+                        {rule.dayType === 'Weekday' ? 'Ngay thuong (T2-T6)' : rule.dayType === 'Weekend' ? 'Cuoi tuan (T7-CN)' : 'Ngay Le Tet'}
                       </td>
                       <td className="text-muted small fw-bold">{rule.ruleName}</td>
                       <td className="fw-bold text-primary">{rule.startTime} - {rule.endTime}</td>
-                      <td className="fw-bold text-success">{rule.price?.toLocaleString()}đ/giờ</td>
+                      <td className="fw-bold text-success">{rule.price?.toLocaleString()}d/gio</td>
                     </tr>
                   ))
                 ) : (
@@ -255,58 +296,72 @@ const FieldDetailPage = () => {
           </div>
         </div>
 
-        {/* --- KHỐI 5: TỔNG QUAN ĐÁNH GIÁ & RENDER ĐÁNH GIÁ THỰC TẾ --- */}
+        {/* --- KHá»I 5: Tá»”NG QUAN ÄÃNH GIÃ & RENDER ÄÃNH GIÃ THá»°C Táº¾ --- */}
         <div className="info-section-card bg-white p-4 rounded-4 shadow-sm mb-4">
-          <h5 className="fw-bold mb-4 text-dark">PHÂN HỆ ĐÁNH GIÁ TỪ KHÁCH HÀNG</h5>
-          <Row className="align-items-center mb-5">
-            <Col md={3} className="text-center border-end py-3">
-              <div className="display-3 fw-bold text-success">{summaryRating.overall}</div>
-              <div className="text-warning mb-2 rating-stars">{renderStars(Number(summaryRating.overall), 18)}</div>
-              <span className="text-muted small fw-bold">({summaryRating.count} đánh giá)</span>
-            </Col>
-            <Col md={9} className="ps-md-5">
-              {summaryRating.distribution.map((item) => (
-                <div key={item.star} className="mb-2">
-                  <div className="d-flex justify-content-between small fw-bold mb-1">
-                    <span className="text-secondary">{item.star} sao</span>
-                    <span className="text-success">{item.count}</span>
-                  </div>
-                  <ProgressBar now={item.percent} variant="success" style={{ height: '6px' }} />
-                </div>
-              ))}
-            </Col>
-          </Row>
+          <h5 className="fw-bold mb-4 text-dark">Đánh giá từ khách hàng</h5>
+          <div className="review-distribution mb-4">
+            {summaryRating.distribution.map((item) => (
+              <div key={item.star} className="review-distribution-row">
+                <span className="review-distribution-label">{item.star} sao</span>
+                <ProgressBar now={item.percent} className="review-distribution-bar" />
+                <span className="review-distribution-count">{item.count}</span>
+              </div>
+            ))}
+          </div>
 
-          {/* RENDER DANH SÁCH CÁC BÀI BÌNH LUẬN LẤY TỪ MONGODB LOCAL */}
-          <div className="reviews-list-container mb-5" style={{ maxHeight: '380px', overflowY: 'auto', paddingRight: '5px' }}>
+          {/* RENDER DANH SÃCH CÃC BÃ€I BÃŒNH LUáº¬N Láº¤Y Tá»ª MONGODB LOCAL */}
+          <div className="reviews-list-container mb-5">
             {reviews.length === 0 ? (
-              <p className="text-muted text-center py-4 fst-italic">Sân bóng chưa có lượt đánh giá nào. Hãy để lại cảm nhận đầu tiên của bạn nhé!</p>
+              <p className="text-muted text-center py-4 fst-italic">Sân bóng chưa có lượt đánh giá nào. Hãy để lại cảm nhận đầu tiên của bạn nhe!</p>
             ) : (
-              reviews.map((r, idx) => (
-                <div key={idx} className="p-4 rounded-4 bg-light d-flex gap-4 align-items-start mb-3 border-0 shadow-xs">
-                  <div className="avatar-circle text-white fw-bold d-flex align-items-center justify-content-center rounded-circle" style={{ backgroundColor: '#198754', width: 45, height: 45, flexShrink: 0 }}>
-                    {(r.user?.fullName || r.name || 'AH').substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-grow-1">
-                    <div className="d-flex justify-content-between mb-2">
-                      <h6 className="fw-bold mb-0 text-dark">{r.user?.fullName || r.name || 'Người dùng ArenaHub'}</h6>
-                      <div className="rating-stars text-warning">{renderStars(Number(r.rating || 0), 14)}</div>
+              reviews.map((r, idx) => {
+                const average = getReviewAverage(r);
+                const reviewerName = r.user?.fullName || r.name || 'Người dùng ArenaHub';
+                const reviewerInitials = reviewerName.substring(0, 2).toUpperCase();
+
+                return (
+                  <div key={r._id || idx} className="review-detail-card">
+                    <div className="review-detail-header">
+                      <div className="d-flex align-items-start gap-3">
+                        <div className="review-avatar">
+                          {r.user?.avatar ? <img src={r.user.avatar} alt={reviewerName} /> : reviewerInitials}
+                        </div>
+                        <div>
+                          <h6 className="reviewer-name">{reviewerName}</h6>
+                          <div className="review-date">{new Date(r.createdAt).toLocaleDateString('vi-VN')}</div>
+                        </div>
+                      </div>
+                      <div className="rating-stars review-card-stars">{renderStars(average, 20)}</div>
                     </div>
-                    <p className="text-muted small mb-2">{r.comment}</p>
-                    <div className="text-muted fw-bold" style={{ fontSize: '10px' }}>
-                      📅 Ngày gửi: {new Date(r.createdAt).toLocaleDateString('vi-VN')}
+
+                    <div className="review-criteria-list">
+                      {reviewCriteria.map((item) => {
+                        const value = Number(r[item.key] || 0);
+                        if (!value) return null;
+                        return <span key={item.key} className="review-criteria-chip">{item.label}: {value}/5</span>;
+                      })}
                     </div>
+
+                    <p className="review-comment">{r.comment}</p>
+
+                    {Array.isArray(r.images) && r.images.length > 0 && (
+                      <div className="review-images">
+                        {r.images.map((image, imageIndex) => (
+                          <img key={`${image}-${imageIndex}`} src={image} alt={`Ảnh đánh giá ${imageIndex + 1}`} />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
-          {/* FORM TIẾP NHẬN PHẢN HỒI ĐÁNH GIÁ MỚI */}
+          {/* FORM TIáº¾P NHáº¬N PHáº¢N Há»’I ÄÃNH GIÃ Má»šI */}
           <div className="p-4 rounded-4 border bg-white shadow-sm mt-5">
              <h5 className="fw-bold mb-2 text-dark"><ChatLeftDotsFill className="me-2 text-success"/> Đánh giá sau khi đặt sân</h5>
              <p className="text-muted small mb-3">
-               Để đảm bảo đánh giá thật, bạn chỉ có thể đánh giá từ lịch sử đặt sân khi booking đã hoàn thành.
+               Để đảm bảo đánh giá thực, bạn chỉ có thể đánh giá từ lịch sử đặt sân khi booking đã hoàn thành.
              </p>
              <Button
                variant="success"

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, Col, Form, Row, Spinner, Table } from 'react-bootstrap';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Badge, Button, Card, Col, Form, Pagination, Row, Spinner, Table } from 'react-bootstrap';
 import { BellRing, RefreshCcw, Send } from 'lucide-react';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
 import { notificationTypeLabels } from '../../utils/notificationUtils';
+import '../../styles/admin/admin-common.css';
 import '../../styles/admin/notificationmanager.css';
 
 const initialForm = {
@@ -13,12 +14,25 @@ const initialForm = {
   type: 'system'
 };
 
+const ITEMS_PER_PAGE = 8;
+
 const AdminNotificationManager = () => {
   const [formData, setFormData] = useState(initialForm);
   const [users, setUsers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(notifications.length / ITEMS_PER_PAGE));
+  const paginatedNotifications = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return notifications.slice(start, start + ITEMS_PER_PAGE);
+  }, [notifications, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   const fetchUsers = async () => {
     try {
@@ -78,11 +92,11 @@ const AdminNotificationManager = () => {
 
   return (
     <div className="admin-notification-page">
-      <div className="admin-notification-header">
+      <div className="admin-page-heading">
         <div>
           <span>ARENAHUB ADMIN</span>
           <h1>Quản lý thông báo</h1>
-          <p>Gửi thông báo hệ thống hoặc khuyến mãi đến người dùng ArenaHub.</p>
+          <p>Gửi thông báo hệ thống, ưu đãi và theo dõi lịch sử gửi đến người dùng.</p>
         </div>
         <Button variant="outline-success" onClick={fetchHistory}>
           <RefreshCcw size={17} /> Làm mới
@@ -172,7 +186,7 @@ const AdminNotificationManager = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {notifications.map((notification) => (
+                      {paginatedNotifications.map((notification) => (
                         <tr key={notification._id}>
                           <td>
                             <strong>{notification.user?.fullName || 'Người dùng'}</strong>
@@ -198,6 +212,20 @@ const AdminNotificationManager = () => {
                       )}
                     </tbody>
                   </Table>
+                  {notifications.length > ITEMS_PER_PAGE && (
+                    <div className="admin-pagination-shell">
+                      <span>Hiển thị {paginatedNotifications.length} / {notifications.length} thông báo</span>
+                      <Pagination className="admin-pagination">
+                        <Pagination.Prev disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} />
+                        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                          <Pagination.Item key={page} active={page === currentPage} onClick={() => setCurrentPage(page)}>
+                            {page}
+                          </Pagination.Item>
+                        ))}
+                        <Pagination.Next disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} />
+                      </Pagination>
+                    </div>
+                  )}
                 </div>
               )}
             </Card.Body>

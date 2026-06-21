@@ -32,7 +32,7 @@ const getServices = async (req, res) => {
 // 2. Thêm mới dịch vụ
 const createService = async (req, res) => {
     try {
-        const { name, price, description, stock, image, appliedFields } = req.body;
+        const { name, price, description, stock, image, appliedFields, inventoryType } = req.body;
         
         if (!name || price === undefined) {
             return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin bắt buộc (Tên, Giá)!" });
@@ -42,7 +42,7 @@ const createService = async (req, res) => {
         const exists = await Service.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
         if (exists) return res.status(400).json({ message: "Dịch vụ đã tồn tại!" });
 
-        const service = await Service.create({ name, price, description, stock, image, appliedFields });
+        const service = await Service.create({ name, price, description, stock, image, appliedFields, inventoryType });
         
         // Phát sự kiện Real-time qua Socket.io
         const io = req.app.get('io');

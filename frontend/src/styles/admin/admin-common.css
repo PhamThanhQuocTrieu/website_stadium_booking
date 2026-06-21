@@ -1,0 +1,99 @@
+.admin-page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.admin-page-heading span {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #059669;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.admin-page-heading h1,
+.admin-page-heading h4 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.05;
+}
+
+.admin-page-heading p {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 1.04rem;
+}
+
+.admin-pagination-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0 0;
+}
+
+.admin-pagination-shell > span {
+  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.admin-pagination {
+  margin: 0;
+}
+
+.admin-pagination .page-link {
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f5132;
+  border-color: #dbe7e2;
+  border-radius: 10px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.admin-pagination .page-item {
+  margin: 0 3px;
+}
+
+.admin-pagination .page-item.active .page-link {
+  color: #ffffff;
+  border-color: #0f5132;
+  background: #0f5132;
+}
+
+.admin-pagination .page-item.disabled .page-link {
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+@media (max-width: 767px) {
+  .admin-page-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-page-heading h1 {
+    font-size: 2rem;
+  }
+
+  .admin-page-heading h4 {
+    font-size: 2rem;
+  }
+
+  .admin-pagination-shell {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

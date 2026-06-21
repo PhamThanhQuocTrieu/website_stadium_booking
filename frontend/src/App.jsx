@@ -18,6 +18,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import ContactPage from './pages/ContactPage';
 import NotificationsPage from './pages/NotificationsPage';
 import MyVouchersPage from './pages/MyVouchersPage';
+import UserChatBox from './components/chat/UserChatBox';
 
 import AdminLayout from './pages/Admin/AdminLayout';
 import Dashboard from './pages/Admin/Dashboard';
@@ -30,11 +31,13 @@ import BookingManager from './pages/Admin/BookingManager';
 import UserManager from './pages/Admin/UserManager';
 import AdminProfile from './pages/Admin/Profile';
 import VoucherManager from './pages/Admin/VoucherManager';
+import BannerManager from './pages/Admin/BannerManager';
 import ServiceManager from './pages/Admin/ServiceManager';
 import ReviewManager from './pages/Admin/ReviewManager';
 import AdminPolicyManager from './pages/Admin/AdminPolicyManager';
 import ContactManager from './pages/Admin/ContactManager';
 import AdminNotificationManager from './pages/Admin/AdminNotificationManager';
+import ChatManager from './pages/Admin/ChatManager';
 
 import './App.css';
 
@@ -105,17 +108,20 @@ function App() {
             <Route path="users" element={<UserManager />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="vouchers" element={<VoucherManager />} />
+            <Route path="banners" element={<BannerManager />} />
             <Route path="services" element={<ServiceManager />} />
             <Route path="reviews" element={<ReviewManager />} />
             <Route path="policies" element={<AdminPolicyManager />} />
             <Route path="contacts" element={<ContactManager />} />
             <Route path="notifications" element={<AdminNotificationManager />} />
+            <Route path="chats" element={<ChatManager />} />
             <Route path="payments" element={<BookingManager />} />
             <Route path="reports" element={<div>Bao cao doanh thu</div>} />
           </Route>
         </Routes>
       </main>
 
+      {!isAdminPage && <UserChatBox />}
       {showHeaderFooter && <Footer />}
     </div>
   );

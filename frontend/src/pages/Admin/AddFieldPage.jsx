@@ -26,7 +26,6 @@ const AddFieldPage = () => {
         services: [
             { name: 'Wifi miễn phí', isAvailable: false },
             { name: 'Bãi đậu xe', isAvailable: false },
-            { name: 'Canteen', isAvailable: false },
             { name: 'Nước uống', isAvailable: false }
         ],
         pricingRules: [

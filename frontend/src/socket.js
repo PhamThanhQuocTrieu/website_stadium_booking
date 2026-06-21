@@ -14,6 +14,10 @@ export const joinSocketRoom = (currentUser) => {
     userId: currentUser._id,
     role: currentUser.role
   });
+  socket.emit('join_chat', {
+    userId: currentUser._id,
+    role: currentUser.role
+  });
 };
 
 export default socket;

@@ -61,17 +61,30 @@ const PaymentPage = () => {
         const bookingRes = await axios.get(`http://localhost:5000/api/bookings/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const fieldId = bookingRes.data?.fieldId?._id || bookingRes.data?.field?._id || bookingRes.data?.field;
+        const bookingData = bookingRes.data;
+        const field = bookingData?.fieldId || bookingData?.field || {};
+        const fieldId = field?._id || field;
         const servicesRes = fieldId
           ? await axios.get(`http://localhost:5000/api/services?fieldId=${fieldId}`)
           : { data: [] };
-        setBookingDetail(bookingRes.data);
-        if (Array.isArray(bookingRes.data?.services)) {
-          setSelectedServices(bookingRes.data.services);
+        setBookingDetail(bookingData);
+        if (Array.isArray(bookingData?.services)) {
+          setSelectedServices(bookingData.services);
         }
         setServices(servicesRes.data);
         try {
-          const voucherRes = await api.get('/user/vouchers');
+          const slots = bookingData?.slots || [];
+          const voucherRes = await api.get('/user/vouchers', {
+            params: {
+              includePublic: true,
+              fieldId,
+              sportType: field?.type,
+              bookingDate: bookingData?.date,
+              startTime: bookingData?.startTime || slots[0],
+              endTime: bookingData?.endTime || (slots.length > 0 ? addMinutesToTime(slots[slots.length - 1], 30) : undefined),
+              originalAmount: totalAmount || bookingData?.originalAmount || bookingData?.totalPrice || 0
+            }
+          });
           setMyVouchers(Array.isArray(voucherRes.data) ? voucherRes.data : []);
         } catch (voucherErr) {
           setMyVouchers([]);
@@ -87,14 +100,23 @@ const PaymentPage = () => {
   }, [bookingId, navigate]);
 
   // --- LOGIC XỬ LÝ DỊCH VỤ ---
+  const getSelectedServiceQuantity = (serviceId) => (
+    selectedServices.find(item => item.serviceId === serviceId)?.quantity || 0
+  );
+
   const handleAddService = (service) => {
     setAppliedVoucher(null);
+    const selectedQuantity = getSelectedServiceQuantity(service._id);
+    if (selectedQuantity >= Number(service.stock || 0)) {
+      Swal.fire('Da het so luong', `${service.name} hien khong con du so luong.`, 'warning');
+      return;
+    }
     setSelectedServices(prev => {
       const exists = prev.find(item => item.serviceId === service._id);
       if (exists) {
         return prev.map(item => item.serviceId === service._id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { serviceId: service._id, name: service.name, price: service.price, quantity: 1, image: service.image }];
+      return [...prev, { serviceId: service._id, name: service.name, price: service.price, quantity: 1, image: service.image, inventoryType: service.inventoryType || 'rental' }];
     });
   };
 
@@ -105,6 +127,14 @@ const PaymentPage = () => {
 
   const updateServiceQuantity = (serviceId, delta) => {
     setAppliedVoucher(null);
+    if (delta > 0) {
+      const service = services.find(item => item._id === serviceId);
+      const selectedQuantity = getSelectedServiceQuantity(serviceId);
+      if (service && selectedQuantity >= Number(service.stock || 0)) {
+        Swal.fire('Da het so luong', `${service.name} hien khong con du so luong.`, 'warning');
+        return;
+      }
+    }
     setSelectedServices(prev => (
       prev
         .map(item => (
@@ -463,18 +493,26 @@ const PaymentPage = () => {
               <Col xs={12}>
                 <div className="text-center text-muted py-4 small">Sân này chưa có dịch vụ đi kèm khả dụng.</div>
               </Col>
-            ) : services.map(s => (
+            ) : services.map(s => {
+              const selectedQuantity = getSelectedServiceQuantity(s._id);
+              const remainingStock = Math.max(0, Number(s.stock || 0) - selectedQuantity);
+              const isOutOfStock = remainingStock <= 0;
+              return (
               <Col md={6} key={s._id} className="mb-3">
-                <div className="d-flex p-2 border rounded align-items-center">
+                <div className="d-flex p-2 border rounded align-items-center" style={{ opacity: isOutOfStock ? 0.45 : 1 }}>
                   <img src={s.image} style={{ width: 50, height: 50 }} alt={s.name} />
                   <div className="ms-3 flex-grow-1">
                     <div className="fw-bold">{s.name}</div>
-                    <small className="text-muted">{s.price.toLocaleString()} đ</small>
+                    <small className="text-muted d-block">{s.price.toLocaleString()} đ</small>
+                    <small className={isOutOfStock ? 'text-danger fw-bold' : 'text-success'}>
+                      {isOutOfStock ? 'Het so luong' : `Con ${remainingStock}`}
+                    </small>
                   </div>
-                  <Button size="sm" variant="success" onClick={() => handleAddService(s)}>+</Button>
+                  <Button size="sm" variant="success" disabled={isOutOfStock} onClick={() => handleAddService(s)}>+</Button>
                 </div>
               </Col>
-            ))}
+              );
+            })}
           </Row>
         </Modal.Body>
       </Modal>

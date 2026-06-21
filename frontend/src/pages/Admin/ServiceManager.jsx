@@ -8,6 +8,11 @@ import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:5000');
 
+const serviceTypeLabel = {
+    rental: 'Cho thuê',
+    consumable: 'Tiêu hao'
+};
+
 const ServiceManager = () => {
     const [services, setServices] = useState([]);
     const [fields, setFields] = useState([]); 
@@ -20,7 +25,8 @@ const ServiceManager = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
 
-    const [formData, setFormData] = useState({ name: '', price: '', description: '', stock: 0, image: '', isActive: true, appliedFields: [] });
+    const emptyForm = { name: '', price: '', description: '', stock: 0, image: '', inventoryType: 'rental', isActive: true, appliedFields: [] };
+    const [formData, setFormData] = useState(emptyForm);
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
@@ -68,14 +74,14 @@ const ServiceManager = () => {
 
     const handleOpenModal = (service = null) => {
         setEditingService(service);
-        setFormData(service || { name: '', price: '', description: '', stock: 0, image: '', isActive: true, appliedFields: [] });
+        setFormData(service ? { ...emptyForm, ...service, inventoryType: service.inventoryType || 'rental' } : emptyForm);
         setShowModal(true);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setUploading(true);
-        const finalData = { ...formData, isActive: parseInt(formData.stock) > 0 };
+        const finalData = { ...formData, stock: Number(formData.stock || 0), price: Number(formData.price || 0) };
 
         try {
             if (editingService) {
@@ -139,13 +145,14 @@ const ServiceManager = () => {
                      filtered.length === 0 ? <div className="text-center py-5"><Inbox size={40} className="text-muted"/> <p>Không tìm thấy dịch vụ!</p></div> :
                     <>
                         <Table hover responsive className="align-middle mb-0">
-                            <thead className="bg-light"><tr><th className="ps-4">Ảnh</th><th>Tên dịch vụ</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th className="text-end pe-4">Thao tác</th></tr></thead>
+                            <thead className="bg-light"><tr><th className="ps-4">Ảnh</th><th>Tên dịch vụ</th><th>Loại</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th className="text-end pe-4">Thao tác</th></tr></thead>
                             <tbody>
                                 <AnimatePresence>
                                     {currentItems.map(s => (
                                         <motion.tr key={s._id} initial={{opacity:0}} animate={{opacity:1}}>
                                             <td className="ps-4"><img src={s.image} className="rounded" style={{width:45, height:45, objectFit:'cover'}} alt="thumb"/></td>
                                             <td className="fw-semibold">{s.name}</td>
+                                            <td><Badge bg={s.inventoryType === 'consumable' ? 'warning' : 'info'}>{serviceTypeLabel[s.inventoryType || 'rental']}</Badge></td>
                                             <td>{Number(s.price).toLocaleString()}đ</td>
                                             <td>{s.stock}</td>
                                             <td><Badge bg={s.isActive ? 'success' : 'danger'}>{s.isActive ? 'Active' : 'Inactive'}</Badge></td>
@@ -181,6 +188,13 @@ const ServiceManager = () => {
                         </div>
                         <Form.Group className="mb-3"><Form.Control placeholder="Tên dịch vụ" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></Form.Group>
                         <Form.Group className="mb-3"><Form.Control placeholder="Mô tả" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">Loại tồn kho</Form.Label>
+                            <Form.Select value={formData.inventoryType || 'rental'} onChange={e => setFormData({...formData, inventoryType: e.target.value})}>
+                                <option value="rental">Cho thuê - khách trả lại sau giờ chơi</option>
+                                <option value="consumable">Tiêu hao - dùng xong là hết</option>
+                            </Form.Select>
+                        </Form.Group>
                         
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-bold">Chọn sân áp dụng:</Form.Label>

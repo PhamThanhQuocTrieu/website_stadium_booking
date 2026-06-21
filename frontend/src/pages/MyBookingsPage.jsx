@@ -1,13 +1,30 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, Col, Container, Form, Modal, Row, Spinner } from 'react-bootstrap';
-import { CalendarCheck, CreditCard, Eye, Home, MapPin, MessageSquare, RefreshCw, RotateCcw, Search, XCircle } from 'lucide-react';
+import {
+  CalendarCheck,
+  Camera,
+  CreditCard,
+  Eye,
+  Home,
+  MapPin,
+  MessageSquare,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Send,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  X,
+  XCircle
+} from 'lucide-react';
 import { Star, StarFill } from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import axiosClient from '../api/axiosClient';
 import '../styles/MyBookingsPage.css';
 
-const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')} d`;
 const normalize = (value) => String(value || '').trim().toLowerCase();
 const text = (value, fallback = '-') => value || fallback;
 
@@ -31,13 +48,9 @@ const bookingStatusMap = {
   cancelled: 'Đã hủy',
   canceled: 'Đã hủy',
   refunded: 'Đã hoàn tiền',
+  'da hoan thanh': 'Hoàn thành',
+  'hoan thanh': 'Hoàn thành',
   'da hoan thanh': 'Hoàn thành'
-};
-
-const mapStatusLabel = (type, status) => {
-  const key = normalize(status);
-  const source = type === 'paymentStatus' ? paymentStatusMap : bookingStatusMap;
-  return source[key] || source[key.replace(/\s+/g, '_')] || 'Không xác định';
 };
 
 const statusMeta = {
@@ -51,7 +64,7 @@ const statusMeta = {
 };
 
 const filters = [
-  { key: 'all', label: 'Tất cả' },
+  { key: 'all', label: 'Tất cả ' },
   { key: 'pending', label: 'Chờ xử lý' },
   { key: 'confirmed', label: 'Đã xác nhận' },
   { key: 'playing', label: 'Đang diễn ra' },
@@ -60,6 +73,45 @@ const filters = [
 ];
 
 const BOOKINGS_PER_PAGE = 4;
+
+const defaultReviewForm = {
+  fieldQuality: 0,
+  serviceQuality: 0,
+  cleanliness: 0,
+  priceReasonable: 0,
+  comment: '',
+  wouldRecommend: true,
+  images: [],
+  imagePreviews: []
+};
+
+const reviewCriteria = [
+  { key: 'fieldQuality', label: 'Chất lượng sân' },
+  { key: 'serviceQuality', label: 'ịch vụ / Thái độ phục vụ' },
+  { key: 'cleanliness', label: 'Vệ sinh sân' },
+  { key: 'priceReasonable', label: 'Giá cả có hợp lý không' }
+];
+
+const calculateReviewAverage = (form) => {
+  const total = reviewCriteria.reduce((sum, item) => sum + Number(form[item.key] || 0), 0);
+  return Math.round(total / reviewCriteria.length);
+};
+
+const uploadReviewImages = async (files = []) => {
+  const uploads = files.map(async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'arenahub_preset');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dp8zttoxz/image/upload', {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) throw new Error('Upload image failed');
+    const data = await res.json();
+    return data.secure_url;
+  });
+  return Promise.all(uploads);
+};
 
 const getField = (booking) => booking?.fieldId || booking?.field || {};
 const getFieldId = (booking) => {
@@ -81,15 +133,22 @@ const formatDateTime = (value) => {
   return parsed.toLocaleString('vi-VN');
 };
 
+const mapStatusLabel = (type, status) => {
+  const key = normalize(status);
+  const source = type === 'paymentStatus' ? paymentStatusMap : bookingStatusMap;
+  return source[key] || source[key.replace(/\s+/g, '_')] || 'Không xác định';
+};
+
 const getPaymentStatus = (booking) => {
   const raw = normalize(booking?.payment?.status || booking?.paymentStatus);
-  if (raw === 'pENDING'.toLowerCase()) return 'pending';
   if (raw === 'unpaid') return 'pending';
   if (raw === 'paid' || raw === 'success') return 'success';
   if (raw === 'failed' || raw === 'cancelled') return 'failed';
   if (raw === 'refunded') return 'refunded';
   return raw || 'pending';
 };
+
+const isPaid = (booking) => ['paid', 'success'].includes(getPaymentStatus(booking));
 
 const getBookingStatus = (booking) => {
   const raw = normalize(booking?.bookingStatus || booking?.status);
@@ -98,7 +157,7 @@ const getBookingStatus = (booking) => {
   const now = Date.now();
 
   if (raw === 'pending_payment') return 'pending';
-  if (raw === 'completed' || raw === 'da hoan thanh') return 'completed';
+  if (raw === 'completed' || raw === 'da hoan thanh' || raw === 'hoan thanh') return 'completed';
   if (raw === 'cancel_requested') return 'cancel_requested';
   if (raw === 'cancelled' || raw === 'canceled') return 'cancelled';
   if (raw === 'refunded') return 'refunded';
@@ -109,9 +168,6 @@ const getBookingStatus = (booking) => {
   }
   return raw || 'pending';
 };
-
-const isPaymentPending = (booking) => getPaymentStatus(booking) === 'pending';
-const isPaid = (booking) => ['paid', 'success'].includes(getPaymentStatus(booking));
 
 const getServiceTotal = (booking) => {
   const services = Array.isArray(booking?.services) ? booking.services : [];
@@ -125,11 +181,11 @@ const getBreakdown = (booking) => {
   const fee = Number(booking?.transactionFee || 0);
   const subtotal = Math.max(0, Number(booking?.subtotal || total - serviceTotal + discount - fee));
   return [
-    ['Tiền sân', subtotal],
-    ['Tiền dịch vụ', serviceTotal],
-    ['Giảm giá', discount ? -discount : 0],
-    ['Phí giao dịch', fee],
-    ['Tổng cộng', total]
+    ['Tien san', subtotal],
+    ['Tien dich vu', serviceTotal],
+    ['Giam gia', discount ? -discount : 0],
+    ['Phi giao dich', fee],
+    ['Tong cong', total]
   ];
 };
 
@@ -143,7 +199,7 @@ const MyBookingsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [detailBooking, setDetailBooking] = useState(null);
   const [reviewBooking, setReviewBooking] = useState(null);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [reviewForm, setReviewForm] = useState(defaultReviewForm);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchBookings = async () => {
@@ -163,16 +219,14 @@ const MyBookingsPage = () => {
     fetchBookings();
   }, []);
 
-  const stats = useMemo(() => {
-    return bookings.reduce((acc, booking) => {
-      const status = getBookingStatus(booking);
-      acc.total += 1;
-      if (status === 'confirmed') acc.confirmed += 1;
-      if (status === 'completed') acc.completed += 1;
-      if (status === 'cancelled') acc.cancelled += 1;
-      return acc;
-    }, { total: 0, confirmed: 0, completed: 0, cancelled: 0 });
-  }, [bookings]);
+  const stats = useMemo(() => bookings.reduce((acc, booking) => {
+    const status = getBookingStatus(booking);
+    acc.total += 1;
+    if (status === 'confirmed') acc.confirmed += 1;
+    if (status === 'completed') acc.completed += 1;
+    if (status === 'cancelled') acc.cancelled += 1;
+    return acc;
+  }, { total: 0, confirmed: 0, completed: 0, cancelled: 0 }), [bookings]);
 
   const visibleBookings = useMemo(() => {
     const keyword = normalize(searchTerm);
@@ -196,7 +250,6 @@ const MyBookingsPage = () => {
   }, [bookings, activeFilter, searchTerm]);
 
   const totalPages = Math.max(Math.ceil(visibleBookings.length / BOOKINGS_PER_PAGE), 1);
-
   const paginatedBookings = useMemo(() => {
     const startIndex = (currentPage - 1) * BOOKINGS_PER_PAGE;
     return visibleBookings.slice(startIndex, startIndex + BOOKINGS_PER_PAGE);
@@ -207,9 +260,7 @@ const MyBookingsPage = () => {
   }, [activeFilter, searchTerm]);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
+    if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
   const updateBookingInList = (bookingId, data) => {
@@ -234,14 +285,14 @@ const MyBookingsPage = () => {
   const handleRequestCancel = async (booking) => {
     const paid = isPaid(booking);
     const result = await Swal.fire({
-      title: paid ? 'Yêu cầu hủy đặt sân?' : 'Hủy đặt sân?',
+      title: paid ? 'Yeu cau huy dat san?' : 'Huy dat san?',
       text: paid
-        ? 'Đơn đã thanh toán sẽ chuyển sang trạng thái chờ admin xác nhận hủy.'
-        : 'Đơn chưa thanh toán sẽ được hủy trực tiếp.',
+        ? 'Don da thanh toan se chuyen sang trang thai cho admin xac nhan huy.'
+        : 'Don chua thanh toan se duoc huy truc tiep.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: paid ? 'Gửi yêu cầu hủy' : 'Hủy đặt sân',
-      cancelButtonText: 'Đóng',
+      confirmButtonText: paid ? 'Gui yeu cau huy' : 'Huy dat san',
+      cancelButtonText: 'Dong',
       confirmButtonColor: '#dc2626'
     });
 
@@ -252,7 +303,7 @@ const MyBookingsPage = () => {
       updateBookingInList(booking._id, data);
       Swal.fire({
         icon: 'success',
-        title: paid ? 'Đã gửi yêu cầu hủy' : 'Đã hủy booking',
+        title: paid ? 'Da gui yeu cau huy' : 'Da huy booking',
         timer: 1500,
         showConfirmButton: false
       });
@@ -261,23 +312,67 @@ const MyBookingsPage = () => {
     }
   };
 
+  const openReviewModal = (booking) => {
+    setReviewForm(defaultReviewForm);
+    setReviewBooking(booking);
+  };
+
+  const closeReviewModal = () => {
+    setReviewBooking(null);
+    setReviewForm(defaultReviewForm);
+  };
+
+  const handleReviewImageChange = (event) => {
+    const files = Array.from(event.target.files || []).slice(0, 3 - reviewForm.imagePreviews.length);
+    if (!files.length) return;
+    const imagePreviews = files.map((file) => ({ name: file.name, file, url: URL.createObjectURL(file) }));
+    setReviewForm((prev) => ({
+      ...prev,
+      imagePreviews: [...prev.imagePreviews, ...imagePreviews].slice(0, 3)
+    }));
+    event.target.value = '';
+  };
+
+  const removeReviewImage = (index) => {
+    setReviewForm((prev) => ({
+      ...prev,
+      imagePreviews: prev.imagePreviews.filter((_, itemIndex) => itemIndex !== index)
+    }));
+  };
+
   const handleSubmitReview = async (event) => {
     event.preventDefault();
     if (!reviewBooking || submitting) return;
-    if (!String(reviewForm.comment || '').trim()) {
-      Swal.fire('Thiếu bình luận', 'Vui lòng nhập nội dung đánh giá.', 'warning');
+
+    const missingRating = reviewCriteria.some((item) => Number(reviewForm[item.key]) < 1 || Number(reviewForm[item.key]) > 5);
+    if (missingRating) {
+      Swal.fire('Thiếu tiêu chí', 'Vui lòng chọn đầy đủ điểm đánh giá từ 1 đến 5 sao.', 'warning');
+      return;
+    }
+
+    const normalizedComment = String(reviewForm.comment || '').trim();
+    if (normalizedComment.length > 500) {
+      Swal.fire(' Bình luận quá dài', ' Bình luận không được vượt quá 500 ký tự.', 'warning');
       return;
     }
 
     setSubmitting(true);
     try {
+      const uploadedImages = await uploadReviewImages(reviewForm.imagePreviews.map((image) => image.file).filter(Boolean));
+
       await axiosClient.post('/reviews', {
         bookingId: reviewBooking._id,
         fieldId: getFieldId(reviewBooking),
-        rating: reviewForm.rating,
-        comment: reviewForm.comment
+        rating: calculateReviewAverage(reviewForm),
+        fieldQuality: reviewForm.fieldQuality,
+        serviceQuality: reviewForm.serviceQuality,
+        cleanliness: reviewForm.cleanliness,
+        priceReasonable: reviewForm.priceReasonable,
+        comment: normalizedComment,
+        wouldRecommend: reviewForm.wouldRecommend,
+        images: uploadedImages
       });
-      setReviewBooking(null);
+      closeReviewModal();
       await fetchBookings();
       Swal.fire({ icon: 'success', title: 'Đã gửi đánh giá', timer: 1500, showConfirmButton: false });
     } catch (err) {
@@ -287,7 +382,7 @@ const MyBookingsPage = () => {
     }
   };
 
-  const renderStars = (value, size = 22, interactive = false) => [1, 2, 3, 4, 5].map((starValue) => {
+  const renderStars = (value, size = 22, interactive = false, fieldKey = 'rating') => [1, 2, 3, 4, 5].map((starValue) => {
     const Icon = Number(value) >= starValue ? StarFill : Star;
     return (
       <button
@@ -295,7 +390,8 @@ const MyBookingsPage = () => {
         type="button"
         className={`rating-star-button ${Number(value) >= starValue ? 'filled' : ''} ${interactive ? 'interactive' : ''}`}
         disabled={!interactive}
-        onClick={() => setReviewForm((prev) => ({ ...prev, rating: starValue }))}
+        onClick={() => setReviewForm((prev) => ({ ...prev, [fieldKey]: starValue }))}
+        aria-label={`${starValue} sao`}
       >
         <Icon size={size} />
       </button>
@@ -367,111 +463,95 @@ const MyBookingsPage = () => {
             <Card.Body>
               <CalendarCheck size={48} />
               <h3>Chưa có booking phù hợp</h3>
-              <p>Thử đổi bộ lọc hoặc đặt sân mới để bắt đầu quản lý lịch chơi của bạn.</p>
-              <Button variant="success" href="/fields">Tìm sân ngay</Button>
+              <p>Thu đổi bộ lọc hoặc đặt sân mới để bắt đầu quản lý lịch chơi của bạn.</p>
+              <Button variant="success" href="/fields">ìm sân ngay</Button>
             </Card.Body>
           </Card>
         ) : (
           <>
-          <Row className="g-4">
-            {paginatedBookings.map((booking) => {
-              const field = getField(booking);
-              const fieldId = getFieldId(booking);
-              const bookingStatus = getBookingStatus(booking);
-              const paymentStatus = getPaymentStatus(booking);
-              const meta = statusMeta[bookingStatus] || statusMeta.pending;
-              const canPay = paymentStatus === 'pending' && !['cancel_requested', 'cancelled', 'completed'].includes(bookingStatus);
-              const canRequestCancel = ['pending', 'confirmed'].includes(bookingStatus);
-              const canReview = bookingStatus === 'completed' && !booking.review && !booking.reviewed;
-              const payment = booking.payment || {};
+            <Row className="g-4">
+              {paginatedBookings.map((booking) => {
+                const field = getField(booking);
+                const fieldId = getFieldId(booking);
+                const bookingStatus = getBookingStatus(booking);
+                const paymentStatus = getPaymentStatus(booking);
+                const meta = statusMeta[bookingStatus] || statusMeta.pending;
+                const canPay = paymentStatus === 'pending' && !['cancel_requested', 'cancelled', 'completed'].includes(bookingStatus);
+                const canRequestCancel = ['pending', 'confirmed'].includes(bookingStatus);
+                const isReviewed = Boolean(booking.review || booking.reviewed || booking.isReviewed || booking.reviewId);
+                const canReview = bookingStatus === 'completed' && !isReviewed;
+                const payment = booking.payment || {};
 
-              return (
-                <Col xl={6} key={booking._id}>
-                  <Card className="booking-history-card">
-                    <div className="booking-cover" style={{ backgroundImage: `url(${field?.image || '/image/football.jpg'})` }}>
-                      <span className={`status-badge ${meta.className}`}>{mapStatusLabel('bookingStatus', bookingStatus)}</span>
-                    </div>
-                    <Card.Body>
-                      <div className="booking-card-heading">
-                        <div>
-                          <h3>{text(field?.fieldName, 'Sân thể thao')}</h3>
-                          <p><MapPin size={15} /> {text(field?.address, 'Địa chỉ đang cập nhật')}</p>
+                return (
+                  <Col xl={6} key={booking._id}>
+                    <Card className="booking-history-card">
+                      <div className="booking-cover" style={{ backgroundImage: `url(${field?.image || '/image/football.jpg'})` }}>
+                        <span className={`status-badge ${meta.className}`}>{mapStatusLabel('bookingStatus', bookingStatus)}</span>
+                      </div>
+                      <Card.Body>
+                        <div className="booking-card-heading">
+                          <div>
+                            <h3>{text(field?.fieldName, 'Sân thể thao')}</h3>
+                            <p><MapPin size={15} /> {text(field?.address, 'Địa chỉ đang cập nhật')}</p>
+                          </div>
+                          <Badge bg={paymentStatus === 'success' ? 'success' : paymentStatus === 'failed' ? 'danger' : 'warning'} text={paymentStatus === 'success' || paymentStatus === 'failed' ? undefined : 'dark'}>
+                            {mapStatusLabel('paymentStatus', paymentStatus)}
+                          </Badge>
                         </div>
-                        <Badge bg={paymentStatus === 'success' ? 'success' : paymentStatus === 'failed' ? 'danger' : 'warning'} text={paymentStatus === 'success' || paymentStatus === 'failed' ? undefined : 'dark'}>
-                          {mapStatusLabel('paymentStatus', paymentStatus)}
-                        </Badge>
-                      </div>
 
-                      <div className="booking-meta-grid">
-                        <div><span>Loại sân</span><strong>{text(field?.type)}</strong></div>
-                        <div><span>Ngày đặt</span><strong>{formatDate(booking.date)}</strong></div>
-                        <div><span>Khung giờ</span><strong>{text(booking.startTime)} - {text(booking.endTime)}</strong></div>
-                        <div><span>Tổng tiền</span><strong>{money(payment.amount || booking.totalPrice)}</strong></div>
-                        <div><span>Phương thức</span><strong>{text(payment.method || booking.paymentMethod, 'VNPAY')}</strong></div>
-                        <div><span>Ngày tạo</span><strong>{formatDateTime(booking.createdAt)}</strong></div>
-                      </div>
+                        <div className="booking-meta-grid">
+                          <div><span>Loại sân</span><strong>{text(field?.type)}</strong></div>
+                          <div><span>Ngày đặt</span><strong>{formatDate(booking.date)}</strong></div>
+                          <div><span>Khung giờ</span><strong>{text(booking.startTime)} - {text(booking.endTime)}</strong></div>
+                          <div><span>Tổng tiền</span><strong>{money(payment.amount || booking.totalPrice)}</strong></div>
+                          <div><span>Phương thức</span><strong>{text(payment.method || booking.paymentMethod, 'VNPAY')}</strong></div>
+                          <div><span>Ngày tạo</span><strong>{formatDateTime(booking.createdAt)}</strong></div>
+                        </div>
 
-                      <div className="booking-id-row">
-                        <span>Mã đơn: {booking._id}</span>
-                        <span>TxnRef: {text(payment.txnRef || booking.txnRef)}</span>
-                      </div>
+                        <div className="booking-id-row">
+                          <span>Mã đơn: {booking._id}</span>
+                          <span>TxnRef: {text(payment.txnRef || booking.txnRef)}</span>
+                        </div>
 
-                      <div className="booking-card-actions">
-                        <Button variant="outline-success" onClick={() => setDetailBooking(booking)}><Eye size={16} /> Xem chi tiết</Button>
-                        {!['cancel_requested', 'cancelled'].includes(bookingStatus) && (
-                          <Button variant="outline-primary" disabled={!fieldId} onClick={() => navigateToField(booking, true)}><RotateCcw size={16} /> Đặt lại</Button>
-                        )}
-                        {canPay && <Button variant="success" onClick={() => handlePayNow(booking)}><CreditCard size={16} /> Thanh toán ngay</Button>}
-                        {canRequestCancel && <Button variant="outline-danger" onClick={() => handleRequestCancel(booking)}><XCircle size={16} /> Yêu cầu hủy</Button>}
-                        {canReview && <Button variant="success" onClick={() => setReviewBooking(booking)}><MessageSquare size={16} /> Đánh giá</Button>}
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              );
-            })}
-          </Row>
+                        <div className="booking-card-actions">
+                          <Button variant="outline-success" onClick={() => setDetailBooking(booking)}><Eye size={16} /> Xem chi tiết</Button>
+                          {!['cancel_requested', 'cancelled'].includes(bookingStatus) && (
+                            <Button variant="outline-primary" disabled={!fieldId} onClick={() => navigateToField(booking, true)}><RotateCcw size={16} /> Đặt lại</Button>
+                          )}
+                          {canPay && <Button variant="success" onClick={() => handlePayNow(booking)}><CreditCard size={16} /> Thanh toán ngay</Button>}
+                          {canRequestCancel && <Button variant="outline-danger" onClick={() => handleRequestCancel(booking)}><XCircle size={16} /> Yêu cầu hủy</Button>}
+                          {bookingStatus === 'completed' && (
+                            <Button variant={canReview ? 'success' : 'outline-secondary'} disabled={!canReview} onClick={() => openReviewModal(booking)}>
+                              <MessageSquare size={16} /> {canReview ? 'Đánh giá' : 'Đã đánh giá'}
+                            </Button>
+                          )}
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                );
+              })}
+            </Row>
 
-          {totalPages > 1 && (
-            <div className="booking-pagination">
-              <div>
-                Hiển thị {paginatedBookings.length} / {visibleBookings.length} đơn
+            {totalPages > 1 && (
+              <div className="booking-pagination">
+                <div>Hiển thị {paginatedBookings.length} / {visibleBookings.length} đơn</div>
+                <div className="booking-pagination-controls">
+                  <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}>Trang trước</button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                    <button type="button" key={page} className={currentPage === page ? 'active' : ''} onClick={() => setCurrentPage(page)}>{page}</button>
+                  ))}
+                  <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}>Trang sau</button>
+                </div>
               </div>
-              <div className="booking-pagination-controls">
-                <button
-                  type="button"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-                >
-                  Trang trước
-                </button>
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                  <button
-                    type="button"
-                    key={page}
-                    className={currentPage === page ? 'active' : ''}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
-                >
-                  Trang sau
-                </button>
-              </div>
-            </div>
-          )}
+            )}
           </>
         )}
       </Container>
 
       <Modal show={Boolean(detailBooking)} onHide={() => setDetailBooking(null)} centered size="lg" dialogClassName="booking-detail-modal">
         <Modal.Header closeButton>
-          <Modal.Title>Chi tiết booking</Modal.Title>
+          <Modal.Title>Chi tiet booking</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {detailBooking && (
@@ -486,13 +566,13 @@ const MyBookingsPage = () => {
               </div>
 
               <div className="detail-section-grid">
-                <div><span>Người đặt</span><strong>{text(detailBooking.user?.fullName || detailBooking.userName, 'Tài khoản của bạn')}</strong></div>
+                <div><span>Người đặt</span><strong>{text(detailBooking.user?.fullName || detailBooking.userName, 'Tai khoan cua ban')}</strong></div>
                 <div><span>Ngày giờ</span><strong>{formatDate(detailBooking.date)} | {detailBooking.startTime} - {detailBooking.endTime}</strong></div>
                 <div><span>Slot</span><strong>{Array.isArray(detailBooking.slots) && detailBooking.slots.length ? detailBooking.slots.join(', ') : `${detailBooking.startTime} - ${detailBooking.endTime}`}</strong></div>
                 <div><span>Giao dịch VNPAY</span><strong>{text(detailBooking.payment?.txnRef || detailBooking.txnRef || detailBooking.payment?.transactionNo)}</strong></div>
                 <div><span>Trạng thái booking</span><strong>{mapStatusLabel('bookingStatus', getBookingStatus(detailBooking))}</strong></div>
                 <div><span>Trạng thái thanh toán</span><strong>{mapStatusLabel('paymentStatus', getPaymentStatus(detailBooking))}</strong></div>
-                <div className="detail-wide"><span>Ghi chú</span><strong>{text(detailBooking.note || detailBooking.cancelReason, 'Không có ghi chú')}</strong></div>
+                <div className="detail-wide"><span>Ghi chu</span><strong>{text(detailBooking.note || detailBooking.cancelReason, 'Khong co ghi chu')}</strong></div>
               </div>
 
               <h5 className="detail-title">Dịch vụ đi kèm</h5>
@@ -507,7 +587,7 @@ const MyBookingsPage = () => {
                 </div>
               ) : <div className="empty-inline">Không có dịch vụ đi kèm.</div>}
 
-              <h5 className="detail-title">Breakdown thanh toán</h5>
+              <h5 className="detail-title">Chi tiết thanh toán</h5>
               <div className="detail-breakdown">
                 {getBreakdown(detailBooking).map(([label, value], index, list) => (
                   <div className={index === list.length - 1 ? 'total' : ''} key={label}>
@@ -521,32 +601,107 @@ const MyBookingsPage = () => {
         </Modal.Body>
       </Modal>
 
-      <Modal show={Boolean(reviewBooking)} onHide={() => setReviewBooking(null)} centered dialogClassName="review-modal-dialog">
-        <Modal.Header closeButton>
-          <Modal.Title>Đánh giá sân</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSubmitReview}>
-          <Modal.Body>
-            <div className="mb-3">
-              <div className="small fw-bold text-muted mb-2">Số sao</div>
-              <div className="rating-stars">{renderStars(reviewForm.rating, 30, true)}</div>
+      <Modal show={Boolean(reviewBooking)} onHide={closeReviewModal} centered size="lg" dialogClassName="review-modal-dialog">
+        <Form onSubmit={handleSubmitReview} className="review-modal-form">
+          <Modal.Body className="review-experience-modal">
+            <div className="review-modal-header">
+              <div className="review-modal-title">
+                <span><Sparkles size={20} /></span>
+                <div>
+                  <h3>Đánh giá trải nghiệm đặt sân</h3>
+                  <p>Chia sẻ trải nghiệm của bạn để chúng tôi cải thiện dịch vụ tốt hơn</p>
+                </div>
+              </div>
+              <button type="button" className="review-close-button" onClick={closeReviewModal} aria-label="Dong">
+                <X size={20} />
+              </button>
             </div>
-            <Form.Group>
-              <Form.Label className="small fw-bold text-muted">Bình luận</Form.Label>
+
+            {reviewBooking && (
+              <div className="review-booking-summary">
+                <img src={getField(reviewBooking)?.image || '/image/football.jpg'} alt={getField(reviewBooking)?.fieldName || 'Sân bóng'} />
+                <div>
+                  <strong>{text(getField(reviewBooking)?.fieldName, 'Sân thể thao')}</strong>
+                  <div className="review-booking-meta">
+                    <span><CalendarCheck size={14} /> {formatDate(reviewBooking.date)}</span>
+                    <span>{reviewBooking.startTime} - {reviewBooking.endTime}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="review-rating-grid">
+              {reviewCriteria.map((criterion) => (
+                <div className="review-criterion-card" key={criterion.key}>
+                  <span>{criterion.label}</span>
+                  <div className="review-stars-control">{renderStars(reviewForm[criterion.key], 20, true, criterion.key)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="review-comment-area">
+              <Form.Label>Bình luận của bạn</Form.Label>
               <Form.Control
                 as="textarea"
-                rows={4}
+                rows={5}
+                maxLength={500}
                 value={reviewForm.comment}
                 onChange={(event) => setReviewForm((prev) => ({ ...prev, comment: event.target.value }))}
                 placeholder="Chia sẻ trải nghiệm thực tế của bạn..."
               />
-            </Form.Group>
+              <span>{reviewForm.comment.length}/500</span>
+            </div>
+
+            <div className="review-recommend-section">
+              <label>Bạn có muốn quay lại sân này không?</label>
+              <div className="review-recommend-options">
+                <button
+                  type="button"
+                  className={reviewForm.wouldRecommend ? 'active' : ''}
+                  onClick={() => setReviewForm((prev) => ({ ...prev, wouldRecommend: true }))}
+                >
+                  <ThumbsUp size={17} /> Có, tôi sẽ quay lại
+                </button>
+                <button
+                  type="button"
+                  className={!reviewForm.wouldRecommend ? 'active muted' : ''}
+                  onClick={() => setReviewForm((prev) => ({ ...prev, wouldRecommend: false }))}
+                >
+                  <ThumbsDown size={17} /> Không chắc
+                </button>
+              </div>
+            </div>
+
+            <div className="review-images-section">
+              <label>Hình ảnh trải nghiệm (tối đa 3 ảnh)</label>
+              <div className="review-image-grid">
+                {reviewForm.imagePreviews.map((image, index) => (
+                  <div className="review-image-preview" key={`${image.name}-${index}`}>
+                    <img src={image.url} alt={image.name} />
+                    <button type="button" onClick={() => removeReviewImage(index)}><X size={13} /></button>
+                  </div>
+                ))}
+                {reviewForm.imagePreviews.length < 3 && (
+                  <label className="review-image-upload">
+                    <Camera size={20} />
+                    <span>Thêm ảnh</span>
+                    <input type="file" accept="image/*" multiple onChange={handleReviewImageChange} />
+                  </label>
+                )}
+              </div>
+            </div>
+
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="light" onClick={() => setReviewBooking(null)}>Đóng</Button>
-            <Button type="submit" variant="success" disabled={submitting}>
-              {submitting ? <Spinner size="sm" /> : 'Gửi đánh giá'}
-            </Button>
+          <Modal.Footer className="review-modal-footer">
+            <div className="review-helper-note">
+              <Sparkles size={16} /> Đánh giá của bạn sẽ giúp cộng đồng người chơi có trải nghiệm tốt hơn!
+            </div>
+            <div className="review-footer-actions">
+              <Button variant="light" onClick={closeReviewModal}>Hủy</Button>
+              <Button type="submit" variant="success" disabled={submitting}>
+                {submitting ? <Spinner size="sm" /> : <><Send size={16} /> Gửi đánh giá</>}
+              </Button>
+            </div>
           </Modal.Footer>
         </Form>
       </Modal>

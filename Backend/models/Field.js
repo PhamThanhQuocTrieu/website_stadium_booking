@@ -24,6 +24,8 @@ const fieldSchema = new mongoose.Schema({
   gallery: [{ type: String }],
   description: { type: String, default: '' },
   isFeatured: { type: Boolean, default: false },
+  ratingAverage: { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 },
   status: { type: String, enum: ['Active', 'Maintenance', 'Full'], default: 'Active' },
   services: [serviceSchema],
   pricingRules: [pricingRuleSchema] // 🌟 LƯU TRỰC TIẾP TẠI ĐÂY

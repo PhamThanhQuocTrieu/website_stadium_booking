@@ -3,6 +3,7 @@ const Booking = require('../models/Booking');
 const Field = require('../models/Field');
 const Review = require('../models/Review');
 const Payment = require('../models/Payment');
+const Service = require('../models/Service');
 const cron = require('node-cron');
 const { createNotification } = require('../services/notificationService');
 const { validateVoucherForBooking } = require('../services/voucherService');
@@ -104,39 +105,135 @@ const calculateFieldAmount = (field, date, startTime, endTime) => {
   return total;
 };
 
+const consumableNamePattern = /(nuoc|nước|water|coca|pepsi|sting|revive|aquafina|lavie|tra|trà|sua|sữa|drink|do uong|đồ uống)/i;
+const normalizeInventoryType = (service = {}) => {
+  if (service.inventoryType === 'consumable' || service.inventoryType === 'rental') return service.inventoryType;
+  return consumableNamePattern.test(String(service.name || '')) ? 'consumable' : 'rental';
+};
+
+const summarizeBookingServices = (services = []) => {
+  const summary = new Map();
+  for (const item of services || []) {
+    const serviceId = item.serviceId || item._id;
+    if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) continue;
+    const key = String(serviceId);
+    summary.set(key, (summary.get(key) || 0) + Math.max(0, Number(item.quantity || 0)));
+  }
+  return summary;
+};
+
+const buildServiceItems = async (services = []) => {
+  const requested = summarizeBookingServices(services);
+  const ids = [...requested.keys()];
+  if (ids.length === 0) return { items: [], requested, serviceMap: new Map() };
+
+  const docs = await Service.find({ _id: { $in: ids } });
+  const serviceMap = new Map(docs.map((service) => [String(service._id), service]));
+  const items = ids.map((id) => {
+    const service = serviceMap.get(id);
+    if (!service) throw new Error('Dich vu da chon khong ton tai.');
+    if (!service.isActive) throw new Error(`Dich vu ${service.name} hien khong kha dung.`);
+    const quantity = requested.get(id);
+    return {
+      serviceId: service._id,
+      name: service.name,
+      price: Number(service.price || 0),
+      quantity,
+      image: service.image || '',
+      inventoryType: normalizeInventoryType(service)
+    };
+  });
+  return { items, requested, serviceMap };
+};
+
+const adjustServiceStock = async ({ current = new Map(), next = new Map(), serviceMap = new Map() }) => {
+  const ids = [...new Set([...current.keys(), ...next.keys()])];
+  for (const id of ids) {
+    const delta = Number(next.get(id) || 0) - Number(current.get(id) || 0);
+    if (delta === 0) continue;
+
+    if (delta > 0) {
+      const service = serviceMap.get(id) || await Service.findById(id);
+      if (!service) throw new Error('Dich vu da chon khong ton tai.');
+      if (Number(service.stock || 0) < delta) {
+        throw new Error(`Dich vu ${service.name} chi con ${Number(service.stock || 0)} san pham.`);
+      }
+      await Service.updateOne({ _id: id }, { $inc: { stock: -delta } });
+    } else {
+      await Service.updateOne({ _id: id }, { $inc: { stock: -delta } });
+    }
+  }
+};
+
+const reserveBookingServices = async (booking, services = []) => {
+  const current = booking.serviceStockReserved ? summarizeBookingServices(booking.services) : new Map();
+  const { items, requested, serviceMap } = await buildServiceItems(services);
+  await adjustServiceStock({ current, next: requested, serviceMap });
+  booking.services = items;
+  booking.serviceStockReserved = items.length > 0;
+  booking.rentableServicesReturned = false;
+  return items;
+};
+
+const releaseBookingServices = async (booking, mode = 'all') => {
+  if (!booking?.serviceStockReserved) return;
+  if (mode === 'rental' && booking.rentableServicesReturned) return;
+  const releasable = (booking.services || []).filter((item) => (
+    mode === 'all'
+      ? (!booking.rentableServicesReturned || normalizeInventoryType(item) !== 'rental')
+      : normalizeInventoryType(item) === 'rental'
+  ));
+  for (const item of releasable) {
+    if (!item.serviceId) continue;
+    await Service.updateOne(
+      { _id: item.serviceId },
+      { $inc: { stock: Math.max(0, Number(item.quantity || 0)) } }
+    );
+  }
+
+  if (mode === 'all') {
+    booking.serviceStockReserved = false;
+    booking.rentableServicesReturned = true;
+  } else {
+    booking.rentableServicesReturned = true;
+  }
+};
+
 const cancelExpiredPendingBookings = async () => {
-  return Booking.updateMany(
-    {
-      paymentStatus: { $in: pendingPaymentStatuses },
-      status: { $in: activeBookingStatuses },
-      $or: [
-        { holdExpiresAt: { $lte: new Date() } },
-        { holdExpiresAt: { $exists: false }, createdAt: { $lte: getHoldExpiredAt() } }
-      ]
-    },
-    { $set: { status: 'Cancelled', paymentStatus: 'FAILED' }, $unset: { holdExpiresAt: '' } }
-  );
+  const expiredBookings = await Booking.find({
+    paymentStatus: { $in: pendingPaymentStatuses },
+    status: { $in: activeBookingStatuses },
+    $or: [
+      { holdExpiresAt: { $lte: new Date() } },
+      { holdExpiresAt: { $exists: false }, createdAt: { $lte: getHoldExpiredAt() } }
+    ]
+  });
+
+  for (const booking of expiredBookings) {
+    await releaseBookingServices(booking, 'all');
+    booking.status = 'Cancelled';
+    booking.paymentStatus = 'FAILED';
+    booking.holdExpiresAt = undefined;
+    await booking.save();
+  }
+
+  return { modifiedCount: expiredBookings.length };
 };
 
 const completePastPaidBookings = async () => {
   const candidates = await Booking.find({
     status: { $in: ['confirmed', 'Confirmed', 'CONFIRMED'] },
     paymentStatus: { $in: paidPaymentStatuses }
-  }).select('_id date endTime');
+  });
 
-  const completedIds = candidates
-    .filter((booking) => {
-      const endAt = getBookingEndDate(booking);
-      return !Number.isNaN(endAt.getTime()) && endAt < new Date();
-    })
-    .map((booking) => booking._id);
-
-  if (completedIds.length === 0) return;
-
-  await Booking.updateMany(
-    { _id: { $in: completedIds } },
-    { $set: { status: 'completed' }, $unset: { holdExpiresAt: '' } }
-  );
+  for (const booking of candidates) {
+    const endAt = getBookingEndDate(booking);
+    if (Number.isNaN(endAt.getTime()) || endAt >= new Date()) continue;
+    await releaseBookingServices(booking, 'rental');
+    booking.status = 'completed';
+    booking.holdExpiresAt = undefined;
+    await booking.save();
+  }
 };
 
 cron.schedule('* * * * *', async () => {
@@ -344,10 +441,12 @@ exports.updateBookingInfo = async (req, res) => {
 
     const subtotal = calculateFieldAmount(field, booking.date, booking.startTime, booking.endTime);
     let serviceTotal = Number(booking.serviceTotal || 0);
+    let servicesReservedThisRequest = false;
 
     if (Array.isArray(services)) {
-      booking.services = services;
-      serviceTotal = services.reduce((sum, service) => {
+      const reservedServices = await reserveBookingServices(booking, services);
+      servicesReservedThisRequest = true;
+      serviceTotal = reservedServices.reduce((sum, service) => {
         return sum + (Number(service.price || 0) * Number(service.quantity || 1));
       }, 0);
     }
@@ -363,23 +462,30 @@ exports.updateBookingInfo = async (req, res) => {
     booking.voucherCode = '';
     booking.voucherAppliedAt = undefined;
 
-    if (voucherCode) {
-      const validation = await validateVoucherForBooking({
-        userId: req.user.id,
-        code: voucherCode,
-        fieldId: booking.field,
-        sportType: field.type,
-        bookingDate: booking.date,
-        startTime: booking.startTime,
-        endTime: booking.endTime,
-        originalAmount
-      });
+    try {
+      if (voucherCode) {
+        const validation = await validateVoucherForBooking({
+          userId: req.user.id,
+          code: voucherCode,
+          fieldId: booking.field,
+          sportType: field.type,
+          bookingDate: booking.date,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          originalAmount
+        });
 
-      booking.voucherId = validation.response.voucherId;
-      booking.voucherCode = validation.response.voucherCode;
-      booking.discountAmount = validation.response.discountAmount;
-      booking.finalAmount = validation.response.finalAmount;
-      booking.totalPrice = validation.response.finalAmount;
+        booking.voucherId = validation.response.voucherId;
+        booking.voucherCode = validation.response.voucherCode;
+        booking.discountAmount = validation.response.discountAmount;
+        booking.finalAmount = validation.response.finalAmount;
+        booking.totalPrice = validation.response.finalAmount;
+      }
+    } catch (error) {
+      if (servicesReservedThisRequest) {
+        await releaseBookingServices(booking, 'all');
+      }
+      throw error;
     }
 
     await booking.save();
@@ -418,6 +524,7 @@ exports.cancelBooking = async (req, res) => {
     if (!paidLikePaymentStatuses.includes(booking.paymentStatus)) {
       booking.paymentStatus = 'FAILED';
     }
+    await releaseBookingServices(booking, 'all');
     await booking.save();
     await createNotification({
       user: booking.user,
@@ -469,6 +576,7 @@ exports.requestCancelBooking = async (req, res) => {
     if (!paid) {
       booking.cancelledAt = new Date();
       booking.paymentStatus = 'failed';
+      await releaseBookingServices(booking, 'all');
       if (latestPayment && latestPayment.status === 'PENDING') {
         latestPayment.status = 'CANCELLED';
         await latestPayment.save();
@@ -508,6 +616,7 @@ exports.approveCancelBooking = async (req, res) => {
     booking.cancelledAt = new Date();
     booking.holdExpiresAt = undefined;
     if (req.body?.reason) booking.cancelReason = req.body.reason;
+    await releaseBookingServices(booking, 'all');
     await booking.save();
     await createNotification({
       user: booking.user,

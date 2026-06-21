@@ -26,6 +26,11 @@ const serviceSchema = new mongoose.Schema({
     default: 0,
     min: [0, 'Số lượng tồn kho không được âm']
   },
+  inventoryType: {
+    type: String,
+    enum: ['rental', 'consumable'],
+    default: 'rental'
+  },
   isActive: {
     type: Boolean,
     default: true

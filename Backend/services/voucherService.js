@@ -38,6 +38,20 @@ const timeToMinutes = (time) => {
   const [hour, minute] = normalizeTime(time).split(':').map(Number);
   return hour * 60 + minute;
 };
+const getBookingDay = (bookingDate) => {
+  if (!bookingDate) return null;
+  const dateValue = String(bookingDate).trim();
+  const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateMatch
+    ? new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]))
+    : new Date(bookingDate);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.getDay();
+};
+const isWeekendBooking = (bookingDate) => {
+  const day = getBookingDay(bookingDate);
+  return day === 0 || day === 6;
+};
 const objectIdSet = (ids = []) => new Set(ids.filter(Boolean).map((id) => String(id)));
 
 const getDiscountValue = (voucher) => Number(
@@ -254,15 +268,19 @@ const validateVoucherForBooking = async ({
       throw makeError('Ma khong ap dung cho mon the thao nay.');
     }
   }
+  if (applyType === 'weekend') {
+    if (!isWeekendBooking(bookingDate)) {
+      throw makeError('Ma chi ap dung cho ngay thu 7 va chu nhat.');
+    }
+  }
   if (applyType === 'time_slot') {
-    const date = new Date(bookingDate);
-    const day = date.getDay();
+    const day = getBookingDay(bookingDate);
     const validDays = voucher.validDays || [];
     const from = timeToMinutes(voucher.validTimeFrom);
     const to = timeToMinutes(voucher.validTimeTo);
     const start = timeToMinutes(startTime);
     const end = timeToMinutes(endTime);
-    if (!validDays.includes(day) || start < from || end > to) {
+    if (day === null || !validDays.includes(day) || start < from || end > to) {
       throw makeError('Ma khong ap dung trong khung gio nay.');
     }
   }

@@ -25,7 +25,7 @@ const voucherSchema = new mongoose.Schema({
 
   applyType: {
     type: String,
-    enum: ['all', 'new_user', 'field', 'sport_type', 'time_slot'],
+    enum: ['all', 'new_user', 'field', 'sport_type', 'time_slot', 'weekend'],
     default: 'all'
   },
   fieldIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Field' }],
