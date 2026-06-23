@@ -286,6 +286,8 @@ async function markConversationRead(conversation, readerRole, readerId) {
   const payload = { conversationId: conversation._id, senderRole, seenAt: now };
   if (readerRole === 'admin') {
     emitToUser(conversation.userId, 'message_seen', payload);
+    const populatedConversation = await Conversation.findById(conversation._id).populate(conversationPopulate).lean();
+    emitToAdmin('conversation_updated', populatedConversation);
   } else {
     emitToAdmin('message_seen', payload);
   }

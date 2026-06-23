@@ -230,8 +230,6 @@ exports.getMyVouchers = async (req, res) => {
 
         const { status } = await getUserVoucherStatus({ userId: req.user.id, voucher, now });
         if (status === 'used' || status === 'expired') {
-          response.push(buildVoucherResponse({ voucher, status: 'used', isPublic: true }));
-          responseVoucherIds.add(String(voucher._id));
           continue;
         }
 

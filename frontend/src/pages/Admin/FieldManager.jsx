@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Card, Spinner, Form, Row, Col, Pagination, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Plus, MapPin, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Edit, Trash2, Plus, MapPin, CheckCircle, AlertCircle, XCircle, ToggleLeft, ToggleRight } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import Swal from 'sweetalert2';
 import '../../styles/admin/fieldmanager.css';
@@ -76,6 +76,24 @@ const FieldManager = () => {
     }
   };
 
+  const handleToggleMaintenance = async (field) => {
+    const maintenance = field.status !== 'Maintenance';
+    try {
+      const { data } = await axiosClient.patch(`/admin/fields/${field._id}/maintenance`, { maintenance });
+      setFields(prev => prev.map(item => item._id === field._id ? data : item));
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: maintenance ? 'Đã bật bảo trì sân' : 'Đã mở sân hoạt động',
+        showConfirmButton: false,
+        timer: 1500
+      });
+    } catch (err) {
+      Swal.fire('Lỗi', err.response?.data?.message || 'Không thể cập nhật trạng thái sân.', 'error');
+    }
+  };
+
   const getStatusBadge = (status) => {
     if (status === 'Active') return <Badge bg="success"><CheckCircle size={12} /> Active</Badge>;
     if (status === 'Maintenance') return <Badge bg="warning"><AlertCircle size={12} /> Maintenance</Badge>;
@@ -127,6 +145,14 @@ const FieldManager = () => {
                   <td><small><MapPin size={12} className="text-danger" /> {f.address}</small></td>
                   <td>{getStatusBadge(f.status)}</td>
                   <td className="text-center">
+                    <Button
+                      variant={f.status === 'Maintenance' ? 'outline-success' : 'outline-warning'}
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleToggleMaintenance(f)}
+                    >
+                      {f.status === 'Maintenance' ? <ToggleLeft size={16} /> : <ToggleRight size={16} />} {f.status === 'Maintenance' ? 'Mở sân' : 'Bảo trì'}
+                    </Button>
                     <Button variant="outline-primary" size="sm" className="me-2" onClick={() => navigate(`/admin/updateField/${f._id}`)}><Edit size={16} /></Button>
                     <Button variant="outline-danger" size="sm" onClick={() => handleDelete(f._id)}><Trash2 size={16} /></Button>
                   </td>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Form, NavDropdown, Image } from 'react-bootstrap';
-import { Search, BoxArrowRight, Person, ListCheck, ShieldLock } from 'react-bootstrap-icons';
+import { Search, BoxArrowRight, Person, ListCheck, ShieldLock, TicketPerforated } from 'react-bootstrap-icons';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode"; // Nhớ cài đặt: npm install jwt-decode
 import myLogo from '../assets/logo.png';
@@ -43,9 +43,11 @@ const Navigation = () => {
     
     const interval = setInterval(checkTokenValidity, 300000); // Kiểm tra mỗi 5 phút
     window.addEventListener('storage', updateUserInfo);
+    window.addEventListener('authChanged', updateUserInfo);
     
     return () => {
       window.removeEventListener('storage', updateUserInfo);
+      window.removeEventListener('authChanged', updateUserInfo);
       clearInterval(interval);
     };
   }, []);
@@ -53,7 +55,7 @@ const Navigation = () => {
   const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userInfo');
-    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authChanged'));
     setShowDropdown(false);
     navigate('/login');
   };
@@ -130,7 +132,7 @@ const Navigation = () => {
 
                   {!isAdmin && (
                     <NavDropdown.Item as={Link} to="/my-vouchers" onClick={() => setShowDropdown(false)}>
-                        <ListCheck className="me-2" size={16} /> Voucher cua toi
+                        <TicketPerforated className="me-2" size={16} /> Voucher của tôi
                     </NavDropdown.Item>
                   )}
 

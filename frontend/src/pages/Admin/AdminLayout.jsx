@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,16 +14,60 @@ import {
   MessageCircle,
   Mail,
   BellRing,
+  Newspaper,
   ScrollText,
   PanelsTopLeft
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import axiosClient from '../../api/axiosClient';
+import socket from '../../socket';
 
 import '../../styles/admin/layout.css';
+
+const getStoredAdmin = () => {
+  try {
+    return JSON.parse(localStorage.getItem('userInfo')) || null;
+  } catch {
+    return null;
+  }
+};
 
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+
+  const loadChatUnreadCount = useCallback(async () => {
+    try {
+      const { data } = await axiosClient.get('/chat/conversations');
+      const total = (Array.isArray(data) ? data : []).reduce((sum, conversation) => {
+        return sum + Number(conversation.unreadByAdmin || 0);
+      }, 0);
+      setChatUnreadCount(total);
+    } catch (error) {
+      setChatUnreadCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    const admin = getStoredAdmin();
+    if (!admin?._id) return undefined;
+
+    if (!socket.connected) socket.connect();
+    socket.emit('join_chat', { userId: admin._id, role: admin.role });
+    loadChatUnreadCount();
+
+    const handleChatUpdate = () => loadChatUnreadCount();
+    socket.on('receive_message', handleChatUpdate);
+    socket.on('conversation_updated', handleChatUpdate);
+    window.addEventListener('adminChatUnreadChanged', handleChatUpdate);
+
+    return () => {
+      socket.off('receive_message', handleChatUpdate);
+      socket.off('conversation_updated', handleChatUpdate);
+      window.removeEventListener('adminChatUnreadChanged', handleChatUpdate);
+    };
+  }, [loadChatUnreadCount]);
 
   const handleLogout = () => {
     Swal.fire({
@@ -37,6 +81,7 @@ const AdminLayout = () => {
       if (result.isConfirmed) {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userInfo');
+        window.dispatchEvent(new Event('authChanged'));
         navigate('/login');
       }
     });
@@ -55,6 +100,7 @@ const AdminLayout = () => {
     { path: '/admin/chats', icon: <MessageCircle size={20} />, label: 'Tin nhắn hỗ trợ' },
     { path: '/admin/contacts', icon: <Mail size={20} />, label: 'Quản lý liên hệ' },
     { path: '/admin/notifications', icon: <BellRing size={20} />, label: 'Quản lý thông báo' },
+    { path: '/admin/news', icon: <Newspaper size={20} />, label: 'Quản lý tin tức' },
     { path: '/admin/profile', icon: <UserCircle size={20} />, label: 'Thông tin cá nhân' },
     { path: '/admin/policies', icon: <ScrollText size={20} />, label: 'Điều khoản & bảo mật' }
   ];
@@ -78,6 +124,11 @@ const AdminLayout = () => {
             >
               <span className="admin-sidebar-link-icon">{item.icon}</span>
               <span className="admin-sidebar-link-text">{item.label}</span>
+              {item.path === '/admin/chats' && chatUnreadCount > 0 && (
+                <span className="admin-sidebar-badge" aria-label={`${chatUnreadCount} tin nhắn chưa đọc`}>
+                  {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                </span>
+              )}
             </Link>
           ))}
 

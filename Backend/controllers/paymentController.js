@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Payment = require('../models/Payment');
+const Field = require('../models/Field');
 const { vnpay, vnpayConfig } = require('../config/vnpay');
 const { createNotification } = require('../services/notificationService');
 const { markVoucherUsed } = require('../services/voucherService');
@@ -16,6 +17,7 @@ const getClientIp = (req) => {
 };
 
 const normalizeAmount = (amount) => Math.round(Number(amount || 0));
+const getFieldName = (field) => field?.fieldName || field?.name || 'sân';
 
 const createTxnRef = (bookingId) => {
   return `AH${Date.now()}${String(bookingId).slice(-6)}`;
@@ -54,6 +56,17 @@ const applySuccessPayment = async (payment, query, io) => {
     }
 
     if (shouldNotify) {
+      const field = await Field.findById(booking.field);
+      await createNotification({
+        user: booking.user,
+        title: 'Đặt sân thành công',
+        message: `Bạn đã đặt sân ${getFieldName(field)} vào lúc ${booking.startTime} ngày ${booking.date}.`,
+        type: 'booking',
+        relatedId: booking._id,
+        relatedModel: 'Booking',
+        io
+      });
+
       await createNotification({
         user: booking.user,
         title: 'Thanh toán thành công',

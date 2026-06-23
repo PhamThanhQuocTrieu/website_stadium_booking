@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Container, Row, Col, Badge, Button, Spinner, ProgressBar } from 'react-bootstrap';
 import { 
-  StarFill, GeoAltFill, ArrowRight, HeartFill, CheckCircleFill, 
+  StarFill, GeoAltFill, ArrowRight, CheckCircleFill, 
   ChatLeftDotsFill, Star, StarHalf, Wifi, CarFrontFill, CupStraw,
   DropletFill, Tools, BagCheckFill, PatchCheckFill
 } from 'react-bootstrap-icons';
@@ -19,7 +19,6 @@ const FieldDetailPage = () => {
   const [field, setField] = useState(null);
   const [reviews, setReviews] = useState([]); // State lÆ°u danh sÃ¡ch reviews thá»±c táº¿ tá»« CSDL Local
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [mainImage, setMainImage] = useState('');
 
   const fetchFieldDetail = async () => {
@@ -188,8 +187,8 @@ const FieldDetailPage = () => {
 
             <Col lg={4}>
               <div className="ps-lg-2 h-100 d-flex flex-column">
-                <Badge bg="success" className="mb-2 bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill w-fit-content">
-                  {field.status === 'Active' ? 'DANG HOAT DONG' : 'BAO TRI'}
+                <Badge bg={field.status === 'Active' ? 'success' : 'warning'} className="mb-2 bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill w-fit-content">
+                  {field.status === 'Active' ? 'ĐANG HOẠT ĐỘNG' : 'ĐANG BẢO TRÌ'}
                 </Badge>
                 <h2 className="fw-bold text-dark mb-2">{field.fieldName}</h2>
                 <div className="d-flex align-items-center gap-2 mb-3 text-warning">
@@ -217,12 +216,10 @@ const FieldDetailPage = () => {
                     variant="success" 
                     size="lg" 
                     className="w-100 py-3 rounded-pill fw-bold shadow-sm mb-3" 
+                    disabled={field.status !== 'Active'}
                     onClick={() => navigate(`/booking/${field._id}`)}
                   >
-                    ĐẶT SÂN NGAY <ArrowRight className="ms-2" />
-                  </Button>
-                  <Button variant="outline-danger" className="w-100 py-2 rounded-pill fw-bold" onClick={() => setIsFavorite(!isFavorite)}>
-                    {isFavorite ? <><HeartFill className="me-2"/> ĐÃ LƯU</> : <><HeartFill className="me-2 text-muted"/> LƯU VÀO YÊU THÍCH</>}
+                    {field.status === 'Active' ? <>ĐẶT SÂN NGAY <ArrowRight className="ms-2" /></> : 'ĐANG BẢO TRÌ'}
                   </Button>
                 </div>
               </div>

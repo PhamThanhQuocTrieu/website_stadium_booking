@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Button, Modal, Spinner } from 'react-bootstrap';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Calendar3, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -101,14 +101,29 @@ const BookingPage = () => {
 
     useEffect(() => {
         fetchBookingStatus();
-        socket.on('slot_booked_success', (data) => {
+        const handleSlotBooked = (data) => {
             if (data.fieldId === id && data.date === formatDateStr(selectedDate)) {
-                setBookedSlots(prev => [...new Set([...prev, ...(data.slots || []).map(normalizeTime)])]);
+                const normalizedSlots = (data.slots || []).map(normalizeTime);
+                setBookedSlots(prev => [...new Set([...prev, ...normalizedSlots])]);
                 fetchBookingStatus();
-                setSelectedSlots(prev => prev.filter(slot => !(data.slots || []).map(normalizeTime).includes(normalizeTime(slot))));
+                setSelectedSlots(prev => prev.filter(slot => !normalizedSlots.includes(normalizeTime(slot))));
             }
-        });
-        return () => socket.off('slot_booked_success');
+        };
+        const handleBookingChanged = (data = {}) => {
+            const eventFieldId = data.fieldId ? String(data.fieldId) : id;
+            const eventDate = data.date || formatDateStr(selectedDate);
+            if (eventFieldId === id && eventDate === formatDateStr(selectedDate)) {
+                fetchBookingStatus();
+            }
+        };
+        socket.on('slot_booked_success', handleSlotBooked);
+        socket.on('booking_cancelled', handleBookingChanged);
+        socket.on('booking_cancel_requested', handleBookingChanged);
+        return () => {
+            socket.off('slot_booked_success', handleSlotBooked);
+            socket.off('booking_cancelled', handleBookingChanged);
+            socket.off('booking_cancel_requested', handleBookingChanged);
+        };
     }, [id, selectedDate, fetchBookingStatus, formatDateStr]);
 
     useEffect(() => {
@@ -131,6 +146,7 @@ const BookingPage = () => {
     };
 
     const getSlotStatus = (time) => {
+        if (fieldData?.status === 'Maintenance') return 'locked';
         if (bookedSlots.includes(normalizeTime(time))) return 'booked';
         const [hour, minute] = time.split(':').map(Number);
         const now = new Date();
@@ -142,6 +158,7 @@ const BookingPage = () => {
 
     const handleSlotClick = (time) => {
         const status = getSlotStatus(time);
+        if (fieldData?.status === 'Maintenance') { triggerAlert('Sân đang bảo trì, vui lòng chọn sân khác!'); return; }
         if (status === 'locked') { triggerAlert(`Khung giờ ${time} đã qua!`); return; }
         if (status === 'booked') { triggerAlert(`Khung giờ ${time} đã có khách!`); return; }
         setSelectedSlots(prev => prev.includes(time) ? prev.filter(s => s !== time) : [...prev, time]);
@@ -159,6 +176,9 @@ const BookingPage = () => {
                 totalPrice: calculateTotalAmount()
             }, { headers: { Authorization: `Bearer ${token}` } });
             if (res.data.success) {
+                const normalizedSlots = selectedSlots.map(normalizeTime);
+                setBookedSlots(prev => [...new Set([...prev, ...normalizedSlots])]);
+                setSelectedSlots([]);
                 navigate('/payment', { state: { bookingId: res.data.bookingId, totalAmount: res.data.totalPrice ?? calculateTotalAmount() } });
             }
         } catch (err) {
@@ -198,9 +218,9 @@ const BookingPage = () => {
         <div className="booking-page-premium">
             <AnimatePresence>
                 {alertMessage && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="custom-toast">
+                    <Motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="custom-toast">
                         {alertMessage}
-                    </motion.div>
+                    </Motion.div>
                 )}
             </AnimatePresence>
 
@@ -253,9 +273,13 @@ const BookingPage = () => {
                             </div>
                         ))}
                         <div className="grid-field-name-label">{fieldData.fieldName}</div>
-                        {bookableSlots.map(time => (
-                            <div key={time} className={`grid-slot-box ${getSlotStatus(time)} ${selectedSlots.includes(time) ? 'active' : ''}`} onClick={() => handleSlotClick(time)} />
-                        ))}
+                        {bookableSlots.map(time => {
+                            const slotStatus = getSlotStatus(time);
+                            const isSelected = slotStatus === 'available' && selectedSlots.includes(time);
+                            return (
+                                <div key={time} className={`grid-slot-box ${slotStatus} ${isSelected ? 'active' : ''}`} onClick={() => handleSlotClick(time)} />
+                            );
+                        })}
                     </div>
                 </div>
             </Container>
@@ -290,8 +314,8 @@ const BookingPage = () => {
                                 Tổng tiền: {formatCurrency(calculateTotalAmount())} đ
                             </h4>
                         </div>
-                        <Button className="btn-next-v3" onClick={handleProcessBooking}>
-                            TIẾP THEO
+                        <Button className="btn-next-v3" onClick={handleProcessBooking} disabled={isSubmitting}>
+                            {isSubmitting ? 'ĐANG GIỮ CHỖ...' : 'TIẾP THEO'}
                         </Button>
                     </Container>
                 </div>

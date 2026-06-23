@@ -319,13 +319,26 @@ const markVoucherUsed = async (booking, io) => {
   voucher.usageCount = voucher.usedCount;
   await voucher.save();
 
-  const userVoucher = await UserVoucher.findOne({ userId: booking.user, voucherId: voucher._id });
-  if (userVoucher) {
-    userVoucher.usedCount = Number(userVoucher.usedCount || 0) + 1;
-    userVoucher.usedAt = new Date();
-    if (userVoucher.usedCount >= Number(voucher.perUserLimit || 1)) userVoucher.status = 'used';
-    await userVoucher.save();
-  }
+  const previousUserVoucher = await UserVoucher.findOne({ userId: booking.user, voucherId: voucher._id });
+  const nextUserUsedCount = Number(previousUserVoucher?.usedCount || 0) + 1;
+  const nextUserVoucherStatus = nextUserUsedCount >= Number(voucher.perUserLimit || 1) ? 'used' : 'available';
+  const userVoucher = await UserVoucher.findOneAndUpdate(
+    { userId: booking.user, voucherId: voucher._id },
+    {
+      $set: {
+        code: voucher.code,
+        status: nextUserVoucherStatus,
+        usedCount: nextUserUsedCount,
+        usedAt: new Date()
+      },
+      $setOnInsert: {
+        userId: booking.user,
+        voucherId: voucher._id,
+        assignedAt: new Date()
+      }
+    },
+    { upsert: true, new: true }
+  );
 
   booking.voucherAppliedAt = new Date();
   await booking.save();

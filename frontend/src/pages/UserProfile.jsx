@@ -59,7 +59,7 @@ const UserProfile = () => {
       const res = await api.put(`/users/${userLocal._id}`, formData);
       
       localStorage.setItem('userInfo', JSON.stringify(res.data));
-      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('authChanged'));
       
       setFormData(prev => ({ ...prev, oldPassword: '', newPassword: '', confirmPassword: '' }));
       Swal.fire('Thành công', 'Đã cập nhật hồ sơ!', 'success');

@@ -55,7 +55,7 @@
 
 .user-voucher-card {
   display: grid;
-  grid-template-columns: 132px 1fr;
+  grid-template-columns: 150px 1fr;
   min-height: 230px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -75,7 +75,16 @@
   padding: 16px;
   text-align: center;
   font-weight: 800;
-  word-break: break-word;
+  min-width: 0;
+}
+
+.voucher-ribbon span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  letter-spacing: 0;
 }
 
 .voucher-card-body {

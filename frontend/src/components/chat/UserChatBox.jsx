@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LogIn, MessageCircle, Send, X } from 'lucide-react';
 import { Button, Spinner } from 'react-bootstrap';
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import socket from '../../socket';
 import TypingBubble from './TypingBubble';
@@ -64,6 +64,7 @@ const getDefaultChatPosition = () => {
 
 const UserChatBox = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [conversation, setConversation] = useState(null);
@@ -71,6 +72,7 @@ const UserChatBox = () => {
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [chatError, setChatError] = useState('');
   const [adminTyping, setAdminTyping] = useState(false);
   const [chatPosition, setChatPosition] = useState(getDefaultChatPosition);
   const typingTimeoutRef = useRef(null);
@@ -99,6 +101,7 @@ const UserChatBox = () => {
   const loadConversation = useCallback(async () => {
     if (!currentUser?._id) return;
     setLoading(true);
+    setChatError('');
     try {
       const { data } = await axiosClient.get('/chat/conversations/my');
       setConversation(data);
@@ -111,7 +114,7 @@ const UserChatBox = () => {
       }
     } catch (error) {
       if (error.response?.status !== 401) {
-        Swal.fire('Không thể tải chat', error.response?.data?.message || 'Vui lòng thử lại sau.', 'error');
+        setChatError(getChatErrorMessage(error));
       }
     } finally {
       setLoading(false);
@@ -121,8 +124,16 @@ const UserChatBox = () => {
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
     window.addEventListener('storage', syncUser);
-    return () => window.removeEventListener('storage', syncUser);
+    window.addEventListener('authChanged', syncUser);
+    return () => {
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener('authChanged', syncUser);
+    };
   }, []);
+
+  useEffect(() => {
+    setCurrentUser(getStoredUser());
+  }, [location.pathname, isOpen]);
 
   useEffect(() => {
     if (!currentUser?._id) return;
@@ -372,6 +383,13 @@ const UserChatBox = () => {
                 <div className="user-chat-body">
                   {loading ? (
                     <div className="user-chat-loading"><Spinner size="sm" /> Đang tải hội thoại...</div>
+                  ) : chatError ? (
+                    <div className="user-chat-error">
+                      <MessageCircle size={32} />
+                      <p>Không thể tải chat</p>
+                      <span>{chatError}</span>
+                      <Button size="sm" onClick={loadConversation}>Thử lại</Button>
+                    </div>
                   ) : messages.length === 0 ? (
                     <div className="user-chat-empty">Xin chào, ArenaHub có thể hỗ trợ gì cho bạn?</div>
                   ) : (

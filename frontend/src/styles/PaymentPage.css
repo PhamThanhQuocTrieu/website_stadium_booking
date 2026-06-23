@@ -269,6 +269,26 @@
   flex-shrink: 0;
 }
 
+.payment-method-logo {
+  width: 58px;
+  height: 44px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #dbe4ea;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.payment-method-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
 .payment-method-icon.muted {
   color: #64748b;
   background: #e2e8f0;

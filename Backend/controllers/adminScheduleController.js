@@ -68,6 +68,34 @@ const getSlots = (startDate, endDate, daysOfWeek, startTime, endTime) => {
   return slots;
 };
 
+const groupBookingSlotsByDate = (bookings = []) => {
+  const slotsByDate = new Map();
+  bookings.forEach((booking) => {
+    const date = normalizeDate(booking.date);
+    if (!slotsByDate.has(date)) slotsByDate.set(date, new Set());
+    let current = normalizeTime(booking.startTime);
+    const endTime = normalizeTime(booking.endTime);
+    while (current && current < endTime) {
+      slotsByDate.get(date).add(current);
+      const next = timeToMinutes(current) + 30;
+      current = `${String(Math.floor(next / 60)).padStart(2, '0')}:${String(next % 60).padStart(2, '0')}`;
+    }
+  });
+  return slotsByDate;
+};
+
+const emitBookedSlots = (io, courtId, bookings = []) => {
+  if (!io) return;
+  const slotsByDate = groupBookingSlotsByDate(bookings);
+  slotsByDate.forEach((slots, date) => {
+    io.emit('slot_booked_success', {
+      fieldId: String(courtId),
+      date,
+      slots: [...slots]
+    });
+  });
+};
+
 const findConflict = async ({ courtId, date, startTime, endTime, excludeBookingId, excludeBookingIds = [] }) => {
   const query = {
     field: new mongoose.Types.ObjectId(courtId),
@@ -373,6 +401,7 @@ exports.createRecurringBooking = async (req, res) => {
       emitToUser(customerId, 'booking:recurring-created', { recurringBooking, createdCount: bookings.length });
     }
     emitToAdmin('schedule:refresh', { message: 'Lich co dinh da duoc tao' });
+    emitBookedSlots(req.app.get('io'), courtId, bookings);
 
     return res.status(201).json({
       message: 'Tao lich co dinh thanh cong',
@@ -572,6 +601,7 @@ exports.updateFutureRecurringBooking = async (req, res) => {
       });
     }
     emitToAdmin('schedule:refresh', { message: 'Lich co dinh da duoc cap nhat' });
+    emitBookedSlots(req.app.get('io'), newCourtId, bookings);
     return res.json({ recurringBooking, createdCount: bookings.length });
   } catch (error) {
     return res.status(400).json({ message: error.message });

@@ -26,6 +26,7 @@ const adminScheduleRoutes = require('./routes/adminScheduleRoutes');
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
+const newsRoutes = require('./routes/newsRoutes');
 const { setSocket } = require('./utils/socket');
 connectDB();
 
@@ -112,6 +113,7 @@ app.use('/api/admin', adminScheduleRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/admin/banners', bannerRoutes);
+app.use('/api/news', newsRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Loi Server: '.red, err.stack);

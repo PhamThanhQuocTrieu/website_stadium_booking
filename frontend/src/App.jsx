@@ -18,6 +18,8 @@ import PrivacyPage from './pages/PrivacyPage';
 import ContactPage from './pages/ContactPage';
 import NotificationsPage from './pages/NotificationsPage';
 import MyVouchersPage from './pages/MyVouchersPage';
+import NewsPage from './pages/NewsPage';
+import NewsDetailPage from './pages/NewsDetailPage';
 import UserChatBox from './components/chat/UserChatBox';
 
 import AdminLayout from './pages/Admin/AdminLayout';
@@ -38,6 +40,7 @@ import AdminPolicyManager from './pages/Admin/AdminPolicyManager';
 import ContactManager from './pages/Admin/ContactManager';
 import AdminNotificationManager from './pages/Admin/AdminNotificationManager';
 import ChatManager from './pages/Admin/ChatManager';
+import NewsManager from './pages/Admin/NewsManager';
 
 import './App.css';
 
@@ -61,7 +64,9 @@ function App() {
       (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
-          localStorage.clear();
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userInfo');
+          window.dispatchEvent(new Event('authChanged'));
           navigate('/login');
         }
         return Promise.reject(error);
@@ -72,6 +77,7 @@ function App() {
 
   const isAuthPage = ['/register', '/login'].includes(location.pathname) || location.pathname.startsWith('/booking');
   const isAdminPage = location.pathname.startsWith('/admin');
+  const isNewsPage = location.pathname.startsWith('/news');
   const showHeaderFooter = !isAuthPage && !isAdminPage;
 
   return (
@@ -95,6 +101,8 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/my-vouchers" element={<MyVouchersPage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/news/:slug" element={<NewsDetailPage />} />
 
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
@@ -114,6 +122,7 @@ function App() {
             <Route path="policies" element={<AdminPolicyManager />} />
             <Route path="contacts" element={<ContactManager />} />
             <Route path="notifications" element={<AdminNotificationManager />} />
+            <Route path="news" element={<NewsManager />} />
             <Route path="chats" element={<ChatManager />} />
             <Route path="payments" element={<BookingManager />} />
             <Route path="reports" element={<div>Bao cao doanh thu</div>} />
@@ -121,7 +130,7 @@ function App() {
         </Routes>
       </main>
 
-      {!isAdminPage && <UserChatBox />}
+      {!isAdminPage && !isNewsPage && <UserChatBox />}
       {showHeaderFooter && <Footer />}
     </div>
   );

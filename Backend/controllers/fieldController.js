@@ -87,3 +87,21 @@ exports.adminDeleteField = async (req, res) => {
         res.status(500).json({ message: "Xóa thất bại", error: error.message });
     }
 };
+exports.adminToggleFieldMaintenance = async (req, res) => {
+    try {
+        const field = await Field.findById(req.params.id);
+        if (!field) return res.status(404).json({ message: "San khong ton tai" });
+
+        const nextStatus = req.body?.maintenance === undefined
+            ? (field.status === 'Maintenance' ? 'Active' : 'Maintenance')
+            : (req.body.maintenance ? 'Maintenance' : 'Active');
+
+        field.status = nextStatus;
+        await field.save();
+
+        if (req.app.get('io')) req.app.get('io').emit('field_updated', field);
+        res.status(200).json(field);
+    } catch (error) {
+        res.status(400).json({ message: "Loi cap nhat trang thai san: " + error.message });
+    }
+};

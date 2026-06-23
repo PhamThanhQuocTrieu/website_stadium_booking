@@ -129,6 +129,7 @@
 
 .user-chat-loading,
 .user-chat-empty,
+.user-chat-error,
 .user-chat-login {
   min-height: 100%;
   display: flex;
@@ -137,6 +138,33 @@
   gap: 10px;
   color: #64748b;
   text-align: center;
+}
+
+.user-chat-error {
+  flex-direction: column;
+  color: #475569;
+}
+
+.user-chat-error svg {
+  color: #ef4444;
+}
+
+.user-chat-error p {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.user-chat-error span {
+  max-width: 260px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.user-chat-error .btn {
+  border: 0;
+  background: #2563eb;
+  font-weight: 700;
 }
 
 .user-chat-login {

@@ -101,6 +101,7 @@ const ChatManager = () => {
       setConversations((prev) => prev.map((item) => (
         item._id === conversation._id ? { ...item, unreadByAdmin: 0 } : item
       )));
+      window.dispatchEvent(new Event('adminChatUnreadChanged'));
     } catch (error) {
       Swal.fire('Không thể tải tin nhắn', error.response?.data?.message || 'Vui lòng thử lại sau.', 'error');
     } finally {
@@ -129,6 +130,7 @@ const ChatManager = () => {
         setMessages((prev) => (prev.some((item) => item._id === message._id) ? prev : [...prev, message]));
         setCustomerTyping(false);
         await axiosClient.put(`/chat/conversations/${conversation._id}/read`).catch(() => {});
+        window.dispatchEvent(new Event('adminChatUnreadChanged'));
       }
     };
 

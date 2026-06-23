@@ -36,7 +36,9 @@ axiosClient.interceptors.response.use(
         const isOurServer = error.config?.baseURL?.includes('localhost:5000');
         
         if (error.response?.status === 401 && isOurServer) {
-            localStorage.clear();
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userInfo');
+            window.dispatchEvent(new Event('authChanged'));
             window.location.href = '/login';
         }
         return Promise.reject(error);

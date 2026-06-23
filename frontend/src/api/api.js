@@ -28,6 +28,7 @@ api.interceptors.response.use(
       // 1. Xóa dữ liệu xác thực
       localStorage.removeItem('userToken');
       localStorage.removeItem('userInfo');
+      window.dispatchEvent(new Event('authChanged'));
       
       // 2. Chuyển hướng về trang login
       // Sử dụng window.location để refresh lại hoàn toàn ứng dụng, xóa sạch state cũ

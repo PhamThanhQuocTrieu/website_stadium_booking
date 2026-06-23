@@ -23,6 +23,7 @@ const LoginPage = () => {
     if (data && data.token) {
       localStorage.setItem('userToken', data.token);
       localStorage.setItem('userInfo', JSON.stringify(data));
+      window.dispatchEvent(new Event('authChanged'));
       return true;
     }
     return false;

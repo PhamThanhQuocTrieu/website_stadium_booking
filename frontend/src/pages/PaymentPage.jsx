@@ -3,11 +3,12 @@ import { Container, Row, Col, Form, Button, Spinner, Modal } from 'react-bootstr
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, ShieldCheck, CalendarCheck, Wallet2, 
-  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash, CreditCard2Front, QrCode 
+  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash, QrCode 
 } from 'react-bootstrap-icons';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import api from '../api/api';
+import vnpayLogo from '../assets/vnpay-logo.jpg';
 import '../styles/PaymentPage.css';
 
 const PaymentPage = () => {
@@ -453,7 +454,9 @@ const PaymentPage = () => {
                       className={`payment-method-card ${paymentMethod === 'VNPAY' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('VNPAY')}
                     >
-                      <span className="payment-method-icon"><CreditCard2Front size={24} /></span>
+                      <span className="payment-method-logo">
+                        <img src={vnpayLogo} alt="VNPAY" />
+                      </span>
                       <span>
                         <span className="fw-bold text-dark d-block">VNPAY</span>
                         <span className="text-muted small d-block">Thanh toán qua ATM, Internet Banking, QR VNPAY</span>

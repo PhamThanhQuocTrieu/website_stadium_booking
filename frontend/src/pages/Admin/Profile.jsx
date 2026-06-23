@@ -109,6 +109,7 @@ const Profile = () => {
     try {
       const res = await api.put(`/users/${formData._id}`, payload);
       localStorage.setItem('userInfo', JSON.stringify(res.data));
+      window.dispatchEvent(new Event('authChanged'));
       Swal.fire('Thành công', 'Đã cập nhật hồ sơ!', 'success');
       setFormData(prev => ({ ...prev, password: '', newPassword: '', confirmPassword: '' }));
     } catch (err) {

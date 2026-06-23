@@ -106,6 +106,7 @@ const RegisterPage = () => {
 
       localStorage.setItem('userToken', res.data.token);
       localStorage.setItem('userInfo', JSON.stringify(res.data));
+      window.dispatchEvent(new Event('authChanged'));
 
       Swal.fire({
         icon: 'success',

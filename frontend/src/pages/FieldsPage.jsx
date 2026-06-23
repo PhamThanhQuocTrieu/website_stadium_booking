@@ -81,15 +81,42 @@ const FieldsPage = () => {
     };
   };
 
+  const getAvailabilityKey = (field) => {
+    if (field.status === 'Maintenance') return 'maintenance';
+    return field.availabilityStatus || (field.status === 'Active' ? 'available' : 'full');
+  };
+
+  const getAvailabilityLabel = (field) => {
+    const key = getAvailabilityKey(field);
+    if (key === 'maintenance') return 'B\u1ea3o tr\u00ec';
+    if (key === 'full') return 'Hết sân';
+    return 'Còn trống';
+  };
+
+  const getAvailabilityBadgeVariant = (field) => {
+    const key = getAvailabilityKey(field);
+    if (key === 'available') return 'success';
+    if (key === 'maintenance') return 'warning';
+    return 'danger';
+  };
+
+  const getFieldActionLabel = (field) => {
+    const key = getAvailabilityKey(field);
+    if (key === 'available') return 'XEM LỊCH & ĐẶT NGAY';
+    return 'XEM CHI TIẾT';
+  };
+
   // Thuật toán lọc nâng cao và sắp xếp động theo mô hình dữ liệu mới
   const filteredFields = useMemo(() => {
     let result = fieldsData.filter(f => {
       const matchSearch = f.fieldName.toLowerCase().includes(filter.search.toLowerCase()) || 
                           f.address.toLowerCase().includes(filter.search.toLowerCase());
       const matchSport = filter.sport === 'Tất cả' || f.type === filter.sport;
-      const matchStatus = filter.status === 'Tất cả' || 
-                          (filter.status === 'Còn trống' && f.status === 'Active') ||
-                          (filter.status === 'Hết sân' && f.status === 'Maintenance');
+      const availabilityKey = getAvailabilityKey(f);
+      const matchStatus = filter.status === 'Tất cả' ||
+                          (filter.status === 'Còn trống' && availabilityKey === 'available') ||
+                          (filter.status === 'Hết sân' && availabilityKey === 'full') ||
+                          (filter.status === 'B\u1ea3o tr\u00ec' && availabilityKey === 'maintenance');
       return matchSearch && matchSport && matchStatus;
     });
 
@@ -178,7 +205,7 @@ const FieldsPage = () => {
 
               <div className="mb-4">
                 <label className="filter-label">TRẠNG THÁI SÂN</label>
-                {['Tất cả', 'Còn trống', 'Hết sân'].map(st => (
+                {['Tất cả', 'Còn trống', 'Hết sân', 'B\u1ea3o tr\u00ec'].map(st => (
                   <Form.Check 
                     key={st} type="radio" label={st} name="status" id={`status-${st}`}
                     checked={filter.status === st}
@@ -222,9 +249,9 @@ const FieldsPage = () => {
                     <Col md={6} xl={4} key={field._id} className="mb-4">
                       <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <Card 
-                          className={`field-card-v2 border-0 shadow-sm rounded-4 overflow-hidden h-100 bg-white ${field.status !== 'Active' ? 'sold-out' : ''}`}
+                          className={['field-card-v2 border-0 shadow-sm rounded-4 overflow-hidden h-100 bg-white', getAvailabilityKey(field) === 'maintenance' ? 'sold-out' : ''].filter(Boolean).join(' ')}
                           style={{ cursor: 'pointer' }}
-                          onClick={() => field.status === 'Active' && navigate(`/field-detail/${field._id}`)} 
+                          onClick={() => navigate(`/field-detail/${field._id}`)} 
                         >
                           <div className="card-img-box">
                             {field.image ? (
@@ -232,8 +259,8 @@ const FieldsPage = () => {
                             ) : (
                                 <ImageIcon size={40} opacity={0.15} />
                             )}
-                            <Badge bg={field.status === 'Active' ? 'success' : 'danger'} className="status-badge shadow-sm">
-                              {field.status === 'Active' ? 'Còn trống' : 'Bảo trì'}
+                            <Badge bg={getAvailabilityBadgeVariant(field)} className="status-badge shadow-sm">
+                              {getAvailabilityLabel(field)}
                             </Badge>
                           </div>
 
@@ -258,13 +285,12 @@ const FieldsPage = () => {
                             <Button 
                               variant="success" 
                               className="w-100 mt-auto fw-bold py-2 rounded-3 shadow-sm"
-                              disabled={field.status !== 'Active'}
                               onClick={(e) => {
                                 e.stopPropagation(); 
                                 navigate(`/field-detail/${field._id}`);
                               }}
                             >
-                              {field.status === 'Active' ? 'XEM LỊCH & ĐẶT NGAY' : 'ĐANG BẢO TRÌ'}
+                              {getFieldActionLabel(field)}
                             </Button>
                           </Card.Body>
                         </Card>

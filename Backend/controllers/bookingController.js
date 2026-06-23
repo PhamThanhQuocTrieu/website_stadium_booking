@@ -51,6 +51,23 @@ const addMinutes = (time, minutesToAdd) => {
   return `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}`;
 };
 
+const getScheduleSlots = (pricingRules = []) => {
+  const validRules = pricingRules.filter((rule) => rule?.startTime && rule?.endTime);
+  const startTime = validRules.length
+    ? validRules.map((rule) => normalizeTime(rule.startTime)).sort()[0]
+    : '05:00';
+  const endTime = validRules.length
+    ? validRules.map((rule) => normalizeTime(rule.endTime)).sort().at(-1)
+    : '24:00';
+  const slots = [];
+  let current = startTime;
+  while (current < endTime) {
+    slots.push(current);
+    current = addMinutes(current, 30);
+  }
+  return slots;
+};
+
 const expandBookingSlots = (booking) => {
   const slots = [];
   let current = normalizeTime(booking.startTime);
@@ -77,6 +94,7 @@ const getActivePendingHoldQuery = () => ({
 const activeBookingStatuses = ['confirmed', 'Confirmed', 'CONFIRMED', 'PENDING_PAYMENT', 'cancel_requested'];
 const paidPaymentStatuses = ['paid', 'success', 'Paid', 'PAID'];
 const pendingPaymentStatuses = ['pending', 'Pending', 'PENDING', 'UNPAID'];
+const lockedPaymentStatuses = ['paid', 'success', 'Paid', 'PAID', 'deposit', 'unpaid', 'UNPAID'];
 const completedBookingStatuses = ['completed', 'Completed', 'COMPLETED', 'Da hoan thanh', 'ÄÃ£ hoÃ n thÃ nh'];
 const cancelledBookingStatuses = ['cancelled', 'Cancelled', 'CANCELLED'];
 const paidLikePaymentStatuses = ['paid', 'success', 'Paid', 'PAID', 'SUCCESS'];
@@ -88,6 +106,12 @@ const isPaidBooking = (booking, payment) => {
   return paidLikeStatusSet.includes(normalizeStatus(payment?.status)) ||
     paidLikeStatusSet.includes(normalizeStatus(booking?.paymentStatus));
 };
+const getBlockingBookingPaymentQuery = () => ({
+  $or: [
+    { paymentStatus: { $in: lockedPaymentStatuses } },
+    { paymentStatus: { $in: pendingPaymentStatuses }, ...getActivePendingHoldQuery() }
+  ]
+});
 const getBookingEndDate = (booking) => new Date(`${booking.date}T${normalizeTime(booking.endTime)}:00`);
 const getFieldName = (field) => field?.fieldName || field?.name || 'sân';
 const calculateFieldAmount = (field, date, startTime, endTime) => {
@@ -255,16 +279,22 @@ exports.getBookingStatus = async (req, res) => {
 
     const field = await Field.findById(fieldId);
     if (!field) return res.status(404).json({ message: 'Khong tim thay san!' });
+    if (field.status === 'Maintenance') {
+      const maintenanceSlots = getScheduleSlots(field.pricingRules || []);
+      return res.status(200).json({
+        field: { _id: fieldId, fieldName: field.fieldName, status: field.status, pricingRules: field.pricingRules || [] },
+        bookedSlots: maintenanceSlots,
+        isMaintenance: true,
+        message: 'San dang bao tri.'
+      });
+    }
 
     const queryDateStr = date || new Date().toISOString().split('T')[0];
     const bookings = await Booking.find({
       field: new mongoose.Types.ObjectId(fieldId),
       date: String(queryDateStr).trim(),
       status: { $in: activeBookingStatuses },
-      $or: [
-        { paymentStatus: { $in: paidPaymentStatuses } },
-        { paymentStatus: { $in: pendingPaymentStatuses }, ...getActivePendingHoldQuery() }
-      ]
+      ...getBlockingBookingPaymentQuery()
     });
 
     const bookedSlots = [];
@@ -275,7 +305,7 @@ exports.getBookingStatus = async (req, res) => {
     });
 
     return res.status(200).json({
-      field: { _id: fieldId, fieldName: field.fieldName, pricingRules: field.pricingRules || [] },
+      field: { _id: fieldId, fieldName: field.fieldName, status: field.status, pricingRules: field.pricingRules || [] },
       bookedSlots
     });
   } catch (error) {
@@ -299,6 +329,9 @@ exports.reserveSlots = async (req, res) => {
 
     const field = await Field.findById(fieldId);
     if (!field) return res.status(404).json({ success: false, message: 'Khong tim thay san!' });
+    if (field.status === 'Maintenance') {
+      return res.status(400).json({ success: false, message: 'San dang bao tri, vui long chon san khac.' });
+    }
 
     const selectedDateObj = new Date(date);
     const dayOfWeek = selectedDateObj.getDay();
@@ -312,10 +345,7 @@ exports.reserveSlots = async (req, res) => {
       field: new mongoose.Types.ObjectId(fieldId),
       date,
       status: { $in: activeBookingStatuses },
-      $or: [
-        { paymentStatus: { $in: paidPaymentStatuses } },
-        { paymentStatus: { $in: pendingPaymentStatuses }, ...getActivePendingHoldQuery() }
-      ]
+      ...getBlockingBookingPaymentQuery()
     });
 
     const bookedSlots = new Set();
@@ -347,18 +377,15 @@ exports.reserveSlots = async (req, res) => {
     };
 
     const newBooking = await Booking.create(bookingData);
-    await createNotification({
-      user: newBooking.user,
-      title: 'Đặt sân thành công',
-      message: `Bạn đã đặt sân ${getFieldName(field)} vào lúc ${startTime} ngày ${date}.`,
-      type: 'booking',
-      relatedId: newBooking._id,
-      relatedModel: 'Booking',
-      io: req.app.get('io')
-    });
-
     const io = req.app.get('io');
-    if (io) io.emit('slot_booked_success', { fieldId, date, slots: selectedSlots });
+    if (io) {
+      io.emit('slot_booked_success', {
+        fieldId: String(fieldId),
+        date,
+        slots: selectedSlots,
+        holdExpiresAt: newBooking.holdExpiresAt
+      });
+    }
     return res.status(200).json({ success: true, bookingId: newBooking._id, totalPrice });
   } catch (error) {
     if (error.code === 11000) {
