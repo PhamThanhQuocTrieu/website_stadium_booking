@@ -1,0 +1,269 @@
+// CDM rut gon cho website_stadium_booking
+// Dan vao https://dbdiagram.io de ve so do cho bao cao/luan van
+// Ghi chu: Du an dung MongoDB/Mongoose, CDM duoi day gom cac collection
+// va chi giu cac thuoc tinh nghiep vu quan trong de giang vien de doc.
+
+Table users {
+  _id ObjectId [pk]
+  fullName varchar [not null]
+  phone varchar
+  email varchar [not null, unique]
+  password varchar [not null]
+  avatar varchar
+  dob date
+  gender varchar
+  role varchar
+  isActive boolean
+}
+
+Table fields {
+  _id ObjectId [pk]
+  fieldName varchar [not null]
+  type varchar [not null]
+  address varchar [not null]
+  image varchar
+  gallery text
+  description text
+  status varchar
+  ratingAverage decimal
+  ratingCount int
+  pricingRules text
+  availableServices text
+}
+
+Table services {
+  _id ObjectId [pk]
+  name varchar [not null, unique]
+  description text
+  image varchar
+  price decimal [not null]
+  stock int
+  inventoryType varchar
+  isActive boolean
+}
+
+Table field_services {
+  _id ObjectId [pk]
+  fieldId ObjectId [not null]
+  serviceId ObjectId [not null]
+}
+
+Table bookings {
+  _id ObjectId [pk]
+  userId ObjectId
+  fieldId ObjectId [not null]
+  voucherId ObjectId
+  reviewId ObjectId
+  bookingDate varchar [not null]
+  startTime varchar [not null]
+  endTime varchar [not null]
+  selectedServices text
+  totalPrice decimal [not null]
+  discountAmount decimal
+  finalAmount decimal
+  paymentMethod varchar
+  paymentStatus varchar
+  status varchar
+  isRecurring boolean
+  customerName varchar
+  customerPhone varchar
+  cancelReason text
+}
+
+Table recurring_bookings {
+  _id ObjectId [pk]
+  customerId ObjectId
+  courtId ObjectId [not null]
+  startDate varchar [not null]
+  endDate varchar [not null]
+  daysOfWeek text
+  startTime varchar [not null]
+  endTime varchar [not null]
+  bookingIds text
+  paymentStatus varchar
+  status varchar
+  createdBy ObjectId
+  note text
+}
+
+Table payments {
+  _id ObjectId [pk]
+  bookingId ObjectId [not null]
+  userId ObjectId [not null]
+  amount decimal [not null]
+  method varchar [not null]
+  provider varchar
+  txnRef varchar [unique]
+  transactionNo varchar
+  status varchar
+  paidAt datetime
+}
+
+Table vouchers {
+  _id ObjectId [pk]
+  code varchar [not null, unique]
+  name varchar [not null]
+  discountType varchar
+  discountValue decimal
+  maxDiscount decimal
+  minOrderAmount decimal
+  usageLimit int
+  usedCount int
+  perUserLimit int
+  applyType varchar
+  applicableFields text
+  applicableUsers text
+  sportTypes text
+  validTime varchar
+  status varchar
+  startDate datetime [not null]
+  endDate datetime [not null]
+}
+
+Table user_vouchers {
+  _id ObjectId [pk]
+  userId ObjectId [not null]
+  voucherId ObjectId [not null]
+  code varchar
+  usedCount int
+  status varchar
+  assignedAt datetime
+  usedAt datetime
+}
+
+Table reviews {
+  _id ObjectId [pk]
+  userId ObjectId [not null]
+  bookingId ObjectId [not null]
+  fieldId ObjectId
+  serviceId ObjectId
+  rating int [not null]
+  fieldQuality int
+  serviceQuality int
+  cleanliness int
+  priceReasonable int
+  comment text [not null]
+  images text
+  isHidden boolean
+}
+
+Table notifications {
+  _id ObjectId [pk]
+  userId ObjectId [not null]
+  title varchar [not null]
+  message text [not null]
+  type varchar [not null]
+  relatedModel varchar
+  relatedId ObjectId
+  isRead boolean
+}
+
+Table conversations {
+  _id ObjectId [pk]
+  userId ObjectId [not null]
+  assignedAdminId ObjectId
+  status varchar
+  lastMessage text
+  lastMessageAt datetime
+  unreadByUser int
+  unreadByAdmin int
+}
+
+Table messages {
+  _id ObjectId [pk]
+  conversationId ObjectId [not null]
+  senderId ObjectId [not null]
+  senderRole varchar [not null]
+  content text
+  type varchar
+  imageUrl varchar
+  status varchar
+}
+
+Table news {
+  _id ObjectId [pk]
+  title varchar [not null]
+  slug varchar [unique]
+  summary text
+  content text [not null]
+  thumbnail varchar
+  category varchar
+  tags text
+  authorId ObjectId
+  newsType varchar
+  sourceUrl varchar
+  status varchar
+  isFeatured boolean
+  views int
+  publishedAt datetime
+}
+
+Table contacts {
+  _id ObjectId [pk]
+  fullName varchar [not null]
+  email varchar [not null]
+  phone varchar [not null]
+  category varchar [not null]
+  subject varchar [not null]
+  message text [not null]
+  status varchar
+  adminReply text
+  repliedAt datetime
+}
+
+Table banners {
+  _id ObjectId [pk]
+  title varchar [not null]
+  subtitle varchar
+  description text
+  image varchar [not null]
+  buttonText varchar
+  buttonLink varchar
+  voucherCode varchar
+  position varchar
+  displayOrder int
+  isActive boolean
+  startDate datetime
+  endDate datetime
+}
+
+Table policies {
+  _id ObjectId [pk]
+  type varchar [not null, unique]
+  title varchar [not null]
+  content text [not null]
+  updatedBy ObjectId
+}
+
+Ref: fields._id < field_services.fieldId
+Ref: services._id < field_services.serviceId
+
+Ref: users._id < bookings.userId
+Ref: fields._id < bookings.fieldId
+Ref: vouchers._id < bookings.voucherId
+Ref: reviews._id - bookings.reviewId
+
+Ref: users._id < recurring_bookings.customerId
+Ref: fields._id < recurring_bookings.courtId
+Ref: users._id < recurring_bookings.createdBy
+
+Ref: bookings._id < payments.bookingId
+Ref: users._id < payments.userId
+
+Ref: users._id < user_vouchers.userId
+Ref: vouchers._id < user_vouchers.voucherId
+
+Ref: users._id < reviews.userId
+Ref: bookings._id < reviews.bookingId
+Ref: fields._id < reviews.fieldId
+Ref: services._id < reviews.serviceId
+
+Ref: users._id < notifications.userId
+
+Ref: users._id < conversations.userId
+Ref: users._id < conversations.assignedAdminId
+Ref: conversations._id < messages.conversationId
+Ref: users._id < messages.senderId
+
+Ref: users._id < news.authorId
+Ref: users._id < policies.updatedBy

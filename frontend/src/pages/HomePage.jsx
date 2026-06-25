@@ -9,10 +9,12 @@ import 'aos/dist/aos.css';
 import { io } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import {
-  Clock,
-  CreditCard,
+  CalendarCheck2,
+  CheckCircle2,
+  ChevronRight,
   Quote,
   Search,
+  ShieldCheck,
   Star
 } from 'lucide-react';
 import { getRulePrice } from '../utils/pricing';
@@ -32,6 +34,33 @@ const staggerCards = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1 } }
 };
+
+const bookingSteps = [
+  {
+    number: '01',
+    icon: Search,
+    title: 'Chọn sân',
+    description: 'Tìm kiếm sân theo loại hình, vị trí, giá và tình trạng còn trống.',
+    badge: 'Tìm đúng sân trong vài giây',
+    checklist: ['Lọc sân nhanh', 'xem chi tiết', 'chọn sân phù hợp']
+  },
+  {
+    number: '02',
+    icon: CalendarCheck2,
+    title: 'Chọn thời gian',
+    description: 'Chọn ngày, khung giờ còn trống và thêm dịch vụ đi kèm nếu cần.',
+    badge: 'Lịch trống rõ ràng',
+    checklist: ['Khung giờ trực quan', 'kiểm tra trùng lịch', 'cập nhật realtime']
+  },
+  {
+    number: '03',
+    icon: ShieldCheck,
+    title: 'Thanh toán',
+    description: 'Xác nhận thông tin, áp dụng voucher và thanh toán an toàn.',
+    badge: 'Xác nhận tức thì',
+    checklist: ['Voucher ưu đãi', 'thanh toán nhanh', 'nhận xác nhận đặt sân']
+  }
+];
 
 const fallbackNews = [
   {
@@ -381,47 +410,62 @@ const HomePage = () => {
         )}
 
         <section className="home-extra-section home-how-section">
-          <div className="home-extra-heading">
-            <span>Quy trình đặt sân</span>
-            <h2>Đặt sân chỉ với 3 bước đơn giản</h2>
-            <p>Chọn sân, chọn thời gian và thanh toán trong một luồng thao tác rõ ràng.</p>
-          </div>
+          <div className="home-how-inner">
+            <motion.div
+              className="home-how-heading"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+            >
+              <span className="home-how-eyebrow">QUY TRÌNH ĐẶT SÂN</span>
+              <h2>Đặt sân nhanh chóng chỉ trong 3 bước</h2>
+              <p>
+                Từ tìm sân, chọn lịch đến thanh toán đều được tối ưu để bạn hoàn tất đặt sân
+                nhanh, rõ ràng và an toàn trên một luồng thao tác.
+              </p>
+            </motion.div>
 
-          <motion.div
-            className="home-steps-grid"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={staggerCards}
-          >
-            {[
-              {
-                icon: Search,
-                title: 'Chọn sân',
-                description: 'Tìm kiếm và chọn sân phù hợp với nhu cầu của bạn.'
-              },
-              {
-                icon: Clock,
-                title: 'Chọn thời gian',
-                description: 'Chọn ngày, khung giờ còn trống và dịch vụ đi kèm.'
-              },
-              {
-                icon: CreditCard,
-                title: 'Thanh toán',
-                description: 'Thanh toán nhanh chóng và nhận xác nhận đặt sân.'
-              }
-            ].map((step, index) => (
-              <motion.article className="home-step-card" key={step.title} variants={fadeUp}>
-                <span className="home-step-number">{index + 1}</span>
-                <div className="home-step-icon">
-                  <step.icon size={30} />
-                </div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-                {index < 2 && <span className="home-step-arrow" aria-hidden="true">→</span>}
-              </motion.article>
-            ))}
-          </motion.div>
+            <motion.div
+              className="home-steps-grid"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.18 }}
+              variants={staggerCards}
+            >
+              {bookingSteps.map((step, index) => (
+                <motion.article className="home-step-card" key={step.title} variants={fadeUp}>
+                  <div className="home-step-topline">
+                    <span className="home-step-number">{step.number}</span>
+                    <div className="home-step-icon">
+                      <step.icon size={28} strokeWidth={2.2} />
+                    </div>
+                  </div>
+
+                  <div className="home-step-content">
+                    <span className="home-step-badge">{step.badge}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </div>
+
+                  <ul className="home-step-checklist">
+                    {step.checklist.map((item) => (
+                      <li key={item}>
+                        <CheckCircle2 size={16} strokeWidth={2.4} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {index < bookingSteps.length - 1 && (
+                    <span className="home-step-arrow" aria-hidden="true">
+                      <ChevronRight size={22} strokeWidth={2.4} />
+                    </span>
+                  )}
+                </motion.article>
+              ))}
+            </motion.div>
+          </div>
         </section>
 
         {featuredFields.length > 0 && (
