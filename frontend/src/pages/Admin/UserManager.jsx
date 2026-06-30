@@ -74,6 +74,11 @@ const getRoleClass = (role) => {
   return 'admin-users-role-user';
 };
 
+const isProtectedAdmin = (userOrRole) => {
+  const role = typeof userOrRole === 'string' ? userOrRole : userOrRole?.role;
+  return ['admin', 'super admin'].includes(String(role || '').toLowerCase());
+};
+
 const UserAvatar = ({ user, large = false }) => {
   const avatar = user?.avatar || user?.avatarUrl || user?.image;
   const label = getInitials(user?.fullName || user?.email);
@@ -126,7 +131,7 @@ const UserManager = () => {
       total: users.length,
       active: users.filter((user) => user.isActive).length,
       locked: users.filter((user) => !user.isActive).length,
-      admins: users.filter((user) => user.role === 'admin').length,
+      admins: users.filter((user) => isProtectedAdmin(user)).length,
       newThisMonth: users.filter((user) => {
         if (!user.createdAt) return false;
         const createdAt = new Date(user.createdAt);
@@ -135,8 +140,13 @@ const UserManager = () => {
     };
   }, [users]);
 
-  const allVisibleSelected = visibleUsers.length > 0 && visibleUsers.every((user) => selectedUsers.includes(user._id));
-  const selectedCount = selectedUsers.length;
+  const selectableUsers = useMemo(() => visibleUsers.filter((user) => !isProtectedAdmin(user)), [visibleUsers]);
+  const allVisibleSelected = selectableUsers.length > 0 && selectableUsers.every((user) => selectedUsers.includes(user._id));
+  const selectedActionIds = useMemo(() => {
+    const protectedIds = new Set(users.filter((user) => isProtectedAdmin(user)).map((user) => user._id));
+    return selectedUsers.filter((id) => !protectedIds.has(id));
+  }, [selectedUsers, users]);
+  const selectedCount = selectedActionIds.length;
 
   const fetchUsers = async () => {
     try {
@@ -164,11 +174,21 @@ const UserManager = () => {
   }, [page, search, filterRole, filterStatus]);
 
   const openModal = (user = null) => {
+    if (isProtectedAdmin(user)) {
+      Swal.fire('Khong the thao tac', 'Tai khoan admin khong duoc CRUD tai trang quan ly nguoi dung.', 'info');
+      return;
+    }
+
     setFormData(user ? { ...initialForm, ...user } : initialForm);
     setShowModal(true);
   };
 
   const openDetailModal = (user) => {
+    if (isProtectedAdmin(user)) {
+      Swal.fire('Khong the thao tac', 'Tai khoan admin khong duoc CRUD tai trang quan ly nguoi dung.', 'info');
+      return;
+    }
+
     setDetailUser(user);
     setShowDetailModal(true);
   };
@@ -183,6 +203,11 @@ const UserManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isProtectedAdmin(formData)) {
+      Swal.fire('Khong the thao tac', 'Tai khoan admin khong duoc CRUD tai trang quan ly nguoi dung.', 'info');
+      return;
+    }
+
     setLoading(true);
     const passwordInput = e.target.elements.password?.value;
     try {
@@ -204,6 +229,11 @@ const UserManager = () => {
   };
 
   const handleLock = async (user) => {
+    if (isProtectedAdmin(user)) {
+      Swal.fire('Khong the thao tac', 'Tai khoan admin khong the bi khoa tai trang nay.', 'info');
+      return;
+    }
+
     const { value: reason } = await Swal.fire({
       title: 'Khóa tài khoản?',
       input: 'text',
@@ -219,22 +249,32 @@ const UserManager = () => {
       await axiosClient.put(`/users/${user._id}`, { isActive: false, lockReason: reason });
       Swal.fire('Thành công', 'Đã khóa tài khoản!', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch {
       Swal.fire('Lỗi', 'Không thể khóa!', 'error');
     }
   };
 
   const toggleStatus = async (user) => {
+    if (isProtectedAdmin(user)) {
+      Swal.fire('Khong the thao tac', 'Tai khoan admin khong the bi mo/khoa tai trang nay.', 'info');
+      return;
+    }
+
     try {
       await axiosClient.put(`/users/${user._id}`, { isActive: true, lockReason: '' });
       Swal.fire('Thành công', 'Tài khoản đã được mở khóa!', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch {
       Swal.fire('Lỗi', 'Không thể mở khóa!', 'error');
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (user) => {
+    if (isProtectedAdmin(user)) {
+      Swal.fire('Khong the thao tac', 'Tai khoan admin khong the bi xoa tai trang nay.', 'info');
+      return;
+    }
+
     const result = await Swal.fire({
       title: 'Xóa vĩnh viễn?',
       text: 'Người dùng này sẽ bị xóa khỏi hệ thống.',
@@ -247,25 +287,26 @@ const UserManager = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axiosClient.delete(`/users/${id}`);
+      await axiosClient.delete(`/users/${user._id}`);
       Swal.fire('Đã xóa', 'Người dùng đã được xóa.', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch {
       Swal.fire('Lỗi', 'Xóa thất bại!', 'error');
     }
   };
 
-  const toggleSelectedUser = (id) => {
-    setSelectedUsers((current) => (current.includes(id) ? current.filter((userId) => userId !== id) : [...current, id]));
+  const toggleSelectedUser = (user) => {
+    if (isProtectedAdmin(user)) return;
+    setSelectedUsers((current) => (current.includes(user._id) ? current.filter((userId) => userId !== user._id) : [...current, user._id]));
   };
 
   const toggleSelectAll = () => {
     if (allVisibleSelected) {
-      setSelectedUsers((current) => current.filter((id) => !visibleUsers.some((user) => user._id === id)));
+      setSelectedUsers((current) => current.filter((id) => !selectableUsers.some((user) => user._id === id)));
       return;
     }
 
-    setSelectedUsers((current) => [...new Set([...current, ...visibleUsers.map((user) => user._id)])]);
+    setSelectedUsers((current) => [...new Set([...current, ...selectableUsers.map((user) => user._id)])]);
   };
 
   const handleBulkLock = async () => {
@@ -281,10 +322,10 @@ const UserManager = () => {
     if (!reason) return;
 
     try {
-      await Promise.all(selectedUsers.map((id) => axiosClient.put(`/users/${id}`, { isActive: false, lockReason: reason })));
+      await Promise.all(selectedActionIds.map((id) => axiosClient.put(`/users/${id}`, { isActive: false, lockReason: reason })));
       Swal.fire('Thành công', 'Đã khóa các tài khoản đã chọn!', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch {
       Swal.fire('Lỗi', 'Không thể khóa hàng loạt!', 'error');
     }
   };
@@ -300,10 +341,10 @@ const UserManager = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await Promise.all(selectedUsers.map((id) => axiosClient.put(`/users/${id}`, { isActive: true, lockReason: '' })));
+      await Promise.all(selectedActionIds.map((id) => axiosClient.put(`/users/${id}`, { isActive: true, lockReason: '' })));
       Swal.fire('Thành công', 'Đã mở khóa các tài khoản đã chọn!', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch {
       Swal.fire('Lỗi', 'Không thể mở khóa hàng loạt!', 'error');
     }
   };
@@ -321,10 +362,10 @@ const UserManager = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await Promise.all(selectedUsers.map((id) => axiosClient.delete(`/users/${id}`)));
+      await Promise.all(selectedActionIds.map((id) => axiosClient.delete(`/users/${id}`)));
       Swal.fire('Đã xóa', 'Các người dùng đã chọn đã được xóa.', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch {
       Swal.fire('Lỗi', 'Xóa hàng loạt thất bại!', 'error');
     }
   };
@@ -379,18 +420,21 @@ const UserManager = () => {
       </section>
 
       <section className="admin-users-stats-grid">
-        {statCards.map(({ label, value, desc, icon: Icon, tone }) => (
-          <article className={`admin-users-stat-card is-${tone}`} key={label}>
+        {statCards.map((stat) => {
+          const StatIcon = stat.icon;
+          return (
+          <article className={`admin-users-stat-card is-${stat.tone}`} key={stat.label}>
             <div className="admin-users-stat-icon">
-              <Icon size={22} />
+              <StatIcon size={22} />
             </div>
             <div>
-              <strong>{value}</strong>
-              <span>{label}</span>
-              <small>{desc}</small>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+              <small>{stat.desc}</small>
             </div>
           </article>
-        ))}
+          );
+        })}
       </section>
 
       <section className="admin-users-filter-card">
@@ -487,7 +531,7 @@ const UserManager = () => {
                 <thead>
                   <tr>
                     <th className="admin-users-checkbox-cell">
-                      <Form.Check checked={allVisibleSelected} onChange={toggleSelectAll} aria-label="Chọn tất cả" />
+                      <Form.Check checked={allVisibleSelected} onChange={toggleSelectAll} disabled={selectableUsers.length === 0} aria-label="Chọn tất cả" />
                     </th>
                     <th>Họ tên</th>
                     <th>Email</th>
@@ -502,7 +546,7 @@ const UserManager = () => {
                   {visibleUsers.map((user) => (
                     <tr key={user._id}>
                       <td className="admin-users-checkbox-cell">
-                        <Form.Check checked={selectedUsers.includes(user._id)} onChange={() => toggleSelectedUser(user._id)} aria-label={`Chọn ${user.fullName}`} />
+                        <Form.Check checked={!isProtectedAdmin(user) && selectedUsers.includes(user._id)} onChange={() => toggleSelectedUser(user)} disabled={isProtectedAdmin(user)} aria-label={`Chọn ${user.fullName}`} />
                       </td>
                       <td>
                         <div className="admin-users-person">
@@ -526,16 +570,16 @@ const UserManager = () => {
                       <td>{formatDate(user.createdAt)}</td>
                       <td>
                         <div className="admin-users-actions">
-                          <ActionButton label="Xem chi tiết" onClick={() => openDetailModal(user)}>
+                          <ActionButton label="Xem chi tiết" disabled={isProtectedAdmin(user)} onClick={() => openDetailModal(user)}>
                             <Eye size={16} />
                           </ActionButton>
-                          <ActionButton label="Sửa" className="is-edit" onClick={() => openModal(user)}>
+                          <ActionButton label="Sửa" className="is-edit" disabled={isProtectedAdmin(user)} onClick={() => openModal(user)}>
                             <Edit size={16} />
                           </ActionButton>
-                          <ActionButton label={user.isActive ? 'Khóa' : 'Mở khóa'} className={user.isActive ? 'is-lock' : 'is-unlock'} onClick={() => (user.isActive ? handleLock(user) : toggleStatus(user))}>
+                          <ActionButton label={user.isActive ? 'Khóa' : 'Mở khóa'} className={user.isActive ? 'is-lock' : 'is-unlock'} disabled={isProtectedAdmin(user)} onClick={() => (user.isActive ? handleLock(user) : toggleStatus(user))}>
                             {user.isActive ? <Lock size={16} /> : <Unlock size={16} />}
                           </ActionButton>
-                          <ActionButton label="Xóa" className="is-delete" onClick={() => handleDelete(user._id)}>
+                          <ActionButton label="Xóa" className="is-delete" disabled={isProtectedAdmin(user)} onClick={() => handleDelete(user)}>
                             <Trash2 size={16} />
                           </ActionButton>
                         </div>
@@ -584,7 +628,6 @@ const UserManager = () => {
               <Form.Label>Vai trò</Form.Label>
               <Form.Select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
                 <option value="user">Khách hàng</option>
-                <option value="admin">Admin</option>
                 <option value="owner">Chủ sân</option>
               </Form.Select>
             </Form.Group>

@@ -43,7 +43,7 @@ const paymentStatusMap = {
 
 const bookingStatusMap = {
   pending: 'Chờ xử lý',
-  pending_payment: 'Chờ xử lý',
+  pending_payment: 'Chờ thanh toán',
   confirmed: 'Đã xác nhận',
   playing: 'Đang diễn ra',
   completed: 'Hoàn thành',
@@ -401,3 +401,4 @@ const VnpayReturnPage = () => {
 };
 
 export default VnpayReturnPage;
+

@@ -1,0 +1,43 @@
+.rich-text-editor {
+  max-width: 100%;
+}
+
+.rich-text-editor .tox.tox-tinymce {
+  border-color: #dbe3ea;
+  border-radius: 8px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.rich-text-editor .tox .tox-toolbar,
+.rich-text-editor .tox .tox-toolbar__overflow,
+.rich-text-editor .tox .tox-toolbar__primary {
+  background: #f8fafc;
+}
+
+.rich-text-editor .tox .tox-toolbar__group {
+  border-color: #e2e8f0;
+}
+
+.rich-text-editor .tox .tox-tbtn,
+.rich-text-editor .tox .tox-listboxfield .tox-listbox--select,
+.rich-text-editor .tox .tox-split-button {
+  border-radius: 6px;
+}
+
+.rich-text-editor .tox .tox-edit-area::before {
+  border-color: #22c55e;
+  border-radius: 0;
+}
+
+.tox-tinymce-aux,
+.tox .tox-dialog-wrap {
+  z-index: 1065;
+}
+
+@media (max-width: 767px) {
+  .rich-text-editor .tox .tox-toolbar__group {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}

@@ -10,7 +10,10 @@ const {
     updateUser, 
     deleteUser, 
     createUser,
-    googleLogin 
+    googleLogin,
+    forgotPassword,
+    verifyResetOtp,
+    resetPassword
 } = require('../controllers/userController');
 
 // Import middleware bảo mật (đảm bảo đường dẫn middlewares có chữ 's')
@@ -20,6 +23,9 @@ const { protect, adminOnly } = require('../middlewares/authMiddleware');
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/google-login', googleLogin);
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-otp', verifyResetOtp);
+router.post('/reset-password', resetPassword);
 
 // Route cần bảo mật
 // Cập nhật thông tin cá nhân (User tự cập nhật)

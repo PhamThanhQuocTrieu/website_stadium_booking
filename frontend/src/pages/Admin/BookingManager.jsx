@@ -262,17 +262,17 @@ const BookingManager = () => {
                           <div className="cancel-action-group">
                             <Button size="sm" variant="success" className="cancel-action-btn" onClick={() => updateCancelRequest(booking, 'approve')}>
                               <Check size={15} />
-                              <span>Duyet huy</span>
+                              <span>Duyệt hủy</span>
                             </Button>
                             <Button size="sm" variant="outline-danger" className="cancel-action-btn" onClick={() => updateCancelRequest(booking, 'reject')}>
                               <X size={15} />
-                              <span>Tu choi</span>
+                              <span>Từ chối</span>
                             </Button>
                           </div>
                         )}
                         <Button size="sm" variant="light" className="detail-action-btn" onClick={() => setSelectedBooking(booking)}>
                           <Eye size={16} />
-                          <span>Chi tiet</span>
+                          <span>Chi tiết</span>
                         </Button>
                       </td>
                     </tr>
@@ -321,7 +321,7 @@ const BookingManager = () => {
 
       <Modal show={!!selectedBooking} onHide={() => setSelectedBooking(null)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Chi tiet don dat san</Modal.Title>
+          <Modal.Title>Chi tiết đơn đặt sân</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedBooking && (

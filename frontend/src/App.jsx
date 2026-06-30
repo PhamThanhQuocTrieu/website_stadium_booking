@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import FieldsPage from './pages/FieldsPage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import BookingPage from './pages/BookingPage';
 import FieldDetailPage from './pages/FieldDetailPage';
 import Footer from './components/Footer';
@@ -41,6 +42,7 @@ import ContactManager from './pages/Admin/ContactManager';
 import AdminNotificationManager from './pages/Admin/AdminNotificationManager';
 import ChatManager from './pages/Admin/ChatManager';
 import NewsManager from './pages/Admin/NewsManager';
+import RevenueReport from './pages/Admin/RevenueReport';
 
 import './App.css';
 
@@ -75,7 +77,7 @@ function App() {
     return () => axios.interceptors.response.eject(interceptor);
   }, [navigate]);
 
-  const isAuthPage = ['/register', '/login'].includes(location.pathname) || location.pathname.startsWith('/booking');
+  const isAuthPage = ['/register', '/login', '/forgot-password'].includes(location.pathname) || location.pathname.startsWith('/booking');
   const isAdminPage = location.pathname.startsWith('/admin');
   const isNewsPage = location.pathname.startsWith('/news');
   const showHeaderFooter = !isAuthPage && !isAdminPage;
@@ -90,6 +92,7 @@ function App() {
           <Route path="/fields" element={<FieldsPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/booking/:id" element={<BookingPage />} />
           <Route path="/field-detail/:id" element={<FieldDetailPage />} />
           <Route path="/payment" element={<PaymentPage />} />
@@ -125,7 +128,7 @@ function App() {
             <Route path="news" element={<NewsManager />} />
             <Route path="chats" element={<ChatManager />} />
             <Route path="payments" element={<BookingManager />} />
-            <Route path="reports" element={<div>Bao cao doanh thu</div>} />
+            <Route path="reports" element={<RevenueReport />} />
           </Route>
         </Routes>
       </main>

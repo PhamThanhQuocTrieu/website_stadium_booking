@@ -7,11 +7,14 @@ import {
   Form,
   InputGroup,
   Modal,
+  Pagination,
   Row,
   Spinner,
   Table
 } from 'react-bootstrap';
 import {
+  ChevronLeft,
+  ChevronRight,
   Edit3,
   ExternalLink,
   FileText,
@@ -23,6 +26,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
+import RichTextEditor from '../../components/RichTextEditor';
 import socket from '../../socket';
 import '../../styles/admin/admin-common.css';
 import '../../styles/admin/newsmanager.css';
@@ -61,6 +65,8 @@ const newsTypeLabels = {
   external: 'Tin nguồn ngoài'
 };
 
+const pageSizeOptions = [5, 10, 20, 50];
+
 const isValidUrl = (value) => {
   try {
     const url = new URL(value);
@@ -87,6 +93,8 @@ const NewsManager = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadNews = async () => {
     try {
@@ -125,6 +133,42 @@ const NewsManager = () => {
     internal: news.filter((item) => item.newsType !== 'external').length,
     external: news.filter((item) => item.newsType === 'external').length
   }), [news]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredNews.length / pageSize));
+
+  const paginatedNews = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredNews.slice(startIndex, startIndex + pageSize);
+  }, [filteredNews, currentPage, pageSize]);
+
+  const paginationItems = useMemo(() => {
+    const maxVisiblePages = 5;
+    const half = Math.floor(maxVisiblePages / 2);
+    let start = Math.max(currentPage - half, 1);
+    const end = Math.min(start + maxVisiblePages - 1, totalPages);
+
+    if (end - start + 1 < maxVisiblePages) {
+      start = Math.max(end - maxVisiblePages + 1, 1);
+    }
+
+    const pages = [];
+
+    for (let page = start; page <= end; page += 1) {
+      pages.push(page);
+    }
+
+    return pages;
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, typeFilter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const openModal = (item = null) => {
     setEditingNews(item);
@@ -250,7 +294,7 @@ const NewsManager = () => {
 
       <Card className="news-admin-toolbar">
         <Row className="g-3">
-          <Col lg={6}>
+          <Col lg={5}>
             <InputGroup>
               <InputGroup.Text><Search size={18} /></InputGroup.Text>
               <Form.Control
@@ -260,7 +304,7 @@ const NewsManager = () => {
               />
             </InputGroup>
           </Col>
-          <Col sm={6} lg={3}>
+          <Col sm={6} lg={2}>
             <Form.Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
               <option value="all">Tất cả trạng thái</option>
               <option value="draft">Bản nháp</option>
@@ -268,11 +312,22 @@ const NewsManager = () => {
               <option value="hidden">Đã ẩn</option>
             </Form.Select>
           </Col>
-          <Col sm={6} lg={3}>
+          <Col sm={6} lg={2}>
             <Form.Select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
               <option value="all">Tất cả loại tin</option>
               <option value="internal">Tin nội bộ</option>
               <option value="external">Tin nguồn ngoài</option>
+            </Form.Select>
+          </Col>
+          <Col sm={6} lg={3}>
+            <Form.Select
+              value={pageSize}
+              onChange={(event) => setPageSize(Number(event.target.value))}
+              aria-label="Số tin mỗi trang"
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>{size} tin</option>
+              ))}
             </Form.Select>
           </Col>
         </Row>
@@ -302,7 +357,7 @@ const NewsManager = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredNews.map((item) => (
+              {paginatedNews.map((item) => (
                 <tr key={item._id}>
                   <td>
                     <div className="news-admin-title-cell">
@@ -340,6 +395,42 @@ const NewsManager = () => {
               ))}
             </tbody>
           </Table>
+        )}
+        {!loading && filteredNews.length > 0 && (
+          <Card.Footer className="news-admin-pagination-footer">
+            <div className="news-admin-page-summary">
+              Hiển thị {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredNews.length)} trong {filteredNews.length} tin
+            </div>
+            <Pagination className="news-admin-pagination mb-0">
+              <Pagination.Prev disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
+                <ChevronLeft size={16} />
+              </Pagination.Prev>
+              {paginationItems[0] > 1 && (
+                <>
+                  <Pagination.Item onClick={() => setCurrentPage(1)}>1</Pagination.Item>
+                  {paginationItems[0] > 2 && <Pagination.Ellipsis disabled />}
+                </>
+              )}
+              {paginationItems.map((page) => (
+                <Pagination.Item
+                  key={page}
+                  active={page === currentPage}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Pagination.Item>
+              ))}
+              {paginationItems[paginationItems.length - 1] < totalPages && (
+                <>
+                  {paginationItems[paginationItems.length - 1] < totalPages - 1 && <Pagination.Ellipsis disabled />}
+                  <Pagination.Item onClick={() => setCurrentPage(totalPages)}>{totalPages}</Pagination.Item>
+                </>
+              )}
+              <Pagination.Next disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
+                <ChevronRight size={16} />
+              </Pagination.Next>
+            </Pagination>
+          </Card.Footer>
         )}
       </Card>
 
@@ -414,7 +505,12 @@ const NewsManager = () => {
               </Col>
               <Col xs={12}>
                 <Form.Label>Nội dung</Form.Label>
-                <Form.Control required as="textarea" rows={9} value={formData.content} onChange={(event) => handleChange('content', event.target.value)} />
+                <RichTextEditor
+                  value={formData.content}
+                  onChange={(html) => handleChange('content', html)}
+                  placeholder="Nhập nội dung..."
+                  height={420}
+                />
               </Col>
               <Col md={4}>
                 <Form.Label>Tags</Form.Label>

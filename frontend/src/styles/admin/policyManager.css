@@ -118,6 +118,10 @@
   min-height: 46px;
   border-color: #dbe3ea;
   border-radius: 12px;
+  color: #172033;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.6;
 }
 
 .policy-editor .form-control:focus {
@@ -132,6 +136,13 @@
 .policy-editor .ql-toolbar {
   border-color: #dbe3ea !important;
   border-radius: 14px 14px 0 0;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.policy-editor .ql-toolbar .ql-picker,
+.policy-editor .ql-toolbar button {
+  color: #334155;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .policy-editor .ql-container {
@@ -139,6 +150,37 @@
   border-color: #dbe3ea !important;
   border-radius: 0 0 14px 14px;
   font-size: 1rem;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.policy-editor .ql-editor {
+  min-height: 360px;
+  color: #172033;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.75;
+  text-align: left;
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+}
+
+.policy-editor .ql-editor * {
+  font-family: inherit;
+  line-height: inherit;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.policy-editor .ql-editor p,
+.policy-editor .ql-editor ol,
+.policy-editor .ql-editor ul {
+  margin-bottom: 0.85rem;
+}
+
+.policy-editor .ql-editor .ql-align-justify {
+  text-align: left;
 }
 
 .policy-admin-state {
@@ -167,6 +209,10 @@
   }
 
   .policy-editor .ql-container {
+    min-height: 280px;
+  }
+
+  .policy-editor .ql-editor {
     min-height: 280px;
   }
 }

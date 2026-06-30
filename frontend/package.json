@@ -20,6 +20,7 @@
     "@fullcalendar/resource-timeline": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
     "@react-oauth/google": "^0.13.5",
+    "@tinymce/tinymce-react": "^6.3.0",
     "aos": "^2.3.4",
     "axios": "^1.14.0",
     "bootstrap": "^5.3.8",
@@ -36,7 +37,8 @@
     "react-router-dom": "^7.14.2",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3",
-    "sweetalert2": "^11.26.24"
+    "sweetalert2": "^11.26.24",
+    "tinymce": "^8.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

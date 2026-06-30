@@ -1,12 +1,13 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const colors = require('colors');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const userRoutes = require('./routes/userRoutes');
 const userVoucherRoutes = require('./routes/userVoucherRoutes');
@@ -24,7 +25,9 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const adminNotificationRoutes = require('./routes/adminNotificationRoutes');
 const adminScheduleRoutes = require('./routes/adminScheduleRoutes');
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
+const adminReportRoutes = require('./routes/adminReportRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const aiChatRoutes = require('./routes/aiChatRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const { setSocket } = require('./utils/socket');
@@ -94,6 +97,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/users', userRoutes);
+app.use('/api/auth', userRoutes);
 app.use('/api/user', userVoucherRoutes);
 app.use('/api/admin/fields', adminFieldRoutes);
 app.use('/api/fields', userFieldRoutes);
@@ -109,8 +113,10 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/admin', adminDashboardRoutes);
+app.use('/api/admin', adminReportRoutes);
 app.use('/api/admin', adminScheduleRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/ai-chat', aiChatRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/admin/banners', bannerRoutes);
 app.use('/api/news', newsRoutes);

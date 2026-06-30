@@ -40,7 +40,7 @@ const paymentStatusMap = {
 
 const bookingStatusMap = {
   pending: 'Chờ xử lý',
-  pending_payment: 'Chờ xử lý',
+  pending_payment: 'Chờ thanh toán',
   confirmed: 'Đã xác nhận',
   playing: 'Đang diễn ra',
   completed: 'Hoàn thành',
@@ -55,6 +55,7 @@ const bookingStatusMap = {
 
 const statusMeta = {
   pending: { className: 'badge-pending' },
+  pending_payment: { className: 'badge-pending' },
   confirmed: { className: 'badge-confirmed' },
   playing: { className: 'badge-playing' },
   completed: { className: 'badge-completed' },
@@ -65,7 +66,7 @@ const statusMeta = {
 
 const filters = [
   { key: 'all', label: 'Tất cả ' },
-  { key: 'pending', label: 'Chờ xử lý' },
+  { key: 'pending', label: 'Chờ thanh toán' },
   { key: 'confirmed', label: 'Đã xác nhận' },
   { key: 'playing', label: 'Đang diễn ra' },
   { key: 'completed', label: 'Hoàn thành' },
@@ -87,7 +88,7 @@ const defaultReviewForm = {
 
 const reviewCriteria = [
   { key: 'fieldQuality', label: 'Chất lượng sân' },
-  { key: 'serviceQuality', label: 'ịch vụ / Thái độ phục vụ' },
+  { key: 'serviceQuality', label: 'Dịch vụ / Thái độ phục vụ' },
   { key: 'cleanliness', label: 'Vệ sinh sân' },
   { key: 'priceReasonable', label: 'Giá cả có hợp lý không' }
 ];
@@ -156,8 +157,8 @@ const getBookingStatus = (booking) => {
   const endAt = new Date(`${booking?.date}T${booking?.endTime || '00:00'}:00`);
   const now = Date.now();
 
-  if (raw === 'pending_payment') return 'pending';
-  if (raw === 'completed' || raw === 'da hoan thanh' || raw === 'hoan thanh') return 'completed';
+  if (raw === 'pending_payment') return 'pending_payment';
+  if (raw === 'completed' || raw === 'Đã hoàn thành' || raw === 'hoàn thành') return 'completed';
   if (raw === 'cancel_requested') return 'cancel_requested';
   if (raw === 'cancelled' || raw === 'canceled') return 'cancelled';
   if (raw === 'refunded') return 'refunded';
@@ -181,11 +182,11 @@ const getBreakdown = (booking) => {
   const fee = Number(booking?.transactionFee || 0);
   const subtotal = Math.max(0, Number(booking?.subtotal || total - serviceTotal + discount - fee));
   return [
-    ['Tien san', subtotal],
-    ['Tien dich vu', serviceTotal],
-    ['Giam gia', discount ? -discount : 0],
-    ['Phi giao dich', fee],
-    ['Tong cong', total]
+    ['Tiền sân', subtotal],
+    ['Tiền dịch vụ', serviceTotal],
+    ['Giảm giá', discount ? -discount : 0],
+    ['Phí giao dịch', fee],
+    ['Tổng cộng', total]
   ];
 };
 
@@ -244,7 +245,7 @@ const MyBookingsPage = () => {
       ].filter(Boolean).join(' ').toLowerCase();
       const matchesFilter = activeFilter === 'all' ||
         bookingStatus === activeFilter ||
-        (activeFilter === 'pending' && bookingStatus === 'cancel_requested');
+        (activeFilter === 'pending' && ['pending_payment', 'cancel_requested'].includes(bookingStatus));
       return matchesFilter && (!keyword || haystack.includes(keyword));
     });
   }, [bookings, activeFilter, searchTerm]);
@@ -285,14 +286,14 @@ const MyBookingsPage = () => {
   const handleRequestCancel = async (booking) => {
     const paid = isPaid(booking);
     const result = await Swal.fire({
-      title: paid ? 'Yeu cau huy dat san?' : 'Huy dat san?',
+      title: paid ? 'Yêu cầu hủy đặt sân?' : 'Yêu cầu hủy đặt sân?',
       text: paid
-        ? 'Don da thanh toan se chuyen sang trang thai cho admin xac nhan huy.'
-        : 'Don chua thanh toan se duoc huy truc tiep.',
+        ? 'Đơn đã thanh toán sẽ chuyển sang trạng thái chờ admin xác nhận hủy.'
+        : 'Đơn chưa thanh toán sẽ được hủy trực tiếp.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: paid ? 'Gui yeu cau huy' : 'Huy dat san',
-      cancelButtonText: 'Dong',
+      confirmButtonText: paid ? 'Gửi yêu cầu hủy' : 'Yêu cầu hủy đặt sân',
+      cancelButtonText: 'Đóng',
       confirmButtonColor: '#dc2626'
     });
 
@@ -303,7 +304,7 @@ const MyBookingsPage = () => {
       updateBookingInList(booking._id, data);
       Swal.fire({
         icon: 'success',
-        title: paid ? 'Da gui yeu cau huy' : 'Da huy booking',
+        title: paid ? 'Đã gửi yêu cầu hủy' : 'Đã hủy booking',
         timer: 1500,
         showConfirmButton: false
       });
@@ -464,7 +465,7 @@ const MyBookingsPage = () => {
               <CalendarCheck size={48} />
               <h3>Chưa có booking phù hợp</h3>
               <p>Thu đổi bộ lọc hoặc đặt sân mới để bắt đầu quản lý lịch chơi của bạn.</p>
-              <Button variant="success" href="/fields">ìm sân ngay</Button>
+              <Button variant="success" href="/fields">Tìm sân ngay</Button>
             </Card.Body>
           </Card>
         ) : (
@@ -477,7 +478,7 @@ const MyBookingsPage = () => {
                 const paymentStatus = getPaymentStatus(booking);
                 const meta = statusMeta[bookingStatus] || statusMeta.pending;
                 const canPay = paymentStatus === 'pending' && !['cancel_requested', 'cancelled', 'completed'].includes(bookingStatus);
-                const canRequestCancel = ['pending', 'confirmed'].includes(bookingStatus);
+                const canRequestCancel = ['pending', 'pending_payment', 'confirmed'].includes(bookingStatus);
                 const isReviewed = Boolean(booking.review || booking.reviewed || booking.isReviewed || booking.reviewId);
                 const canReview = bookingStatus === 'completed' && !isReviewed;
                 const payment = booking.payment || {};
@@ -566,13 +567,13 @@ const MyBookingsPage = () => {
               </div>
 
               <div className="detail-section-grid">
-                <div><span>Người đặt</span><strong>{text(detailBooking.user?.fullName || detailBooking.userName, 'Tai khoan cua ban')}</strong></div>
+                <div><span>Người đặt</span><strong>{text(detailBooking.user?.fullName || detailBooking.userName, 'Tài khoản của bạn')}</strong></div>
                 <div><span>Ngày giờ</span><strong>{formatDate(detailBooking.date)} | {detailBooking.startTime} - {detailBooking.endTime}</strong></div>
                 <div><span>Slot</span><strong>{Array.isArray(detailBooking.slots) && detailBooking.slots.length ? detailBooking.slots.join(', ') : `${detailBooking.startTime} - ${detailBooking.endTime}`}</strong></div>
                 <div><span>Giao dịch VNPAY</span><strong>{text(detailBooking.payment?.txnRef || detailBooking.txnRef || detailBooking.payment?.transactionNo)}</strong></div>
                 <div><span>Trạng thái booking</span><strong>{mapStatusLabel('bookingStatus', getBookingStatus(detailBooking))}</strong></div>
                 <div><span>Trạng thái thanh toán</span><strong>{mapStatusLabel('paymentStatus', getPaymentStatus(detailBooking))}</strong></div>
-                <div className="detail-wide"><span>Ghi chu</span><strong>{text(detailBooking.note || detailBooking.cancelReason, 'Khong co ghi chu')}</strong></div>
+                <div className="detail-wide"><span>Ghi chú</span><strong>{text(detailBooking.note || detailBooking.cancelReason, 'Không có ghi chú')}</strong></div>
               </div>
 
               <h5 className="detail-title">Dịch vụ đi kèm</h5>

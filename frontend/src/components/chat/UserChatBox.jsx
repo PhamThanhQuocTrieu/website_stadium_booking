@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LogIn, MessageCircle, Send, X } from 'lucide-react';
+import { Bot, Headphones, LogIn, MessageCircle, Send, X } from 'lucide-react';
 import { Button, Spinner } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import socket from '../../socket';
+import AiChatBox from './AiChatBox';
 import TypingBubble from './TypingBubble';
 import '../../styles/chat/UserChatBox.css';
 
@@ -74,6 +75,7 @@ const UserChatBox = () => {
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState('');
   const [adminTyping, setAdminTyping] = useState(false);
+  const [activeChatMode, setActiveChatMode] = useState('ai');
   const [chatPosition, setChatPosition] = useState(getDefaultChatPosition);
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -360,7 +362,7 @@ const UserChatBox = () => {
             transition={{ duration: 0.18 }}
           >
             <header className="user-chat-header">
-              <div className="user-chat-support-avatar">AH</div>
+              <div className="user-chat-support-avatar">{activeChatMode === 'ai' ? <Bot size={21} /> : 'AH'}</div>
               <div>
                 <h3>Hỗ trợ khách hàng</h3>
                 <p>Thường phản hồi trong vài phút</p>
@@ -380,6 +382,28 @@ const UserChatBox = () => {
               </div>
             ) : (
               <>
+                <div className="user-chat-tabs" role="tablist" aria-label="Chon kenh ho tro">
+                  <button
+                    type="button"
+                    className={activeChatMode === 'ai' ? 'active' : ''}
+                    onClick={() => setActiveChatMode('ai')}
+                  >
+                    <Bot size={16} /> Chat voi AI
+                  </button>
+                  <button
+                    type="button"
+                    className={activeChatMode === 'admin' ? 'active' : ''}
+                    onClick={() => setActiveChatMode('admin')}
+                  >
+                    <Headphones size={16} /> Chat voi Admin
+                    {unreadCount > 0 && <span>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                  </button>
+                </div>
+
+                {activeChatMode === 'ai' ? (
+                  <AiChatBox currentUser={currentUser} onSwitchToAdmin={() => setActiveChatMode('admin')} />
+                ) : (
+                  <>
                 <div className="user-chat-body">
                   {loading ? (
                     <div className="user-chat-loading"><Spinner size="sm" /> Đang tải hội thoại...</div>
@@ -440,6 +464,8 @@ const UserChatBox = () => {
                     <Send size={18} />
                   </button>
                 </footer>
+                  </>
+                )}
               </>
             )}
           </motion.section>

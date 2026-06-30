@@ -9,8 +9,15 @@ const ACTIVE_CONFLICT_STATUSES = { $nin: ['cancelled', 'Cancelled', 'CANCELLED',
 const LOCKED_STATUSES = ['cancelled', 'completed', 'Cancelled', 'Completed', 'CANCELLED', 'COMPLETED', 'Da hoan thanh', 'ÄÃ£ hoÃ n thÃ nh'];
 const DAY_NAMES = ['Chu nhat', 'Thu 2', 'Thu 3', 'Thu 4', 'Thu 5', 'Thu 6', 'Thu 7'];
 
+const formatLocalDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const normalizeDate = (value) => {
-  if (!value) return new Date().toISOString().slice(0, 10);
+  if (!value) return formatLocalDate(new Date());
   return String(value).slice(0, 10);
 };
 
@@ -57,7 +64,7 @@ const getSlots = (startDate, endDate, daysOfWeek, startTime, endTime) => {
     const day = cursor.getDay();
     if (daysOfWeek.includes(day)) {
       slots.push({
-        date: cursor.toISOString().slice(0, 10),
+        date: formatLocalDate(cursor),
         dayOfWeek: day,
         startTime,
         endTime
@@ -474,7 +481,7 @@ exports.cancelRecurringBooking = async (req, res) => {
   try {
     const recurringBooking = await RecurringBooking.findById(req.params.id);
     if (!recurringBooking) return res.status(404).json({ message: 'Khong tim thay lich co dinh' });
-    const nowDate = new Date().toISOString().slice(0, 10);
+    const nowDate = formatLocalDate(new Date());
     await Booking.updateMany({
       _id: { $in: recurringBooking.bookingIds },
       date: { $gte: nowDate },
@@ -534,7 +541,7 @@ exports.updateFutureRecurringBooking = async (req, res) => {
       return res.status(409).json({ message: 'Co lich bi trung', conflictSlots: checked.slots.filter((slot) => !slot.isAvailable) });
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = formatLocalDate(new Date());
     await Booking.updateMany({
       _id: { $in: recurringBooking.bookingIds },
       date: { $gte: today },

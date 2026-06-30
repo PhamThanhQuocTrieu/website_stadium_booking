@@ -27,7 +27,7 @@ const PolicyPage = ({ type }) => {
       try {
         const { data } = await axiosClient.get(`/policies/${type}`);
         setPolicy(data);
-      } catch (err) {
+      } catch {
         setError('Không thể tải dữ liệu chính sách. Vui lòng thử lại.');
       } finally {
         setLoading(false);

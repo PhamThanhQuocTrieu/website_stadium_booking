@@ -16,7 +16,8 @@ import {
   BellRing,
   Newspaper,
   ScrollText,
-  PanelsTopLeft
+  PanelsTopLeft,
+  BarChart3
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
@@ -91,6 +92,7 @@ const AdminLayout = () => {
     { path: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/admin/fields', icon: <MapPinned size={20} />, label: 'Quản lý sân' },
     { path: '/admin/bookings', icon: <CalendarDays size={20} />, label: 'Đơn đặt sân' },
+    { path: '/admin/reports', icon: <BarChart3 size={20} />, label: 'Báo cáo doanh thu' },
     { path: '/admin/schedule-manager', icon: <CalendarClock size={20} />, label: 'Quản lý lịch sân' },
     { path: '/admin/users', icon: <Users size={20} />, label: 'Người dùng' },
     { path: '/admin/vouchers', icon: <TicketPercent size={20} />, label: 'Mã giảm giá' },

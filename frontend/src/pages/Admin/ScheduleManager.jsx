@@ -13,10 +13,16 @@ import RecurringBookingModal from './RecurringBookingModal';
 import RecurringBookingList from './RecurringBookingList';
 import '../../styles/admin/schedule-manager.css';
 
-const today = new Date().toISOString().slice(0, 10);
 const lockedStatuses = ['cancelled', 'completed', 'Cancelled', 'Completed', 'CANCELLED', 'COMPLETED'];
 
-const formatDate = (date) => date?.toISOString().slice(0, 10);
+const formatDate = (date) => {
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const today = formatDate(new Date());
 const formatTime = (date) => date?.toTimeString().slice(0, 5);
 const formatSlotLabel = (slotInfo) => {
   const hour = slotInfo.date.getHours();

@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Form, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { FileText, Save, ShieldCheck } from 'lucide-react';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
+import RichTextEditor from '../../components/RichTextEditor';
 import '../../styles/admin/policyManager.css';
 
 const labels = {
@@ -51,7 +50,7 @@ const AdminPolicyManager = () => {
     try {
       const { data } = await axiosClient.get('/policies');
       setPolicies(Array.isArray(data) ? data : []);
-    } catch (err) {
+    } catch {
       setError('Không thể tải dữ liệu chính sách. Vui lòng thử lại.');
       Swal.fire('Lỗi', 'Không thể tải dữ liệu chính sách. Vui lòng thử lại.', 'error');
     } finally {
@@ -69,7 +68,12 @@ const AdminPolicyManager = () => {
 
     setSaving(true);
     try {
-      const { data } = await axiosClient.put(`/policies/${activePolicy._id}`, formData);
+      const payload = {
+        ...formData,
+        title: formData.title.trim(),
+        content: formData.content
+      };
+      const { data } = await axiosClient.put(`/policies/${activePolicy._id}`, payload);
       setPolicies((prev) => prev.map((item) => (item._id === data._id ? data : item)));
       Swal.fire('Thành công', 'Đã lưu thay đổi chính sách.', 'success');
     } catch (err) {
@@ -133,10 +137,11 @@ const AdminPolicyManager = () => {
 
         <Form.Group>
           <Form.Label>Nội dung</Form.Label>
-          <ReactQuill
-            theme="snow"
+          <RichTextEditor
             value={formData.content}
-            onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+            onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
+            placeholder="Nhập nội dung..."
+            height={420}
           />
         </Form.Group>
       </div>

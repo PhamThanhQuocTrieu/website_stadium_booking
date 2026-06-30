@@ -13,6 +13,13 @@ const normalizeTime = (time) => {
   return `${String(hour).padStart(2, '0')}:${String(minute || 0).padStart(2, '0')}`;
 };
 
+const formatLocalDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const timeToMinutes = (time) => {
   const [hour, minute] = normalizeTime(time).split(':').map(Number);
   return hour * 60 + minute;
@@ -289,7 +296,7 @@ exports.getBookingStatus = async (req, res) => {
       });
     }
 
-    const queryDateStr = date || new Date().toISOString().split('T')[0];
+    const queryDateStr = date || formatLocalDate(new Date());
     const bookings = await Booking.find({
       field: new mongoose.Types.ObjectId(fieldId),
       date: String(queryDateStr).trim(),
@@ -373,7 +380,7 @@ exports.reserveSlots = async (req, res) => {
       transactionFee: 0,
       holdExpiresAt: getHoldExpiresAt(),
       paymentStatus: 'Pending',
-      status: 'Confirmed'
+      status: 'PENDING_PAYMENT'
     };
 
     const newBooking = await Booking.create(bookingData);

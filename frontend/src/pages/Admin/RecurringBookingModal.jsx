@@ -3,13 +3,26 @@ import { X } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import RecurringBookingCheckResult from './RecurringBookingCheckResult';
 
+const formatLocalDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addMonths = (date, months) => {
+  const nextDate = new Date(date);
+  nextDate.setMonth(nextDate.getMonth() + months);
+  return nextDate;
+};
+
 const defaultForm = {
   customerId: '',
   customerName: '',
   customerPhone: '',
   courtId: '',
-  startDate: new Date().toISOString().slice(0, 10),
-  endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10),
+  startDate: formatLocalDate(new Date()),
+  endDate: formatLocalDate(addMonths(new Date(), 1)),
   daysOfWeek: [2, 4],
   startTime: '17:00',
   endTime: '18:00',

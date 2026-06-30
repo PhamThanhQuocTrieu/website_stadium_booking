@@ -150,7 +150,7 @@ const LoginPage = () => {
                 <Form.Group className="auth-field">
                   <div className="auth-label-row">
                     <Form.Label>Mật khẩu</Form.Label>
-                    <Link to="/login" tabIndex={-1}>Quên mật khẩu?</Link>
+                    <Link to="/forgot-password">Quên mật khẩu?</Link>
                   </div>
                   <InputGroup className="auth-input-group">
                     <InputGroup.Text><Lock size={18} /></InputGroup.Text>

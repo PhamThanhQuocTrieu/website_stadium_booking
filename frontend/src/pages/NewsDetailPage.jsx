@@ -22,13 +22,6 @@ const formatDate = (value) => {
   return date.toLocaleDateString('vi-VN');
 };
 
-const renderContent = (content = '') => {
-  return String(content)
-    .split('\n')
-    .filter((line) => line.trim())
-    .map((line, index) => <p key={`${line}-${index}`}>{line}</p>);
-};
-
 const NewsDetailPage = () => {
   const { slug } = useParams();
   const [article, setArticle] = useState(null);
@@ -123,9 +116,10 @@ const NewsDetailPage = () => {
 
             <img className="news-detail-image" src={article.thumbnail || fallbackImage} alt={article.title} />
 
-            <div className="news-detail-content">
-              {renderContent(article.content)}
-            </div>
+            <div
+              className="news-detail-content"
+              dangerouslySetInnerHTML={{ __html: article.content || '' }}
+            />
 
             {isExternal && (
               <section className="news-source-box" aria-label="Nguồn tham khảo">
