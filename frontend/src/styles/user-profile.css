@@ -143,6 +143,19 @@
 
 .save-btn:hover { background-color: #157347 !important; transform: translateY(-2px); } 
 
+.otp-btn {
+  width: 100%;
+  min-height: 50px;
+  background-color: #14532d !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+
+.otp-btn:hover {
+  background-color: #166534 !important;
+}
+
 .profile-page .container {
   padding-left: clamp(1rem, 3vw, 1.5rem);
   padding-right: clamp(1rem, 3vw, 1.5rem);

@@ -1,0 +1,41 @@
+@startuml
+title Quan ly san va dich vu
+
+start
+:Admin truy cap chuc nang quan ly;
+:He thong xac thuc quyen admin;
+if (Khong co quyen?) then (Co)
+  :Tu choi truy cap;
+  stop
+endif
+
+if (Quan ly san?) then (San)
+  :Admin chon them/sua/xoa/bao tri san;
+  if (Them hoac sua san?) then (Co)
+    :Nhap thong tin san va bang gia;
+    :He thong kiem tra du lieu;
+    :Luu thong tin san;
+  elseif (Xoa san?) then (Co)
+    :He thong xoa san;
+  else (Bao tri)
+    :He thong doi trang thai san;
+  endif
+  :Phat thong bao cap nhat san realtime;
+else (Dich vu)
+  :Admin chon them/sua/xoa/bat tat dich vu;
+  if (Them dich vu?) then (Co)
+    :Kiem tra ten dich vu trung lap;
+    :Luu dich vu moi;
+  elseif (Sua dich vu?) then (Co)
+    :Cap nhat gia, ton kho, anh, san ap dung;
+  elseif (Xoa dich vu?) then (Co)
+    :Xoa dich vu;
+  else (Bat tat)
+    :Doi trang thai hoat dong;
+  endif
+  :Phat thong bao cap nhat dich vu realtime;
+endif
+
+:Tra ket qua cho admin;
+stop
+@enduml

@@ -1,0 +1,64 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+title So do hoat dong admin xem lich va doi lich booking
+
+|Admin|
+start
+:Mo man hinh lich san;
+
+|He thong|
+:Xac thuc quyen admin;
+if (Khong co quyen?) then (Co)
+  :Tu choi truy cap;
+  stop
+endif
+
+|Admin|
+:Chon ngay va loai san;
+
+|Co so du lieu|
+:Lay danh sach san;
+:Lay booking trong ngay;
+
+|He thong|
+:Hien thi lich theo cot san va khung gio;
+
+|Admin|
+if (Admin doi lich booking?) then (Co)
+  :Chon booking va khung gio moi;
+
+  |He thong|
+  :Kiem tra booking co duoc doi khong;
+  if (Booking da hoan thanh hoac da huy?) then (Co)
+    :Thong bao khong the doi lich;
+    stop
+  endif
+  :Kiem tra khung gio moi hop le;
+
+  |Co so du lieu|
+  :Kiem tra trung lich;
+
+  |He thong|
+  if (Khung gio moi bi trung?) then (Co)
+    :Thong bao khung gio da co nguoi dat;
+    stop
+  endif
+
+  |Co so du lieu|
+  :Cap nhat san/ngay/gio moi;
+  :Ghi lich su doi lich;
+
+  |He thong|
+  :Gui thong bao cho khach hang;
+  :Lam moi lich admin;
+endif
+
+stop
+@enduml

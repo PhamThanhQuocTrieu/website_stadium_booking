@@ -1,5 +1,5 @@
 ﻿// File: Frontend/src/pages/FieldDetailPage.jsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Container, Row, Col, Badge, Button, Spinner, ProgressBar } from 'react-bootstrap';
 import { 
   StarFill, GeoAltFill, ArrowRight, CheckCircleFill, 
@@ -9,9 +9,16 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
-import Swal from 'sweetalert2'; // ðŸŒŸ THÃŠM Má»šI: ThÆ° viá»‡n thÃ´ng bÃ¡o popup cao cáº¥p
+import Swal from 'sweetalert2';
 import { findPricingRule } from '../utils/pricing';
 import '../styles/FieldDetailPage.css'; 
+
+const reviewCriteria = [
+  { key: 'fieldQuality', label: 'Chất lượng sân' },
+  { key: 'serviceQuality', label: 'Dịch vụ' },
+  { key: 'cleanliness', label: 'Vệ sinh' },
+  { key: 'priceReasonable', label: 'Giá cả' }
+];
 
 const FieldDetailPage = () => {
   const { id } = useParams();
@@ -21,9 +28,8 @@ const FieldDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState('');
 
-  const fetchFieldDetail = async () => {
+  const fetchFieldDetail = useCallback(async () => {
     try {
-      // Gá»i API Backend (API nÃ y tráº£ vá» dáº¡ng: { field, reviews })
       const [fieldRes, reviewRes] = await Promise.all([
         axios.get(`http://localhost:5000/api/fields/${id}`),
         axios.get(`http://localhost:5000/api/reviews/field/${id}`).catch(() => ({ data: null }))
@@ -39,13 +45,12 @@ const FieldDetailPage = () => {
       console.error("Loi lay chi tiet san:", err);
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    fetchFieldDetail();
+    const fetchTimer = setTimeout(fetchFieldDetail, 0);
 
-    // Khá»Ÿi táº¡o vÃ  ngáº¯t socket an toÃ n trong vÃ²ng Ä‘á»i component
     const socket = io('http://localhost:5000');
     socket.on('field_updated', (data) => {
       if (data.id === id || data.data?._id === id) {
@@ -59,11 +64,12 @@ const FieldDetailPage = () => {
     });
 
     return () => {
+      clearTimeout(fetchTimer);
       socket.off('field_updated');
       socket.off('review_updated');
       socket.disconnect();
     };
-  }, [id]);
+  }, [id, fetchFieldDetail]);
 
   const renderStars = (rating, size = 16, interactive = false, onSelect = null) => {
     const value = Number(rating || 0);
@@ -85,13 +91,6 @@ const FieldDetailPage = () => {
     });
   };
 
-  const reviewCriteria = [
-    { key: 'fieldQuality', label: 'Chất lượng sân' },
-    { key: 'serviceQuality', label: 'Dịch vụ' },
-    { key: 'cleanliness', label: 'Vệ sinh' },
-    { key: 'priceReasonable', label: 'Giá cả' }
-  ];
-
   const getServiceIcon = (serviceName = '') => {
     const normalizedName = String(serviceName)
       .normalize('NFD')
@@ -107,13 +106,13 @@ const FieldDetailPage = () => {
     return PatchCheckFill;
   };
 
-  const getReviewAverage = (review) => {
+  const getReviewAverage = useCallback((review) => {
     const scores = reviewCriteria
       .map((item) => Number(review?.[item.key] || 0))
       .filter((value) => value >= 1 && value <= 5);
     if (scores.length === 0) return 0;
     return scores.reduce((sum, value) => sum + value, 0) / scores.length;
-  };
+  }, []);
 
   // Tinh diem trung binh va phan bo sao theo cach cac he thong review nhu Google hien thi.
   const summaryRating = useMemo(() => {
@@ -147,7 +146,7 @@ const FieldDetailPage = () => {
       count,
       distribution
     };
-  }, [reviews]);
+  }, [reviews, getReviewAverage]);
 
   const currentPricingRule = useMemo(() => {
     return findPricingRule(field?.pricingRules || [], new Date());
@@ -263,7 +262,7 @@ const FieldDetailPage = () => {
           <h5 className="fw-bold mb-4 d-flex align-items-center gap-2 text-dark">
             <div className="bg-success" style={{width:4, height:20, borderRadius:2}}></div> BẢNG GIÁ CHI TIẾT HỆ THỐNG
           </h5>
-          <div className="table-responsive rounded-4 overflow-hidden border">
+          <div className="field-pricing-table-wrap table-responsive rounded-4 border">
             <table className="table table-borderless mb-0 align-middle">
               <thead className="bg-dark text-white text-center">
                 <tr>

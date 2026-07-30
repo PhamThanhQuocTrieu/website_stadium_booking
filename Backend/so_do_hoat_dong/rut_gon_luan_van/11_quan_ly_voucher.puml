@@ -1,0 +1,41 @@
+@startuml
+title Quan ly va su dung voucher
+
+start
+:Admin hoac nguoi dung thao tac voucher;
+
+if (Admin quan ly voucher?) then (Admin)
+  :He thong xac thuc quyen admin;
+  if (Khong co quyen?) then (Co)
+    :Tu choi truy cap;
+    stop
+  endif
+  :Admin them/sua/xoa voucher;
+  :Nhap ma, ten, loai giam, gia tri, dieu kien ap dung;
+  :He thong validate thong tin voucher;
+  if (Ma bi trung hoac du lieu sai?) then (Co)
+    :Thong bao loi;
+    stop
+  endif
+  :Luu thay doi voucher;
+  :Tra ket qua;
+else (Nguoi dung)
+  :Nguoi dung nhap voucher khi dat san;
+  :He thong xac thuc nguoi dung;
+  :Tim voucher theo ma;
+  if (Voucher khong ton tai hoac het han?) then (Co)
+    :Thong bao voucher khong hop le;
+    stop
+  endif
+  :Kiem tra gio dat, ngay dat, loai san, gia tri don;
+  :Kiem tra gioi han su dung cua nguoi dung;
+  if (Khong thoa dieu kien?) then (Co)
+    :Thong bao khong ap dung duoc;
+    stop
+  endif
+  :Tinh so tien giam;
+  :Cap nhat tong tien booking;
+endif
+
+stop
+@enduml

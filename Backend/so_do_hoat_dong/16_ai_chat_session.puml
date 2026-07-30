@@ -1,0 +1,84 @@
+@startuml
+title AI ChatSession va lich su tro chuyen
+
+start
+:Nguoi dung gui cau hoi den /api/ai-chat/send;
+:protect JWT;
+:Lay userId tu token;
+:Nhan message va optional bookingId;
+
+if (Message rong?) then (Co)
+  :Tra 400 noi dung khong duoc de trong;
+  stop
+endif
+
+if (Message qua 2000 ky tu?) then (Co)
+  :Tra 400 yeu cau rut gon noi dung;
+  stop
+endif
+
+if (Co bookingId va bookingId khong hop le?) then (Co)
+  :Tra 400 ma booking khong hop le;
+  stop
+endif
+
+fork
+  :Lay profile User;
+fork again
+  :Tim ChatSession theo userId;
+  if (bookingId hop le?) then (Co)
+    :Them dieu kien relatedBooking;
+  endif
+  :Sap xep updatedAt giam dan;
+  if (Khong co session?) then (Co)
+    :Tao ChatSession moi;
+    note right
+      ChatSession gom:
+      - userId
+      - relatedBooking
+      - messages[]
+      - timestamps
+    end note
+  endif
+end fork
+
+:Them message cua user vao session.messages;
+:Luu ChatSession;
+:Emit ai_typing_start cho user;
+
+partition "aiChatService.generateAiReply" {
+  :Lay lich su gan nhat tu session.messages;
+  :Lay context san phu hop;
+  :Lay context lich trong neu cau hoi co ngay/gio;
+  :Lay voucher cua user neu cau hoi lien quan voucher;
+  :Lay booking theo relatedBooking neu co;
+  :Lay policy neu cau hoi lien quan huy/thanh toan/dieu khoan;
+  :Tao prompt tu system prompt, history va context;
+  :Goi Gemini model;
+  if (Model khong ton tai?) then (Co)
+    :Thu model fallback tiep theo;
+  endif
+  :Nhan cau tra loi AI;
+}
+
+:Them message cua AI vao session.messages;
+:Luu ChatSession lan 2;
+:Emit ai_typing_stop;
+:Emit ai_message kem session va message moi;
+:Tra session, reply va message cho frontend;
+
+if (Nguoi dung xem lich su?) then (GET /history)
+  :Tim tat ca ChatSession theo userId;
+  :Sort updatedAt giam dan;
+  :Populate relatedBooking;
+  :Tra danh sach session;
+endif
+
+if (Nguoi dung xoa lich su?) then (DELETE /clear)
+  :Xoa tat ca ChatSession theo userId;
+  :Emit ai_history_cleared;
+  :Tra thong bao da xoa;
+endif
+
+stop
+@enduml

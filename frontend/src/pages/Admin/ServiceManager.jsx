@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axiosClient from '../../api/axiosClient'; 
 import Swal from 'sweetalert2';
 import { io } from 'socket.io-client';
+import '../../styles/admin/servicemanager.css';
 
 const socket = io('http://localhost:5000');
 
@@ -112,7 +113,14 @@ const ServiceManager = () => {
     };
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="service-manager-page p-4" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+            <div className="admin-page-heading">
+                <div>
+                    <span>ARENAHUB ADMIN</span>
+                    <h1>Quản lý dịch vụ đi kèm</h1>
+                    <p>Quản lý tiện ích, đồ uống và vật phẩm hỗ trợ khách hàng trong quá trình đặt sân.</p>
+                </div>
+            </div>
             {/* Toolbar giữ nguyên ... */}
             <Row className="mb-4 g-3">
                 {[
@@ -127,13 +135,13 @@ const ServiceManager = () => {
                 ))}
             </Row>
 
-            <div className="d-flex gap-2 mb-4 bg-white p-2 rounded shadow-sm align-items-center">
+            <div className="service-manager-toolbar d-flex gap-2 mb-4 bg-white p-2 rounded shadow-sm align-items-center">
                 <InputGroup className="flex-grow-1 border-0">
                     <InputGroup.Text className="bg-transparent border-0"><Search size={18} /></InputGroup.Text>
                     <Form.Control className="border-0 shadow-none" placeholder="Tìm tên dịch vụ, mô tả..." onChange={(e) => {setSearch(e.target.value); setCurrentPage(1);}} />
                 </InputGroup>
-                <div className="vr mx-1" />
-                <Form.Select className="border-0 shadow-none" style={{ width: '150px' }} onChange={(e) => {setFilter(e.target.value); setCurrentPage(1);}}>
+                <div className="service-manager-divider vr mx-1" />
+                <Form.Select className="service-manager-filter border-0 shadow-none" onChange={(e) => {setFilter(e.target.value); setCurrentPage(1);}}>
                     <option value="all">Tất cả</option><option value="active">Hoạt động</option><option value="inactive">Ngưng</option>
                 </Form.Select>
                 <Button variant="success" className="px-3" onClick={() => handleOpenModal()}><Plus size={20}/> Thêm mới</Button>

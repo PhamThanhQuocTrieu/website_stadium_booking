@@ -1,0 +1,83 @@
+@startuml
+title Cap nhat don, dich vu va voucher
+
+start
+:Nguoi dung vao trang thanh toan booking da giu;
+
+partition "PUT /api/bookings/:id/update-info" {
+  :protect JWT;
+  :Tim Booking theo id;
+  if (Khong thay booking?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  if (Booking khong thuoc user hien tai?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  if (Booking da thanh toan?) then (Co)
+    :Tra 400 khong the cap nhat;
+    stop
+  endif
+  :Tim Field cua booking;
+  :Tinh lai subtotal tu pricingRules;
+
+  if (Co danh sach services?) then (Co)
+    :Gom so luong theo serviceId;
+    :Tim Service va validate isActive;
+    if (Service khong ton tai/khong kha dung?) then (Co)
+      :Tra 400;
+      stop
+    endif
+    :So sanh so luong hien tai va so luong moi;
+    if (Can tru them kho?) then (Co)
+      if (Kho khong du?) then (Co)
+        :Tra 400 so luong ton khong du;
+        stop
+      endif
+      :Giam stock;
+    endif
+    if (Can hoan kho?) then (Co)
+      :Tang stock phan chenh lech;
+    endif
+    :Gan booking.services va serviceStockReserved;
+    :Tinh serviceTotal;
+  endif
+
+  :Dat originalAmount = subtotal + serviceTotal;
+  :Reset voucherId, voucherCode, discountAmount;
+
+  if (Co voucherCode?) then (Co)
+    partition "voucherService.validateVoucherForBooking" {
+      :Chuan hoa code;
+      :Tim Voucher active;
+      if (Khong tim thay hoac het han?) then (Co)
+        :Throw loi voucher;
+      endif
+      :Kiem tra UserVoucher, usageLimit, usedCount;
+      :Kiem tra dieu kien san, loai the thao, ngay gio;
+      :Kiem tra minOrderAmount;
+      :Tinh discountAmount theo fixed/percent va maxDiscount;
+      :Tra finalAmount;
+    }
+    if (Voucher loi sau khi da giu service?) then (Co)
+      :Hoan kho service vua giu;
+      :Tra 400;
+      stop
+    endif
+    :Gan voucherId, voucherCode, discountAmount, finalAmount;
+  endif
+
+  :Luu Booking;
+  :Tra booking da cap nhat;
+}
+
+partition "GET/POST voucher APIs" {
+  :/api/vouchers/validate de validate nhanh;
+  :/api/vouchers/check de xem trang thai voucher cua user;
+  :/api/user/vouchers de lay voucher cua user;
+  :Admin CRUD voucher trong /api/admin/vouchers;
+}
+
+stop
+@enduml

@@ -45,16 +45,25 @@ import NewsManager from './pages/Admin/NewsManager';
 import RevenueReport from './pages/Admin/RevenueReport';
 
 import './App.css';
+import './styles/UserResponsive.css';
+
+const readCurrentUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('userInfo'));
+  } catch {
+    return null;
+  }
+};
+
+const isAdminUser = (userInfo) => {
+  const role = String(userInfo?.role || '').toLowerCase();
+  return role === 'admin' || role === 'super admin';
+};
 
 const AdminRoute = ({ children }) => {
-  try {
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-    const role = String(userInfo?.role || '').toLowerCase();
-    const isAdmin = role === 'admin' || role === 'super admin';
-    return isAdmin ? children : <Navigate to="/" replace />;
-  } catch {
-    return <Navigate to="/login" replace />;
-  }
+  const userInfo = readCurrentUser();
+  if (!userInfo) return <Navigate to="/login" replace />;
+  return isAdminUser(userInfo) ? children : <Navigate to="/" replace />;
 };
 
 function App() {
@@ -77,10 +86,19 @@ function App() {
     return () => axios.interceptors.response.eject(interceptor);
   }, [navigate]);
 
+  const userInfo = readCurrentUser();
+  const isLoggedInAdmin = isAdminUser(userInfo);
   const isAuthPage = ['/register', '/login', '/forgot-password'].includes(location.pathname) || location.pathname.startsWith('/booking');
+  const hideChatBox = ['/register', '/login'].includes(location.pathname);
   const isAdminPage = location.pathname.startsWith('/admin');
   const isNewsPage = location.pathname.startsWith('/news');
-  const showHeaderFooter = !isAuthPage && !isAdminPage;
+  const showHeaderFooter = !isAuthPage && !isAdminPage && !isLoggedInAdmin;
+
+  useEffect(() => {
+    if (isLoggedInAdmin && !isAdminPage) {
+      navigate('/admin', { replace: true });
+    }
+  }, [isLoggedInAdmin, isAdminPage, navigate]);
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -133,7 +151,7 @@ function App() {
         </Routes>
       </main>
 
-      {!isAdminPage && !isNewsPage && <UserChatBox />}
+      {!hideChatBox && !isAdminPage && !isNewsPage && !isLoggedInAdmin && <UserChatBox />}
       {showHeaderFooter && <Footer />}
     </div>
   );

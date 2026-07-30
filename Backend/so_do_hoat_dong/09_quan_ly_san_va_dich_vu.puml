@@ -1,0 +1,125 @@
+@startuml
+title Quan ly san va dich vu
+
+start
+:Admin truy cap trang quan ly;
+:Goi API /api/admin/fields hoac /api/services;
+:protect JWT;
+:Kiem tra quyen admin;
+if (Khong phai admin?) then (Co)
+  :Tra 403;
+  stop
+endif
+
+if (Quan ly san?) then (Fields)
+  if (Lay danh sach/chi tiet?) then (GET)
+    :Doc Field tu MongoDB;
+    :Sort theo createdAt;
+    :Tra danh sach hoac chi tiet;
+    stop
+  endif
+
+  if (Tao hoac cap nhat san?) then (POST/PUT)
+    :Nhan thong tin san, anh, loai san, dia chi, pricingRules;
+    :Parse pricingRules neu la chuoi JSON;
+    if (pricingRules sai dinh dang?) then (Co)
+      :Dung mang rong;
+    endif
+    if (Tao moi?) then (POST)
+      :Field.create;
+    else (PUT)
+      :findByIdAndUpdate voi runValidators;
+      if (Khong tim thay san?) then (Co)
+        :Tra 404;
+        stop
+      endif
+    endif
+    :Emit field_updated qua Socket.IO;
+    :Tra Field moi/cap nhat;
+    stop
+  endif
+
+  if (Bat/tat bao tri?) then (PATCH maintenance)
+    :Tim Field theo id;
+    if (Khong tim thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    if (Body co maintenance?) then (Co)
+      :Set status Maintenance hoac Active theo body;
+    else (Khong)
+      :Dao trang thai Active <-> Maintenance;
+    endif
+    :Luu Field;
+    :Emit field_updated;
+    :Tra Field;
+    stop
+  endif
+
+  if (Xoa san?) then (DELETE)
+    :findByIdAndDelete Field;
+    if (Khong tim thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Emit field_updated voi deleted=true;
+    :Tra thong bao xoa thanh cong;
+    stop
+  endif
+endif
+
+if (Quan ly dich vu?) then (Services)
+  if (User/Admin lay danh sach?) then (GET)
+    :Nhan search va optional fieldId;
+    if (Co fieldId?) then (Co)
+      :Validate ObjectId;
+      if (Khong hop le?) then (Co)
+        :Tra 400;
+        stop
+      endif
+      :Chi lay service active ap dung cho san;
+    endif
+    :Tim theo ten/mo ta bang regex neu co search;
+    :Tra danh sach Service;
+    stop
+  endif
+
+  if (Tao dich vu?) then (POST)
+    :Validate name va price;
+    if (Thieu bat buoc?) then (Co)
+      :Tra 400;
+      stop
+    endif
+    :Kiem tra trung ten khong phan biet hoa thuong;
+    if (Da ton tai?) then (Co)
+      :Tra 400;
+      stop
+    endif
+    :Service.create voi stock, image, appliedFields, inventoryType;
+    :Emit serviceCreated;
+    :Tra 201;
+    stop
+  endif
+
+  if (Cap nhat/xoa/doi trang thai?) then (PUT/DELETE/PATCH)
+    :Tim Service theo id;
+    if (Khong tim thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    if (PUT?) then (Co)
+      :Cap nhat body va runValidators;
+      :Emit serviceUpdated;
+    elseif (DELETE?) then (Co)
+      :Xoa Service;
+      :Emit serviceDeleted;
+    else (PATCH status)
+      :Dao isActive;
+      :Emit serviceStatusChanged;
+    endif
+    :Tra ket qua;
+  endif
+endif
+
+stop
+@enduml

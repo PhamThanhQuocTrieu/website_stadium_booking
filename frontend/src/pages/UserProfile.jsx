@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Spinner, Image, Container, Form } from 'react-bootstrap';
-import { Camera, User, ShieldCheck, Mail, Phone, Calendar, Save } from 'lucide-react';
+import { Camera, User, ShieldCheck, Mail, Phone, Calendar, Save, Send } from 'lucide-react';
 import axios from 'axios';
 import api from '../api/api'; // <--- IMPORT INSTANCE ĐÃ CẤU HÌNH TOKEN
 import Swal from 'sweetalert2';
@@ -9,9 +9,10 @@ import '../styles/user-profile.css';
 const UserProfile = () => {
   const [formData, setFormData] = useState({ 
     fullName: '', email: '', phone: '', dob: '', avatar: '', 
-    oldPassword: '', newPassword: '', confirmPassword: '' 
+    oldPassword: '', newPassword: '', confirmPassword: '', passwordOtp: ''
   });
   const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -23,6 +24,22 @@ const UserProfile = () => {
   }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSendPasswordOtp = async () => {
+    if (!formData.oldPassword) {
+      return Swal.fire('Lỗi', 'Vui lòng nhập mật khẩu cũ trước khi gửi mã OTP!', 'error');
+    }
+
+    setOtpLoading(true);
+    try {
+      await api.post('/users/change-password-otp', { oldPassword: formData.oldPassword });
+      Swal.fire('Thành công', 'Mã OTP đã được gửi đến email của bạn!', 'success');
+    } catch (err) {
+      Swal.fire('Lỗi', err.response?.data?.message || 'Không thể gửi mã OTP!', 'error');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -50,6 +67,10 @@ const UserProfile = () => {
       return Swal.fire('Lỗi', 'Mật khẩu mới không khớp!', 'error');
     }
 
+    if (formData.newPassword && !/^\d{6}$/.test(formData.passwordOtp.trim())) {
+      return Swal.fire('Lỗi', 'Vui lòng nhập mã OTP gồm 6 số để đổi mật khẩu!', 'error');
+    }
+
     setLoading(true);
     try {
       const userLocal = JSON.parse(localStorage.getItem('userInfo'));
@@ -61,7 +82,7 @@ const UserProfile = () => {
       localStorage.setItem('userInfo', JSON.stringify(res.data));
       window.dispatchEvent(new Event('authChanged'));
       
-      setFormData(prev => ({ ...prev, oldPassword: '', newPassword: '', confirmPassword: '' }));
+      setFormData(prev => ({ ...prev, oldPassword: '', newPassword: '', confirmPassword: '', passwordOtp: '' }));
       Swal.fire('Thành công', 'Đã cập nhật hồ sơ!', 'success');
     } catch (err) {
       console.error("Lỗi cập nhật:", err.response?.data);
@@ -108,9 +129,11 @@ const UserProfile = () => {
 
                 <div className="section-title security-title"><ShieldCheck size={22} /> <span>Bảo mật tài khoản</span></div>
                 <Row>
-                  <Col md={4}><Form.Group className="mb-4"><Form.Label>MK CŨ</Form.Label><Form.Control type="password" name="oldPassword" value={formData.oldPassword} onChange={handleChange} /></Form.Group></Col>
-                  <Col md={4}><Form.Group className="mb-4"><Form.Label>MK MỚI</Form.Label><Form.Control type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} /></Form.Group></Col>
-                  <Col md={4}><Form.Group className="mb-4"><Form.Label>XÁC NHẬN MK</Form.Label><Form.Control type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} /></Form.Group></Col>
+                  <Col md={4}><Form.Group className="mb-4"><Form.Label>MẬT KHẨU CŨ</Form.Label><Form.Control type="password" name="oldPassword" value={formData.oldPassword} onChange={handleChange} /></Form.Group></Col>
+                  <Col md={4}><Form.Group className="mb-4"><Form.Label>MẬT KHẨU MỚI</Form.Label><Form.Control type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} /></Form.Group></Col>
+                  <Col md={4}><Form.Group className="mb-4"><Form.Label>XÁC NHẬN MẬT KHẨU</Form.Label><Form.Control type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} /></Form.Group></Col>
+                  <Col md={8}><Form.Group className="mb-4"><Form.Label>MÃ OTP</Form.Label><Form.Control inputMode="numeric" maxLength={6} name="passwordOtp" value={formData.passwordOtp} onChange={(event) => setFormData({ ...formData, passwordOtp: event.target.value.replace(/\D/g, '').slice(0, 6) })} placeholder="Nhập mã OTP được gửi qua email" /></Form.Group></Col>
+                  <Col md={4} className="d-flex align-items-end"><Button type="button" className="otp-btn mb-4" onClick={handleSendPasswordOtp} disabled={loading || otpLoading}>{otpLoading ? <Spinner size="sm" /> : <><Send size={16} className="me-2" />Gửi mã OTP</>}</Button></Col>
                 </Row>
                 
                 <Button type="submit" className="save-btn" disabled={loading}>

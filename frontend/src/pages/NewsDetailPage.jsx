@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Badge, Container, Spinner } from 'react-bootstrap';
-import { ArrowLeft, CalendarDays, ChevronRight, ExternalLink, Eye, UserRound } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronRight, Eye, UserRound } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import '../styles/NewsPage.css';
@@ -79,8 +79,6 @@ const NewsDetailPage = () => {
     );
   }
 
-  const isExternal = article.newsType === 'external';
-
   return (
     <article className="news-detail-page">
       <Container className="news-detail-container">
@@ -97,7 +95,6 @@ const NewsDetailPage = () => {
             <header className="news-detail-header">
               <div className="news-detail-kicker">
                 <Badge bg="success">{article.category || 'Tin tức chung'}</Badge>
-                {isExternal && <Badge className="news-external-badge">Nguồn ngoài</Badge>}
               </div>
               <h1>{article.title}</h1>
               {article.summary && <p>{article.summary}</p>}
@@ -120,33 +117,6 @@ const NewsDetailPage = () => {
               className="news-detail-content"
               dangerouslySetInnerHTML={{ __html: article.content || '' }}
             />
-
-            {isExternal && (
-              <section className="news-source-box" aria-label="Nguồn tham khảo">
-                <h2>Nguồn tham khảo</h2>
-                <dl>
-                  <div>
-                    <dt>Tên nguồn</dt>
-                    <dd>{article.sourceName}</dd>
-                  </div>
-                  <div>
-                    <dt>Link bài viết gốc</dt>
-                    <dd>
-                      <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        {article.sourceUrl}
-                        <ExternalLink size={16} />
-                      </a>
-                    </dd>
-                  </div>
-                  {article.originalAuthor && (
-                    <div>
-                      <dt>Tác giả gốc</dt>
-                      <dd>{article.originalAuthor}</dd>
-                    </div>
-                  )}
-                </dl>
-              </section>
-            )}
           </main>
 
           <aside className="news-detail-sidebar">

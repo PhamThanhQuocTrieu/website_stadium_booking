@@ -1,0 +1,99 @@
+@startuml
+title Quan tri noi dung, san, dich vu va bao cao
+
+start
+:Admin goi cac API quan tri;
+
+partition "Middleware chung" {
+  :protect JWT;
+  :adminOnly/admin;
+  if (Khong phai admin?) then (Co)
+    :Tra 401/403;
+    stop
+  endif
+}
+
+if (Quan ly san?) then (/api/admin/fields)
+  :GET danh sach / chi tiet san;
+  :POST tao san;
+  :PUT cap nhat san;
+  :PATCH maintenance;
+  :DELETE xoa san;
+  :Doc/ghi Field va pricingRules;
+  :Tra ket qua;
+  stop
+endif
+
+if (Quan ly dich vu?) then (/api/services)
+  :GET dich vu cho user/admin;
+  :POST tao Service;
+  :PUT cap nhat Service;
+  :PATCH status bat/tat;
+  :DELETE xoa Service;
+  :Kiem tra stock, price, image, isActive;
+  :Tra ket qua;
+  stop
+endif
+
+if (Quan ly voucher?) then (/api/admin/vouchers)
+  :GET danh sach Voucher;
+  :POST tao Voucher;
+  :PUT cap nhat Voucher;
+  :DELETE xoa Voucher;
+  :Dong bo dieu kien active, ngay het han, usageLimit;
+  :Tra ket qua;
+  stop
+endif
+
+if (Quan ly tin tuc/banner/chinh sach?) then (News/Banner/Policy)
+  if (News?) then (Co)
+    :Tao slug duy nhat tu title;
+    :CRUD News admin;
+    :GET public chi lay published;
+  endif
+  if (Banner?) then (Co)
+    :CRUD Banner admin;
+    :PATCH toggle active;
+    :GET /home chi lay banner hien thi;
+  endif
+  if (Policy?) then (Co)
+    :GET public theo type;
+    :Admin GET all va PUT cap nhat policy;
+  endif
+  :Tra ket qua;
+  stop
+endif
+
+if (Quan ly lien he?) then (/api/contacts)
+  :User POST gui lien he;
+  :Admin GET list/detail;
+  :Admin PATCH status;
+  :Admin PATCH reply;
+  :Admin DELETE;
+  :Luu Contact va co the gui email tra loi;
+  :Tra ket qua;
+  stop
+endif
+
+if (Quan ly danh gia?) then (/api/reviews)
+  :User tao/sua/xoa review sau booking;
+  :GET review theo field/service;
+  :Admin GET reviews;
+  :Admin PATCH visibility;
+  :Tinh lai rating trung binh cua san;
+  :Tra ket qua;
+  stop
+endif
+
+if (Dashboard/Bao cao?) then (/api/admin/dashboard va /reports/revenue)
+  :Nhan bo loc thoi gian;
+  :Aggregate Bookings, Payments, Users, Fields;
+  :Tinh doanh thu, booking, ty le, bieu do;
+  :Tra JSON cho dashboard/report;
+  stop
+endif
+
+:Endpoint khong khop;
+:Tra 404;
+stop
+@enduml

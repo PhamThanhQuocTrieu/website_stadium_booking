@@ -300,7 +300,7 @@ const validateVoucherForBooking = async ({
     userVoucher,
     response: {
       success: true,
-      message: 'Ap dung ma giam gia thanh cong',
+      message: 'Áp dụng mã giảm giá thành công',
       voucherId: voucher._id,
       voucherCode: voucher.code,
       originalAmount: amount,
@@ -425,8 +425,8 @@ const assignNewUserVouchers = async (user, io) => {
     assigned.push(userVoucher);
     await createNotification({
       user: user._id,
-      title: 'Ban vua nhan voucher moi',
-      message: `Ban vua nhan voucher ${voucher.code} giam ${getDiscountValue(voucher)}${voucher.discountType === 'fixed' ? 'd' : '%'} cho lan dat san dau tien.`,
+      title: 'Bạn vừa nhận voucher mới',
+      message: `Bạn vừa nhận voucher ${voucher.code} giảm ${getDiscountValue(voucher)}${voucher.discountType === 'fixed' ? 'đ' : '%'} cho lần đặt sân đầu tiên.`,
       type: 'promotion',
       relatedId: voucher._id,
       relatedModel: 'Voucher',

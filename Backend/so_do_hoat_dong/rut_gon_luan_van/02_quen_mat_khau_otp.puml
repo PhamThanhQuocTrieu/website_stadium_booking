@@ -1,0 +1,54 @@
+@startuml
+title Khoi phuc mat khau bang OTP
+
+start
+:Nguoi dung chon quen mat khau;
+:Nhap email;
+:He thong kiem tra email;
+
+if (Email hop le va ton tai?) then (Co)
+  :Sinh OTP 6 so;
+  :Ma hoa OTP;
+  :Luu OTP kem thoi gian het han;
+  :Gui OTP qua email;
+else (Khong)
+  :Tra thong bao chung de bao mat;
+  stop
+endif
+
+:Nguoi dung nhap OTP;
+:He thong kiem tra OTP;
+
+if (OTP het han?) then (Co)
+  :Xoa OTP;
+  :Thong bao OTP het han;
+  stop
+endif
+
+if (OTP sai qua so lan cho phep?) then (Co)
+  :Xoa OTP;
+  :Thong bao vuot so lan thu;
+  stop
+endif
+
+if (OTP dung?) then (Co)
+  :Danh dau OTP da xac thuc;
+else (Khong)
+  :Tang so lan nhap sai;
+  :Thong bao OTP sai;
+  stop
+endif
+
+:Nguoi dung nhap mat khau moi;
+:He thong kiem tra mat khau va xac nhan;
+if (Mat khau hop le?) then (Co)
+  :Ma hoa mat khau moi;
+  :Cap nhat tai khoan;
+  :Xoa OTP;
+  :Thong bao thanh cong;
+else (Khong)
+  :Thong bao loi;
+endif
+
+stop
+@enduml

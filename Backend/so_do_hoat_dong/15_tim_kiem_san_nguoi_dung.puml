@@ -1,0 +1,60 @@
+@startuml
+title Tim kiem san va xem chi tiet cho nguoi dung
+
+start
+:Nguoi dung mo trang danh sach san;
+
+partition "GET /api/fields" {
+  :Nhan isFeatured, type, date;
+  :Tao query Field;
+  if (Co isFeatured?) then (Co)
+    :Filter field noi bat;
+  endif
+  if (Co type?) then (Co)
+    :Filter theo loai the thao;
+  endif
+  :Lay danh sach Field va pricingRules;
+  :Dung date query hoac ngay hien tai;
+  :Lay booking active cua cac field trong ngay;
+  :Chi tinh booking da thanh toan hoac pending con hold;
+  :Mo rong booking thanh cac slot 30 phut;
+  :Gom bookedSlots theo field;
+  :Tinh thoi gian hien tai theo phut;
+
+  repeat
+    :Xu ly tung Field;
+    if (Field Maintenance?) then (Co)
+      :availabilityStatus=maintenance;
+      :availableSlotsToday=0;
+    else (Active)
+      :Sinh cac slot tu pricingRules;
+      :Loai slot da qua neu la hom nay;
+      :Loai slot da duoc booking;
+      if (Con slot trong?) then (Co)
+        :availabilityStatus=available;
+      else (Khong)
+        :availabilityStatus=full;
+      endif
+      :availableSlotsToday = so slot con trong;
+    endif
+  repeat while (Con Field?)
+  :Tra danh sach san kem trang thai trong lich;
+}
+
+:Nguoi dung chon mot san;
+
+partition "GET /api/fields/:id" {
+  :Tim Field theo id va populate pricingRules;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tim Review cua field, isHidden != true;
+  :Populate user fullName, email, avatar;
+  :Sort review moi nhat;
+  :Tra field va reviews;
+}
+
+:Frontend hien thi chi tiet san, bang gia, danh gia va nut dat lich;
+stop
+@enduml

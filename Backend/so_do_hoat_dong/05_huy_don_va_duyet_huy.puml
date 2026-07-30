@@ -1,0 +1,97 @@
+@startuml
+title Huy don va admin duyet huy
+
+start
+:Nguoi dung yeu cau huy booking;
+
+if (Dung API huy truc tiep?) then (PATCH /:id/cancel)
+  :protect JWT;
+  :Tim Booking;
+  if (Khong thay hoac khong phai chu don?) then (Co)
+    :Tra 404/403;
+    stop
+  endif
+  if (Booking completed/cancelled?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Tinh thoi diem bat dau;
+  if (Con it hon 2 tieng?) then (Co)
+    :Tra 400 chi duoc huy truoc 2 tieng;
+    stop
+  endif
+  :Set status Cancelled, cancelledAt, cancelReason;
+  if (Chua thanh toan?) then (Co)
+    :Set paymentStatus FAILED;
+  endif
+  :Hoan kho dich vu;
+  :Tao notification huy san thanh cong;
+  if (Payment moi nhat dang PENDING?) then (Co)
+    :Set payment CANCELLED;
+  endif
+  :Emit booking_cancelled;
+  :Tra booking va payment;
+  stop
+endif
+
+partition "PATCH /api/bookings/:id/request-cancel" {
+  :protect JWT;
+  :Tim Booking va kiem tra chu don;
+  if (Khong hop le?) then (Co)
+    :Tra 404/403/400;
+    stop
+  endif
+  if (Da o cancel_requested?) then (Co)
+    :Tra booking dang cho admin xac nhan;
+    stop
+  endif
+  :Tim Payment moi nhat;
+  if (Booking da thanh toan?) then (Co)
+    :Set status cancel_requested;
+    :Luu ly do huy;
+    :Tao notification Dang cho admin xac nhan;
+    :Emit booking_cancel_requested;
+    :Tra success;
+  else (Chua thanh toan)
+    :Set status cancelled va paymentStatus failed;
+    :Hoan kho dich vu;
+    if (Payment PENDING?) then (Co)
+      :Set payment CANCELLED;
+    endif
+    :Tao notification Huy san thanh cong;
+    :Emit booking_cancel_requested;
+    :Tra success;
+  endif
+}
+
+:Admin xu ly booking cancel_requested;
+
+if (Admin duyet huy?) then (PATCH /api/admin/bookings/:id/approve-cancel)
+  :protect + adminOnly;
+  :Tim Booking;
+  if (Khong phai cancel_requested?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Set status cancelled, cancelledAt, cancelReason neu co;
+  :Xoa holdExpiresAt;
+  :Hoan kho dich vu;
+  :Luu booking;
+  :Tao notification admin da xac nhan huy;
+  :Emit booking_cancelled;
+  :Tra success;
+else (Admin tu choi)
+  :protect + adminOnly;
+  :Tim Booking;
+  if (Khong phai cancel_requested?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Set status confirmed;
+  :Luu ly do neu co;
+  :Tao notification yeu cau huy bi tu choi;
+  :Tra success;
+endif
+
+stop
+@enduml

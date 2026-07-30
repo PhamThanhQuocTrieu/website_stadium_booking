@@ -57,7 +57,7 @@ const lockedPaymentStatuses = ['paid', 'success', 'Paid', 'PAID', 'deposit', 'un
 const getActivePendingHoldQuery = () => ({
   $or: [
     { holdExpiresAt: { $gt: new Date() } },
-    { holdExpiresAt: { $exists: false }, createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) } }
+    { holdExpiresAt: { $exists: false }, createdAt: { $gt: new Date(Date.now() - 3 * 60 * 1000) } }
   ]
 });
 const getBlockingBookingPaymentQuery = () => ({

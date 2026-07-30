@@ -10,6 +10,34 @@ const formatLocalDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const formatVietnameseDate = (value) => {
+  if (!value) return '';
+  const [year, month, day] = String(value).split('-');
+  if (!year || !month || !day) return '';
+  return `${day}/${month}/${year}`;
+};
+
+const parseVietnameseDate = (value) => {
+  const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return '';
+
+  const [, dayValue, monthValue, yearValue] = match;
+  const day = Number(dayValue);
+  const month = Number(monthValue);
+  const year = Number(yearValue);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year
+    || date.getMonth() !== month - 1
+    || date.getDate() !== day
+  ) {
+    return '';
+  }
+
+  return formatLocalDate(date);
+};
+
 const addMonths = (date, months) => {
   const nextDate = new Date(date);
   nextDate.setMonth(nextDate.getMonth() + months);
@@ -31,6 +59,13 @@ const defaultForm = {
   createOnlyAvailableSlots: false
 };
 
+const timeOptions = Array.from({ length: 37 }, (_, index) => {
+  const totalMinutes = 5 * 60 + index * 30;
+  const hour = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+  const minute = String(totalMinutes % 60).padStart(2, '0');
+  return `${hour}:${minute}`;
+});
+
 const weekDays = [
   { value: 1, label: 'Thứ 2' },
   { value: 2, label: 'Thứ 3' },
@@ -40,6 +75,37 @@ const weekDays = [
   { value: 6, label: 'Thứ 7' },
   { value: 0, label: 'Chủ nhật' }
 ];
+
+const VietnameseDateInput = ({ value, onChange }) => {
+  const [displayValue, setDisplayValue] = useState(formatVietnameseDate(value));
+
+  useEffect(() => {
+    setDisplayValue(formatVietnameseDate(value));
+  }, [value]);
+
+  const handleChange = (event) => {
+    const nextValue = event.target.value;
+    setDisplayValue(nextValue);
+    const parsedValue = parseVietnameseDate(nextValue);
+    if (parsedValue) onChange(parsedValue);
+  };
+
+  const handleBlur = () => {
+    const parsedValue = parseVietnameseDate(displayValue);
+    setDisplayValue(parsedValue ? formatVietnameseDate(parsedValue) : formatVietnameseDate(value));
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/yyyy"
+      value={displayValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  );
+};
 
 const RecurringBookingModal = ({ open, resources, onClose, onCreated, editingItem }) => {
   const [form, setForm] = useState(defaultForm);
@@ -129,7 +195,7 @@ const RecurringBookingModal = ({ open, resources, onClose, onCreated, editingIte
       const { data } = await axiosClient.post('/admin/recurring-bookings/check', payload);
       setCheckResult(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể kiểm tra lịch có định');
+      setError(err.response?.data?.message || 'Không thể kiểm tra lịch cố định');
     } finally {
       setLoading(false);
     }
@@ -159,7 +225,7 @@ const RecurringBookingModal = ({ open, resources, onClose, onCreated, editingIte
       onCreated(data);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể tạo lịch có định');
+      setError(err.response?.data?.message || 'Không thể tạo lịch cố định');
       if (err.response?.data?.conflictSlots) {
         setCheckResult({
           totalSlots: err.response.data.conflictSlots.length,
@@ -181,7 +247,7 @@ const RecurringBookingModal = ({ open, resources, onClose, onCreated, editingIte
       <section className="schedule-manager-modal schedule-manager-recurring-modal">
         <header>
           <div>
-            <p>{editingItem ? 'Chỉnh sửa hiện tại' : 'Đặt lịch có định'}</p>
+            <p>{editingItem ? 'Chỉnh sửa hiện tại' : 'Đặt lịch cố định'}</p>
             <h3>Lịch sân theo tuần/tháng</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng"><X size={20} /></button>
@@ -213,19 +279,23 @@ const RecurringBookingModal = ({ open, resources, onClose, onCreated, editingIte
           </label>
           <label>
             <span>Từ ngày</span>
-            <input type="date" value={form.startDate} onChange={(event) => updateForm('startDate', event.target.value)} />
+            <VietnameseDateInput value={form.startDate} onChange={(value) => updateForm('startDate', value)} />
           </label>
           <label>
             <span>Đến ngày</span>
-            <input type="date" value={form.endDate} onChange={(event) => updateForm('endDate', event.target.value)} />
+            <VietnameseDateInput value={form.endDate} onChange={(value) => updateForm('endDate', value)} />
           </label>
           <label>
             <span>Giờ bắt đầu</span>
-            <input type="time" step="1800" value={form.startTime} onChange={(event) => updateForm('startTime', event.target.value)} />
+            <select value={form.startTime} onChange={(event) => updateForm('startTime', event.target.value)}>
+              {timeOptions.map((time) => <option key={time} value={time}>{time}</option>)}
+            </select>
           </label>
           <label>
             <span>Giờ kết thúc</span>
-            <input type="time" step="1800" value={form.endTime} onChange={(event) => updateForm('endTime', event.target.value)} />
+            <select value={form.endTime} onChange={(event) => updateForm('endTime', event.target.value)}>
+              {timeOptions.map((time) => <option key={time} value={time}>{time}</option>)}
+            </select>
           </label>
           <label>
             <span>Thanh toán</span>
@@ -270,10 +340,10 @@ const RecurringBookingModal = ({ open, resources, onClose, onCreated, editingIte
 
         <footer>
           <button type="button" className="schedule-manager-btn schedule-manager-btn-light" onClick={checkSlots} disabled={loading}>
-            {loading ? 'Dang kiem tra...' : 'Kiem tra lich trong'}
+            {loading ? 'Đang kiểm tra...' : 'Kiểm tra lịch trống'}
           </button>
           <button type="button" className="schedule-manager-btn schedule-manager-btn-primary" onClick={submit} disabled={loading || !canCreate}>
-            {loading ? 'Dang luu...' : (editingItem ? 'Cap nhat lich' : 'Tao lich co dinh')}
+            {loading ? 'Đang lưu...' : (editingItem ? 'Cập nhật lịch' : 'Tạo lịch cố định')}
           </button>
         </footer>
       </section>

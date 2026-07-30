@@ -1,0 +1,71 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+title So do hoat dong cap nhat booking voi dich vu va voucher
+
+|Nguoi dung|
+start
+:Mo trang thanh toan booking;
+:Chon dich vu thue/mua them;
+:Nhap ma voucher neu co;
+:Gui yeu cau cap nhat booking;
+
+|He thong|
+:Xac thuc nguoi dung;
+
+|Co so du lieu|
+:Lay thong tin booking cua nguoi dung;
+
+if (Booking khong hop le hoac da thanh toan?) then (Co)
+  |He thong|
+  :Thong bao khong the cap nhat;
+  stop
+endif
+
+|He thong|
+:Tinh lai tien san;
+
+if (Co dich vu?) then (Co)
+  |Co so du lieu|
+  :Kiem tra dich vu con hoat dong;
+  :Kiem tra so luong ton kho;
+  if (Khong du ton kho?) then (Co)
+    |He thong|
+    :Thong bao dich vu khong du so luong;
+    stop
+  endif
+  |Co so du lieu|
+  :Cap nhat ton kho dich vu;
+  |He thong|
+  :Tinh tien dich vu;
+endif
+
+:Tinh tong tien truoc giam;
+
+if (Co voucher?) then (Co)
+  |Co so du lieu|
+  :Kiem tra ma voucher;
+  :Kiem tra dieu kien ap dung;
+  if (Voucher khong hop le?) then (Co)
+    :Hoan kho dich vu neu da giu;
+    |He thong|
+    :Thong bao voucher khong hop le;
+    stop
+  endif
+  |He thong|
+  :Tinh so tien giam va tong tien sau giam;
+endif
+
+|Co so du lieu|
+:Luu thong tin booking;
+
+|He thong|
+:Tra tong tien cuoi cung;
+stop
+@enduml

@@ -1,0 +1,74 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+title So do hoat dong dat san va giu cho tam thoi
+
+|Nguoi dung|
+start
+:Chon san va ngay dat;
+
+|He thong|
+:Tiep nhan yeu cau xem lich san;
+
+|Co so du lieu|
+:Lay thong tin san, khung gio va booking trong ngay;
+
+|He thong|
+:Kiem tra trang thai san va khung gio;
+if (San dang bao tri?) then (Co)
+  :Thong bao san tam thoi khong kha dung;
+  stop
+else (Khong)
+  :Xac dinh cac slot con trong;
+endif
+
+|Nguoi dung|
+:Yeu cau dat san;
+
+|He thong|
+:Kiem tra trang thai dang nhap;
+if (Nguoi dung da dang nhap?) then (Khong)
+  :Yeu cau dang nhap;
+  stop
+else (Co)
+  :Xac thuc yeu cau giu cho;
+endif
+
+repeat
+  |Nguoi dung|
+  :Chon cac slot trong;
+  :Gui yeu cau giu cho;
+
+  |He thong|
+  :Tiep nhan yeu cau giu cho;
+
+  |Co so du lieu|
+  :Kiem tra booking va slot dang duoc giu;
+
+  |He thong|
+  if (Khung gio da duoc dat hoac giu?) then (Co)
+    :Thong bao khung gio khong con kha dung;
+  endif
+repeat while (Khung gio da duoc dat hoac giu?) is (Co) not (Khong)
+
+|He thong|
+:Tinh gia theo bang gia cua san;
+
+|Co so du lieu|
+:Tao don dat san trang thai cho thanh toan;
+:Luu thoi gian giu cho 3 phut;
+
+|He thong|
+:Thong bao realtime slot vua duoc giu;
+:Tra ma booking va tong tien;
+
+|Nguoi dung|
+:Chuyen sang buoc thanh toan;
+stop
+@enduml

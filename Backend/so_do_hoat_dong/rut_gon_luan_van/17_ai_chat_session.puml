@@ -1,0 +1,38 @@
+@startuml
+title Luu lich su hoi dap AI bang ChatSession
+
+start
+:Nguoi dung gui cau hoi cho tro ly AI;
+:He thong xac thuc nguoi dung;
+:Kiem tra noi dung cau hoi va bookingId neu co;
+
+if (Du lieu khong hop le?) then (Co)
+  :Thong bao loi;
+  stop
+endif
+
+:Tim lich su ChatSession cua nguoi dung;
+if (Chua co ChatSession?) then (Co)
+  :Tao ChatSession moi;
+endif
+
+:Luu cau hoi cua nguoi dung vao ChatSession;
+:Thong bao AI dang tra loi;
+:He thong lay ngu canh san, booking, voucher va chinh sach;
+:Gui prompt den dich vu AI;
+:Nhan cau tra loi;
+:Luu cau tra loi AI vao ChatSession;
+:Gui cau tra loi ve frontend;
+
+if (Nguoi dung xem lich su?) then (Co)
+  :Lay danh sach ChatSession theo nguoi dung;
+  :Hien thi lich su hoi dap;
+endif
+
+if (Nguoi dung xoa lich su?) then (Co)
+  :Xoa cac ChatSession cua nguoi dung;
+  :Thong bao da xoa lich su;
+endif
+
+stop
+@enduml

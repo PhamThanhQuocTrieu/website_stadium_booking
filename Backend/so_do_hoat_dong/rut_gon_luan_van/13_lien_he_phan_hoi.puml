@@ -1,0 +1,33 @@
+@startuml
+title Gui lien he va admin phan hoi
+
+start
+:Nguoi dung mo form lien he;
+:Nhap ho ten, email, sdt, loai yeu cau, tieu de, noi dung;
+:He thong kiem tra du lieu;
+
+if (Email, sdt hoac noi dung khong hop le?) then (Co)
+  :Thong bao loi nhap lieu;
+  stop
+endif
+
+:Luu thong tin lien he;
+:Thong bao gui lien he thanh cong;
+
+:Admin mo trang quan ly lien he;
+:He thong xac thuc quyen admin;
+:Admin loc danh sach theo tu khoa, trang thai, loai yeu cau;
+:Chon mot lien he;
+
+if (Admin cap nhat trang thai?) then (Co)
+  :Cap nhat trang thai lien he;
+endif
+
+if (Admin phan hoi?) then (Co)
+  :Nhap noi dung phan hoi;
+  :Luu phan hoi;
+  :Doi trang thai sang da phan hoi;
+endif
+
+stop
+@enduml

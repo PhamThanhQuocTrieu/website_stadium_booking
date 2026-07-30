@@ -1,0 +1,124 @@
+@startuml
+title Danh gia san va dich vu
+
+start
+:Nguoi dung/Admin goi API /api/reviews;
+
+if (User tao danh gia?) then (POST /)
+  :protect JWT;
+  :Validate bookingId, diem 1-5, comment 10-500 ky tu;
+  if (Du lieu khong hop le?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Tim Booking;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  if (Booking khong thuoc user?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  if (Booking chua completed?) then (Co)
+    :Tra 400 chi booking hoan thanh moi duoc danh gia;
+    stop
+  endif
+  if (fieldId khong khop booking.field?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  if (Co serviceId nhung khong nam trong booking?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Kiem tra booking da co review chua;
+  if (Da danh gia?) then (Co)
+    :Tra 409;
+    stop
+  endif
+  :Tao Review;
+  :Danh dau booking.reviewed/isReviewed;
+  :Tinh lai ratingAverage va ratingCount cua Field;
+  :Emit review_updated;
+  :Tra review da populate;
+  stop
+endif
+
+if (User sua danh gia?) then (PUT /:id)
+  :protect JWT;
+  :Validate cac diem neu co;
+  :Tim Review;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  if (Review khong thuoc user?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  :Cap nhat rating, tieu chi, comment, recommend, images;
+  :Luu Review;
+  :Tinh lai rating Field;
+  :Emit review_updated;
+  :Tra review moi;
+  stop
+endif
+
+if (User/Admin xoa danh gia?) then (DELETE /:id)
+  :protect JWT;
+  :Tim Review;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  if (Khong phai owner va khong phai admin?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  if (Admin xoa review cua nguoi khac?) then (Co)
+    :An review bang isHidden=true;
+    :Ghi hiddenReason va hiddenAt;
+  else (Owner xoa)
+    :Xoa Review;
+    :Set Booking reviewed=false va xoa reviewId;
+  endif
+  :Tinh lai rating Field;
+  :Emit review_updated;
+  :Tra thanh cong;
+  stop
+endif
+
+if (Admin an/hien review?) then (PATCH /admin/:id/visibility)
+  :protect + adminOnly;
+  :Tim Review;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Set isHidden, hiddenReason, hiddenAt;
+  :Luu Review;
+  :Tinh lai rating Field;
+  :Emit review_updated;
+  :Tra review da populate;
+  stop
+endif
+
+if (Lay danh sach review?) then (GET)
+  if (Theo field/service public?) then (Co)
+    :Loc isHidden != true;
+    :Populate user, booking, field/service;
+    :Tra danh sach;
+  elseif (Review cua toi?) then (Co)
+    :protect JWT;
+    :Tim Review theo user;
+    :Tra danh sach;
+  else (Admin)
+    :protect + adminOnly;
+    :Loc theo fieldId, rating, from, to;
+    :Tra danh sach;
+  endif
+endif
+
+stop
+@enduml

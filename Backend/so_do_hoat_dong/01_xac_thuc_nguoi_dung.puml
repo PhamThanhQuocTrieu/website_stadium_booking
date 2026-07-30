@@ -1,0 +1,132 @@
+@startuml
+title Xac thuc va quan ly nguoi dung
+
+start
+:Nguoi dung/Admin goi API /api/users hoac /api/auth;
+
+if (Dang ky tai khoan?) then (POST /register)
+  :Kiem tra email da ton tai;
+  if (Email da ton tai?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Hash password;
+  :Tao User role user;
+  :Gan voucher chao mung;
+  :Emit userUpdated;
+  :Tra thong tin user va JWT;
+  stop
+endif
+
+if (Dang nhap mat khau?) then (POST /login)
+  :Tim user bang email hoac phone;
+  :So khop password;
+  if (Sai tai khoan/mat khau?) then (Co)
+    :Tra 401;
+    stop
+  endif
+  if (Tai khoan bi khoa?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  if (Role user?) then (Co)
+    :Dam bao voucher chao mung neu du dieu kien;
+  endif
+  :Tao JWT gom id va role;
+  :Tra user profile va token;
+  stop
+endif
+
+if (Google login?) then (POST /google-login)
+  :Verify Google id token;
+  if (Token khong hop le?) then (Co)
+    :Tra 401;
+    stop
+  endif
+  :Lay email, name, picture;
+  if (User chua ton tai?) then (Co)
+    :Tao user moi;
+    if (Email admin mac dinh?) then (Co)
+      :Gan role admin;
+    else (Khong)
+      :Gan role user;
+      :Gan voucher chao mung;
+    endif
+  else (Da co)
+    if (Role user?) then (Co)
+      :Dam bao voucher chao mung neu du dieu kien;
+    endif
+  endif
+  :Tra profile va JWT;
+  stop
+endif
+
+if (Quen mat khau?) then (POST /forgot-password)
+  :Chuan hoa email;
+  if (Email rong?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Tim user theo email;
+  if (Khong ton tai?) then (Co)
+    :Tra thong bao chung de bao mat;
+    stop
+  endif
+  :Sinh OTP 6 so;
+  :Hash OTP va luu expiresAt;
+  :Xoa OTP cu cung email;
+  :Gui email OTP;
+  :Tra thong bao chung;
+  stop
+endif
+
+if (Xac thuc OTP?) then (POST /verify-reset-otp)
+  :Tim OTP theo email;
+  if (Khong co hoac het han?) then (Co)
+    :Tra 400 va xoa OTP het han neu can;
+    stop
+  endif
+  if (Vuot 5 lan sai?) then (Co)
+    :Xoa OTP;
+    :Tra 429;
+    stop
+  endif
+  :So khop OTP bang bcrypt;
+  if (Sai OTP?) then (Co)
+    :Tang attempts;
+    :Tra 400;
+    stop
+  endif
+  :Danh dau verified;
+  :Tra thanh cong;
+  stop
+endif
+
+if (Dat lai mat khau?) then (POST /reset-password)
+  :Validate password moi va confirm;
+  :Tim OTP da verified;
+  :Kiem tra het han va so khop OTP;
+  :Tim user;
+  :Hash password moi;
+  :Luu user va xoa OTP;
+  :Tra thanh cong;
+  stop
+endif
+
+partition "Admin/User update" {
+  :protect JWT;
+  :PUT /:id hoac Admin CRUD users;
+  if (Khong phai chu tai khoan va khong phai admin?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  if (Thao tac len tai khoan admin bi cam?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  :Cap nhat thong tin, doi password neu co oldPassword dung;
+  :Emit userUpdated;
+  :Tra ket qua;
+}
+stop
+@enduml

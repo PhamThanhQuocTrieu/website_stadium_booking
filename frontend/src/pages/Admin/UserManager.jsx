@@ -111,6 +111,7 @@ const UserManager = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('');
   const [formData, setFormData] = useState(initialForm);
+  const [createPassword, setCreatePassword] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
 
   const [page, setPage] = useState(1);
@@ -179,8 +180,15 @@ const UserManager = () => {
       return;
     }
 
-    setFormData(user ? { ...initialForm, ...user } : initialForm);
+    setFormData(user ? { ...initialForm, ...user } : { ...initialForm });
+    setCreatePassword('');
     setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setFormData({ ...initialForm });
+    setCreatePassword('');
   };
 
   const openDetailModal = (user) => {
@@ -209,17 +217,16 @@ const UserManager = () => {
     }
 
     setLoading(true);
-    const passwordInput = e.target.elements.password?.value;
     try {
       if (formData._id) {
         await axiosClient.put(`/users/${formData._id}`, formData);
         Swal.fire('Thành công', 'Đã cập nhật!', 'success');
       } else {
-        const payload = { ...formData, password: passwordInput || 'Password@123' };
+        const payload = { ...formData, password: createPassword || 'Password@123' };
         await axiosClient.post('/users', payload);
         Swal.fire('Thành công', 'Đã thêm mới!', 'success');
       }
-      setShowModal(false);
+      closeModal();
       fetchUsers();
     } catch (err) {
       Swal.fire('Lỗi', err.response?.data?.message || 'Thao tác thất bại!', 'error');
@@ -600,28 +607,35 @@ const UserManager = () => {
         )}
       </section>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered dialogClassName="admin-users-form-modal">
+      <Modal show={showModal} onHide={closeModal} centered dialogClassName="admin-users-form-modal">
         <Modal.Header closeButton>
           <Modal.Title>{formData._id ? 'Cập nhật tài khoản' : 'Thêm mới người dùng'}</Modal.Title>
         </Modal.Header>
-        <Form onSubmit={handleSubmit}>
+        <Form key={formData._id || 'new-user-form'} onSubmit={handleSubmit} autoComplete="off">
           <Modal.Body>
             <Form.Group className="mb-3">
               <Form.Label>Họ tên</Form.Label>
-              <Form.Control value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} required />
+              <Form.Control name="managedUserFullName" autoComplete="off" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} required />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Email</Form.Label>
-              <Form.Control type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+              <Form.Control name="managedUserEmail" type="email" autoComplete="off" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Số điện thoại</Form.Label>
-              <Form.Control value={formData.phone || ''} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+              <Form.Control name="managedUserPhone" autoComplete="off" value={formData.phone || ''} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
             </Form.Group>
             {!formData._id && (
               <Form.Group className="mb-3">
                 <Form.Label>Mật khẩu</Form.Label>
-                <Form.Control name="password" type="password" placeholder="Mặc định: Password@123" />
+                <Form.Control
+                  name="managedUserCreatePassword"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Mặc định: Password@123"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                />
               </Form.Group>
             )}
             <Form.Group className="mb-3">

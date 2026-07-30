@@ -1,0 +1,64 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+title So do hoat dong huy don dat san
+
+|Nguoi dung|
+start
+:Chon huy don dat san;
+
+|He thong|
+:Xac thuc nguoi dung;
+
+|Co so du lieu|
+:Kiem tra booking thuoc nguoi dung;
+
+if (Booking khong hop le?) then (Co)
+  |He thong|
+  :Thong bao loi;
+  stop
+endif
+
+if (Booking chua thanh toan?) then (Co)
+  |Co so du lieu|
+  :Huy booking truc tiep;
+  :Hoan kho dich vu;
+  :Huy giao dich pending neu co;
+  |He thong|
+  :Gui thong bao huy thanh cong;
+  stop
+endif
+
+|He thong|
+:Booking da thanh toan;
+
+|Co so du lieu|
+:Chuyen trang thai sang cho admin duyet huy;
+
+|He thong|
+:Gui thong bao da gui yeu cau;
+
+|Admin|
+:Xem danh sach yeu cau huy;
+
+if (Admin dong y huy?) then (Co)
+  |Co so du lieu|
+  :Cap nhat booking da huy;
+  :Hoan kho dich vu;
+  |He thong|
+  :Gui thong bao admin da xac nhan;
+else (Khong)
+  |Co so du lieu|
+  :Khoi phuc booking ve da xac nhan;
+  |He thong|
+  :Gui thong bao yeu cau huy bi tu choi;
+endif
+
+stop
+@enduml

@@ -5,6 +5,7 @@ const Field = require('../models/Field');
 const { vnpay, vnpayConfig } = require('../config/vnpay');
 const { createNotification } = require('../services/notificationService');
 const { markVoucherUsed } = require('../services/voucherService');
+const { getSocket } = require('../utils/socket');
 
 const paidStatuses = ['PAID', 'Paid'];
 const cancelledStatuses = ['CANCELLED', 'Cancelled'];
@@ -17,7 +18,32 @@ const getClientIp = (req) => {
 };
 
 const normalizeAmount = (amount) => Math.round(Number(amount || 0));
+const getBookingPayableAmount = (booking) => normalizeAmount(
+  booking?.finalAmount ?? booking?.totalPrice
+);
 const getFieldName = (field) => field?.fieldName || field?.name || 'sân';
+
+const normalizeTime = (time) => {
+  const [hour, minute] = String(time).split(':').map(Number);
+  return `${String(hour).padStart(2, '0')}:${String(minute || 0).padStart(2, '0')}`;
+};
+
+const addMinutes = (time, minutesToAdd) => {
+  const [hour, minute] = normalizeTime(time).split(':').map(Number);
+  const totalMinutes = hour * 60 + minute + minutesToAdd;
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`;
+};
+
+const expandBookingSlots = (booking) => {
+  const slots = [];
+  let current = normalizeTime(booking.startTime);
+  const endTime = normalizeTime(booking.endTime);
+  while (current < endTime) {
+    slots.push(current);
+    current = addMinutes(current, 30);
+  }
+  return slots;
+};
 
 const createTxnRef = (bookingId) => {
   return `AH${Date.now()}${String(bookingId).slice(-6)}`;
@@ -51,6 +77,15 @@ const applySuccessPayment = async (payment, query, io) => {
     booking.txnRef = query.vnp_TxnRef;
     booking.holdExpiresAt = undefined;
     await booking.save();
+    const socket = io || getSocket();
+    if (socket && shouldNotify) {
+      socket.emit('slot_booked_success', {
+        fieldId: String(booking.field),
+        date: booking.date,
+        slots: expandBookingSlots(booking),
+        slotStatus: 'booked'
+      });
+    }
     if (shouldNotify) {
       await markVoucherUsed(booking, io);
     }
@@ -101,7 +136,7 @@ exports.createVnpayPayment = async (req, res) => {
       booking.status = 'Cancelled';
       booking.paymentStatus = 'FAILED';
       await booking.save();
-      return res.status(400).json({ success: false, message: 'Thoi gian giu cho 5 phut da het. Vui long dat lai.' });
+      return res.status(400).json({ success: false, message: 'Thoi gian giu cho 3 phut da het. Vui long dat lai.' });
     }
     if (paidStatuses.includes(booking.paymentStatus)) {
       return res.status(400).json({ success: false, message: 'Booking da duoc thanh toan.' });
@@ -110,18 +145,24 @@ exports.createVnpayPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Booking khong o trang thai can thanh toan.' });
     }
 
-    const bookingAmount = normalizeAmount(booking.totalPrice);
+    const bookingAmount = getBookingPayableAmount(booking);
     if (amount !== undefined && normalizeAmount(amount) !== bookingAmount) {
-      return res.status(400).json({ success: false, message: 'So tien thanh toan khong khop voi booking.' });
+      return res.status(400).json({ success: false, message: 'Số tiền thanh toán không khớp với booking.' });
     }
 
-    const existingPending = await Payment.findOne({
+    let existingPending = await Payment.findOne({
       bookingId: booking._id,
       method: 'VNPAY',
       status: 'PENDING'
     }).sort({ createdAt: -1 });
 
     const isNewPendingPayment = !existingPending;
+    if (existingPending && normalizeAmount(existingPending.amount) !== bookingAmount) {
+      existingPending.amount = bookingAmount;
+      existingPending.txnRef = createTxnRef(booking._id);
+      existingPending.orderInfo = `Thanh toan booking ${booking._id}`;
+      await existingPending.save();
+    }
     const payment = existingPending || await Payment.create({
       bookingId: booking._id,
       userId: req.user.id,

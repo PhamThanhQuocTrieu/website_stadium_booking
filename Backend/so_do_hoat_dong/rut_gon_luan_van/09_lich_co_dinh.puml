@@ -1,0 +1,48 @@
+@startuml
+title Quan ly lich co dinh
+
+start
+:Admin tao lich co dinh;
+:Nhap khach hang, san, khoang ngay, thu trong tuan va gio;
+:He thong xac thuc quyen admin;
+:Kiem tra thong tin bat buoc;
+:Sinh danh sach ngay thoa dieu kien;
+:Kiem tra trung lich tung ngay;
+
+if (Co lich bi trung?) then (Co)
+  if (Admin chi tao slot con trong?) then (Co)
+    :Bo qua cac slot bi trung;
+  else (Khong)
+    :Tra danh sach slot bi trung;
+    stop
+  endif
+endif
+
+:Tao ban ghi lich co dinh;
+:Tao nhieu booking tu cac slot hop le;
+:Lien ket booking vao lich co dinh;
+:Gui thong bao cho khach hang neu co tai khoan;
+:Cap nhat realtime lich san;
+
+if (Admin huy lich co dinh?) then (Co)
+  :Chon lich co dinh;
+  :Huy cac booking tu hien tai tro ve sau;
+  :Cap nhat trang thai lich co dinh;
+  :Gui thong bao cho khach hang;
+endif
+
+if (Admin cap nhat lich tuong lai?) then (Co)
+  :Nhap lich moi;
+  :Kiem tra trung lich;
+  if (Co trung lich?) then (Co)
+    :Thong bao khong the cap nhat;
+    stop
+  endif
+  :Huy cac booking tuong lai cua lich cu;
+  :Tao booking moi;
+  :Ghi lich su cap nhat;
+  :Gui thong bao;
+endif
+
+stop
+@enduml

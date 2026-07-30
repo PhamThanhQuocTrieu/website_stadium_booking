@@ -13,7 +13,8 @@ const {
     googleLogin,
     forgotPassword,
     verifyResetOtp,
-    resetPassword
+    resetPassword,
+    sendChangePasswordOtp
 } = require('../controllers/userController');
 
 // Import middleware bảo mật (đảm bảo đường dẫn middlewares có chữ 's')
@@ -29,6 +30,7 @@ router.post('/reset-password', resetPassword);
 
 // Route cần bảo mật
 // Cập nhật thông tin cá nhân (User tự cập nhật)
+router.post('/change-password-otp', protect, sendChangePasswordOtp);
 router.put('/:id', protect, updateUser);
 
 // Các route quản trị (Chỉ dành cho Admin/Super Admin)

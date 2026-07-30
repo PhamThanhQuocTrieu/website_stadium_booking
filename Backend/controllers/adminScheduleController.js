@@ -98,7 +98,8 @@ const emitBookedSlots = (io, courtId, bookings = []) => {
     io.emit('slot_booked_success', {
       fieldId: String(courtId),
       date,
-      slots: [...slots]
+      slots: [...slots],
+      slotStatus: 'booked'
     });
   });
 };
@@ -273,15 +274,15 @@ exports.rescheduleBooking = async (req, res) => {
     if (booking.user) {
       notification = await createNotification({
         user: booking.user._id || booking.user,
-        title: 'Lich dat san da duoc thay doi',
-        message: `Lich dat san cua ban da duoc chuyen sang ${field.fieldName} luc ${booking.startTime} - ${booking.endTime} ngay ${booking.date}.`,
+        title: 'Lịch đặt sân đã được thay đổi',
+        message: `Lịch đặt sân của bạn đã được chuyển sang ${field.fieldName} lúc ${booking.startTime} - ${booking.endTime} ngày ${booking.date}.`,
         type: 'booking',
         relatedId: booking._id,
         relatedModel: 'Booking'
       });
       emitToUser(booking.user._id || booking.user, 'booking:rescheduled', { bookingId: booking._id, booking });
     }
-    emitToAdmin('schedule:refresh', { message: 'Lich san da duoc cap nhat' });
+    emitToAdmin('schedule:refresh', { message: 'Lịch sân đã được cập nhật' });
 
     return res.json({ booking, notification });
   } catch (error) {
@@ -399,15 +400,15 @@ exports.createRecurringBooking = async (req, res) => {
     if (customerId) {
       notification = await createNotification({
         user: customerId,
-        title: 'Lich dat san co dinh da duoc tao',
-        message: `Ban da duoc dat lich co dinh vao ${daysOfWeek.map((day) => DAY_NAMES[day]).join(', ')} luc ${normalizeTime(startTime)} - ${normalizeTime(endTime)} tu ${normalizeDate(startDate)} den ${normalizeDate(endDate)}.`,
+        title: 'Lịch đặt sân cố định đã được tạo',
+        message: `Bạn đã được đặt lịch cố định vào ${daysOfWeek.map((day) => DAY_NAMES[day]).join(', ')} lúc ${normalizeTime(startTime)} - ${normalizeTime(endTime)} từ ${normalizeDate(startDate)} đến ${normalizeDate(endDate)}.`,
         type: 'booking',
         relatedId: recurringBooking._id,
         relatedModel: 'RecurringBooking'
       });
       emitToUser(customerId, 'booking:recurring-created', { recurringBooking, createdCount: bookings.length });
     }
-    emitToAdmin('schedule:refresh', { message: 'Lich co dinh da duoc tao' });
+    emitToAdmin('schedule:refresh', { message: 'Lịch cố định đã được tạo' });
     emitBookedSlots(req.app.get('io'), courtId, bookings);
 
     return res.status(201).json({
@@ -498,14 +499,14 @@ exports.cancelRecurringBooking = async (req, res) => {
     if (recurringBooking.customer) {
       await createNotification({
         user: recurringBooking.customer,
-        title: 'Lich dat san co dinh da bi huy',
-        message: 'Lich dat san co dinh cua ban da duoc huy boi admin.',
+        title: 'Lịch đặt sân cố định đã bị hủy',
+        message: 'Lịch đặt sân cố định của bạn đã được hủy bởi admin.',
         type: 'booking',
         relatedId: recurringBooking._id,
         relatedModel: 'RecurringBooking'
       });
     }
-    emitToAdmin('schedule:refresh', { message: 'Lich co dinh da bi huy' });
+    emitToAdmin('schedule:refresh', { message: 'Lịch cố định đã bị hủy' });
     return res.json({ recurringBooking });
   } catch (error) {
     return res.status(400).json({ message: error.message });
@@ -600,14 +601,14 @@ exports.updateFutureRecurringBooking = async (req, res) => {
     if (recurringBooking.customer) {
       await createNotification({
         user: recurringBooking.customer,
-        title: 'Lich dat san co dinh da duoc cap nhat',
-        message: `Lich co dinh cua ban da duoc cap nhat. Tong gia tri lich: ${formatMoney(recurringBooking.totalPrice)} VND.`,
+        title: 'Lịch đặt sân cố định đã được cập nhật',
+        message: `Lịch cố định của bạn đã được cập nhật. Tổng giá trị lịch: ${formatMoney(recurringBooking.totalPrice)} VND.`,
         type: 'booking',
         relatedId: recurringBooking._id,
         relatedModel: 'RecurringBooking'
       });
     }
-    emitToAdmin('schedule:refresh', { message: 'Lich co dinh da duoc cap nhat' });
+    emitToAdmin('schedule:refresh', { message: 'Lịch cố định đã được cập nhật' });
     emitBookedSlots(req.app.get('io'), newCourtId, bookings);
     return res.json({ recurringBooking, createdCount: bookings.length });
   } catch (error) {

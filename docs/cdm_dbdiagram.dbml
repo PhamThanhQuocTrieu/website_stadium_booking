@@ -1,7 +1,7 @@
-// CDM rut gon cho website_stadium_booking
-// Dan vao https://dbdiagram.io de ve so do cho bao cao/luan van
-// Ghi chu: Du an dung MongoDB/Mongoose, CDM duoi day gom cac collection
-// va chi giu cac thuoc tinh nghiep vu quan trong de giang vien de doc.
+// CDM rut gon nhung day du bang cho luan van
+// Paste vao https://dbdiagram.io
+// Nguyen tac: du tat ca bang/model chinh cua project, chi giu thuoc tinh
+// nghiep vu tieu bieu de so do ngan, dep va de giai thich.
 
 Table users {
   _id ObjectId [pk]
@@ -10,8 +10,6 @@ Table users {
   email varchar [not null, unique]
   password varchar [not null]
   avatar varchar
-  dob date
-  gender varchar
   role varchar
   isActive boolean
 }
@@ -22,13 +20,20 @@ Table fields {
   type varchar [not null]
   address varchar [not null]
   image varchar
-  gallery text
   description text
   status varchar
   ratingAverage decimal
-  ratingCount int
   pricingRules text
-  availableServices text
+}
+
+Table pricing_rules {
+  _id ObjectId [pk]
+  ruleName varchar [not null]
+  startTime varchar [not null]
+  endTime varchar [not null]
+  price decimal [not null]
+  dayType varchar
+  isPeakHour boolean
 }
 
 Table services {
@@ -40,30 +45,26 @@ Table services {
   stock int
   inventoryType varchar
   isActive boolean
-}
-
-Table field_services {
-  _id ObjectId [pk]
-  fieldId ObjectId [not null]
-  serviceId ObjectId [not null]
+  appliedFields text
 }
 
 Table bookings {
   _id ObjectId [pk]
-  userId ObjectId
-  fieldId ObjectId [not null]
+  user ObjectId
+  field ObjectId [not null]
   voucherId ObjectId
   reviewId ObjectId
-  bookingDate varchar [not null]
+  date varchar [not null]
   startTime varchar [not null]
   endTime varchar [not null]
-  selectedServices text
+  services text
   totalPrice decimal [not null]
   discountAmount decimal
   finalAmount decimal
   paymentMethod varchar
   paymentStatus varchar
   status varchar
+  holdExpiresAt datetime
   isRecurring boolean
   customerName varchar
   customerPhone varchar
@@ -72,8 +73,9 @@ Table bookings {
 
 Table recurring_bookings {
   _id ObjectId [pk]
-  customerId ObjectId
-  courtId ObjectId [not null]
+  customer ObjectId
+  court ObjectId [not null]
+  createdBy ObjectId
   startDate varchar [not null]
   endDate varchar [not null]
   daysOfWeek text
@@ -82,8 +84,6 @@ Table recurring_bookings {
   bookingIds text
   paymentStatus varchar
   status varchar
-  createdBy ObjectId
-  note text
 }
 
 Table payments {
@@ -111,10 +111,6 @@ Table vouchers {
   usedCount int
   perUserLimit int
   applyType varchar
-  applicableFields text
-  applicableUsers text
-  sportTypes text
-  validTime varchar
   status varchar
   startDate datetime [not null]
   endDate datetime [not null]
@@ -133,23 +129,22 @@ Table user_vouchers {
 
 Table reviews {
   _id ObjectId [pk]
-  userId ObjectId [not null]
-  bookingId ObjectId [not null]
-  fieldId ObjectId
-  serviceId ObjectId
+  user ObjectId [not null]
+  booking ObjectId [not null]
+  field ObjectId
+  service ObjectId
   rating int [not null]
   fieldQuality int
   serviceQuality int
   cleanliness int
   priceReasonable int
   comment text [not null]
-  images text
   isHidden boolean
 }
 
 Table notifications {
   _id ObjectId [pk]
-  userId ObjectId [not null]
+  user ObjectId [not null]
   title varchar [not null]
   message text [not null]
   type varchar [not null]
@@ -164,7 +159,6 @@ Table conversations {
   assignedAdminId ObjectId
   status varchar
   lastMessage text
-  lastMessageAt datetime
   unreadByUser int
   unreadByAdmin int
 }
@@ -176,8 +170,14 @@ Table messages {
   senderRole varchar [not null]
   content text
   type varchar
-  imageUrl varchar
   status varchar
+}
+
+Table chat_sessions {
+  _id ObjectId [pk]
+  userId ObjectId [not null]
+  relatedBooking ObjectId
+  messages text
 }
 
 Table news {
@@ -187,14 +187,9 @@ Table news {
   summary text
   content text [not null]
   thumbnail varchar
-  category varchar
-  tags text
-  authorId ObjectId
-  newsType varchar
-  sourceUrl varchar
+  author ObjectId
   status varchar
   isFeatured boolean
-  views int
   publishedAt datetime
 }
 
@@ -208,23 +203,19 @@ Table contacts {
   message text [not null]
   status varchar
   adminReply text
-  repliedAt datetime
 }
 
 Table banners {
   _id ObjectId [pk]
   title varchar [not null]
   subtitle varchar
-  description text
   image varchar [not null]
   buttonText varchar
   buttonLink varchar
   voucherCode varchar
   position varchar
-  displayOrder int
+  order int
   isActive boolean
-  startDate datetime
-  endDate datetime
 }
 
 Table policies {
@@ -235,16 +226,50 @@ Table policies {
   updatedBy ObjectId
 }
 
-Ref: fields._id < field_services.fieldId
-Ref: services._id < field_services.serviceId
+Table otps {
+  _id ObjectId [pk]
+  email varchar [not null, unique]
+  otpHash varchar [not null]
+  expiresAt datetime [not null]
+  verified boolean
+  attempts int
+}
 
-Ref: users._id < bookings.userId
-Ref: fields._id < bookings.fieldId
+TableGroup "Nghiep vu dat san" {
+  users
+  fields
+  pricing_rules
+  services
+  bookings
+  recurring_bookings
+  payments
+  vouchers
+  user_vouchers
+  reviews
+}
+
+TableGroup "Tuong tac va ho tro" {
+  notifications
+  conversations
+  messages
+  chat_sessions
+  contacts
+}
+
+TableGroup "Noi dung va he thong" {
+  news
+  banners
+  policies
+  otps
+}
+
+Ref: users._id < bookings.user
+Ref: fields._id < bookings.field
 Ref: vouchers._id < bookings.voucherId
 Ref: reviews._id - bookings.reviewId
 
-Ref: users._id < recurring_bookings.customerId
-Ref: fields._id < recurring_bookings.courtId
+Ref: users._id < recurring_bookings.customer
+Ref: fields._id < recurring_bookings.court
 Ref: users._id < recurring_bookings.createdBy
 
 Ref: bookings._id < payments.bookingId
@@ -253,17 +278,20 @@ Ref: users._id < payments.userId
 Ref: users._id < user_vouchers.userId
 Ref: vouchers._id < user_vouchers.voucherId
 
-Ref: users._id < reviews.userId
-Ref: bookings._id < reviews.bookingId
-Ref: fields._id < reviews.fieldId
-Ref: services._id < reviews.serviceId
+Ref: users._id < reviews.user
+Ref: bookings._id < reviews.booking
+Ref: fields._id < reviews.field
+Ref: services._id < reviews.service
 
-Ref: users._id < notifications.userId
+Ref: users._id < notifications.user
 
 Ref: users._id < conversations.userId
 Ref: users._id < conversations.assignedAdminId
 Ref: conversations._id < messages.conversationId
 Ref: users._id < messages.senderId
 
-Ref: users._id < news.authorId
+Ref: users._id < chat_sessions.userId
+Ref: bookings._id < chat_sessions.relatedBooking
+
+Ref: users._id < news.author
 Ref: users._id < policies.updatedBy

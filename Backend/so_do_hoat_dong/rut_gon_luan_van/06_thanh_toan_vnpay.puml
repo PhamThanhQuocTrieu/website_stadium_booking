@@ -1,0 +1,82 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+title So do hoat dong thanh toan booking qua VNPay
+
+|Nguoi dung|
+start
+:Bam thanh toan;
+
+|He thong|
+:Xac thuc nguoi dung;
+
+|Co so du lieu|
+:Kiem tra booking;
+
+if (Booking khong thuoc nguoi dung?) then (Co)
+  |He thong|
+  :Tu choi thanh toan;
+  stop
+endif
+
+if (Booking het thoi gian giu cho?) then (Co)
+  |Co so du lieu|
+  :Huy booking;
+  |He thong|
+  :Thong bao dat lai;
+  stop
+endif
+
+if (Booking da thanh toan hoac da huy?) then (Co)
+  |He thong|
+  :Thong bao trang thai khong hop le;
+  stop
+endif
+
+|He thong|
+:Kiem tra so tien thanh toan;
+
+|Co so du lieu|
+:Tao hoac lay giao dich VNPay dang cho;
+:Cap nhat booking sang cho thanh toan;
+
+|He thong|
+:Tao URL thanh toan VNPay;
+
+|Nguoi dung|
+:Chuyen nguoi dung sang cong VNPay;
+
+|VNPay|
+:Xu ly giao dich thanh toan;
+:Tra ket qua ve he thong;
+
+|He thong|
+:Xac minh chu ky;
+if (Chu ky khong hop le?) then (Co)
+  :Tu choi ket qua;
+  stop
+endif
+
+if (Thanh toan thanh cong?) then (Co)
+  |Co so du lieu|
+  :Cap nhat payment thanh cong;
+  :Cap nhat booking da xac nhan;
+  :Danh dau voucher da su dung;
+  |He thong|
+  :Gui thong bao thanh cong;
+else (Khong)
+  |Co so du lieu|
+  :Cap nhat payment that bai;
+  :Cap nhat booking thanh toan that bai;
+endif
+
+|He thong|
+:Tra ket qua cho frontend;
+stop
+@enduml

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Card, Spinner, Form, Row, Col, Pagination, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Plus, MapPin, CheckCircle, AlertCircle, XCircle, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Edit, Trash2, Plus, MapPin, CheckCircle, AlertCircle, XCircle, MapPinned, ListFilter, Trophy } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import Swal from 'sweetalert2';
 import '../../styles/admin/fieldmanager.css';
@@ -30,11 +30,30 @@ const FieldManager = () => {
   // Logic Lọc dữ liệu
   const filteredFields = useMemo(() => {
     return fields.filter(f => {
-      const matchSearch = f.fieldName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (f.fieldName || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchType = typeFilter === 'Tất cả' || f.type === typeFilter;
       return matchSearch && matchType;
     });
   }, [fields, searchTerm, typeFilter]);
+
+  const fieldStats = useMemo(() => {
+    const sportTypes = new Set(fields.map(f => f.type).filter(Boolean));
+    return {
+      total: fields.length,
+      active: fields.filter(f => f.status === 'Active').length,
+      maintenance: fields.filter(f => f.status === 'Maintenance').length,
+      visible: filteredFields.length,
+      types: sportTypes.size
+    };
+  }, [fields, filteredFields]);
+
+  const statCards = [
+    { label: 'Tổng sân', value: fieldStats.total, desc: 'Tài nguyên trong hệ thống', icon: MapPinned, tone: 'emerald' },
+    { label: 'Đang hoạt động', value: fieldStats.active, desc: 'Sẵn sàng nhận lịch', icon: CheckCircle, tone: 'green' },
+    { label: 'Đang bảo trì', value: fieldStats.maintenance, desc: 'Tạm khóa đặt sân', icon: AlertCircle, tone: 'amber' },
+    { label: 'Đang hiển thị', value: fieldStats.visible, desc: 'Theo bộ lọc hiện tại', icon: ListFilter, tone: 'blue' },
+    { label: 'Bộ môn', value: fieldStats.types, desc: 'Loại sân đang có', icon: Trophy, tone: 'violet' },
+  ];
 
   // Logic Phân trang
   const paginatedFields = useMemo(() => {
@@ -107,6 +126,24 @@ const FieldManager = () => {
         <Button variant="success" onClick={() => navigate('/admin/addField')}><Plus size={20}/> Thêm sân mới</Button>
       </div>
 
+      <section className="field-manager-stats-grid">
+        {statCards.map((stat) => {
+          const StatIcon = stat.icon;
+          return (
+            <article className={`field-manager-stat-card is-${stat.tone}`} key={stat.label}>
+              <div className="field-manager-stat-icon">
+                <StatIcon size={24} />
+              </div>
+              <div>
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+                <small>{stat.desc}</small>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
       {/* Thanh bộ lọc */}
       <div className="filter-bar mb-3">
         <Row className="g-3">
@@ -145,14 +182,23 @@ const FieldManager = () => {
                   <td><small><MapPin size={12} className="text-danger" /> {f.address}</small></td>
                   <td>{getStatusBadge(f.status)}</td>
                   <td className="text-center">
-                    <Button
-                      variant={f.status === 'Maintenance' ? 'outline-success' : 'outline-warning'}
-                      size="sm"
-                      className="me-2"
-                      onClick={() => handleToggleMaintenance(f)}
-                    >
-                      {f.status === 'Maintenance' ? <ToggleLeft size={16} /> : <ToggleRight size={16} />} {f.status === 'Maintenance' ? 'Mở sân' : 'Bảo trì'}
-                    </Button>
+                    <div className="field-maintenance-control me-2">
+                      <button
+                        type="button"
+                        className={`field-maintenance-switch ${f.status === 'Maintenance' ? 'is-on' : ''}`}
+                        role="switch"
+                        aria-checked={f.status === 'Maintenance'}
+                        aria-label={f.status === 'Maintenance' ? 'Tắt bảo trì sân' : 'Bật bảo trì sân'}
+                        title={f.status === 'Maintenance' ? 'Tắt bảo trì sân' : 'Bật bảo trì sân'}
+                        onClick={() => handleToggleMaintenance(f)}
+                      >
+                        <span />
+                      </button>
+                      <div>
+                        <strong>Bảo trì</strong>
+                        <small>{f.status === 'Maintenance' ? 'Đang bật' : 'Đang tắt'}</small>
+                      </div>
+                    </div>
                     <Button variant="outline-primary" size="sm" className="me-2" onClick={() => navigate(`/admin/updateField/${f._id}`)}><Edit size={16} /></Button>
                     <Button variant="outline-danger" size="sm" onClick={() => handleDelete(f._id)}><Trash2 size={16} /></Button>
                   </td>

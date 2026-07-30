@@ -3,3 +3,205 @@
 .pagination-custom .page-link { border: none; border-radius: 8px; margin: 0 4px; color: #333; }
 .pagination-custom .page-item.active .page-link { background-color: #198754; color: white; }
 .field-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+
+.field-maintenance-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+  padding: 4px 8px 4px 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+}
+
+.field-maintenance-control strong,
+.field-maintenance-control small {
+  display: block;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.field-maintenance-control strong {
+  color: #1e293b;
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.field-maintenance-control small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.field-maintenance-switch {
+  position: relative;
+  width: 54px;
+  height: 30px;
+  padding: 0;
+  vertical-align: middle;
+  background: #cfd3d6;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.field-maintenance-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  transition: transform 0.2s ease;
+}
+
+.field-maintenance-switch.is-on {
+  background: #35e39a;
+}
+
+.field-maintenance-switch.is-on span {
+  transform: translateX(24px);
+}
+
+.field-maintenance-switch:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.1), 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.field-maintenance-switch:focus-visible {
+  outline: 3px solid rgba(25, 135, 84, 0.24);
+  outline-offset: 3px;
+}
+
+.field-manager-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.field-manager-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.field-manager-stat-card:hover {
+  transform: translateY(-3px);
+  border-color: #bbf7d0;
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.09);
+}
+
+.field-manager-stat-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.field-manager-stat-card span {
+  display: block;
+  margin-top: 6px;
+  color: #334155;
+  font-weight: 800;
+}
+
+.field-manager-stat-card small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.field-manager-stat-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+}
+
+.field-manager-stat-card.is-emerald .field-manager-stat-icon {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.field-manager-stat-card.is-green .field-manager-stat-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.field-manager-stat-card.is-amber .field-manager-stat-icon {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.field-manager-stat-card.is-blue .field-manager-stat-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.field-manager-stat-card.is-violet .field-manager-stat-icon {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+@media (max-width: 767.98px) {
+  .field-manager-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-bar {
+    padding: 14px;
+  }
+
+  .admin-card {
+    border-radius: 10px;
+  }
+
+  .admin-card .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pagination-custom {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .p-4:has(.filter-bar) {
+    padding: 12px !important;
+  }
+
+  .field-manager-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .p-4:has(.filter-bar) > .d-flex.justify-content-between {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .p-4:has(.filter-bar) > .d-flex.justify-content-between .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}

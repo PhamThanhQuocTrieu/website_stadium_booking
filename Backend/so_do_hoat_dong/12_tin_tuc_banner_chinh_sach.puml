@@ -1,0 +1,142 @@
+@startuml
+title Quan tri tin tuc, banner va chinh sach
+
+start
+:Client/Admin goi API News, Banner hoac Policy;
+
+if (Tin tuc public?) then (GET /api/news)
+  if (Danh sach?) then (GET /)
+    :Tim News status=published;
+    :Select bo content;
+    :Sort featured, publishedAt, createdAt;
+    :Tra danh sach tin;
+  else (GET /:slugOrId)
+    :Tim published news theo slug hoac ObjectId;
+    if (Khong tim thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Tang views;
+    :Tra chi tiet article;
+  endif
+  stop
+endif
+
+if (Admin quan ly tin tuc?) then (News admin)
+  :protect + adminOnly;
+  if (GET admin/all?) then (Co)
+    :Loc theo newsType neu co;
+    :Validate newsType internal/external/all;
+    :Populate author;
+    :Tra danh sach;
+    stop
+  endif
+  :Normalize payload title, summary, content, tags, type, source, status;
+  :Validate title/content;
+  if (Tin external?) then (Co)
+    :Validate sourceName va sourceUrl http/https;
+  endif
+  if (Du lieu loi?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  if (Tao moi?) then (POST)
+    :Tao slug duy nhat tu title;
+    :Gan author=req.user;
+    :Set publishedAt neu status=published;
+    :News.create;
+    :Emit news_updated created;
+  elseif (Cap nhat?) then (PUT)
+    :Tim News;
+    if (Khong thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Cap nhat payload va tao lai slug duy nhat;
+    :Cap nhat publishedAt theo status;
+    :Emit news_updated updated;
+  else (DELETE)
+    :findByIdAndDelete;
+    if (Khong thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Emit news_updated deleted;
+  endif
+  :Tra ket qua;
+  stop
+endif
+
+if (Banner trang chu?) then (GET /api/banners/home)
+  :Tim Banner isActive=true;
+  :Chi lay banner trong khoang startDate/endDate;
+  :Sort order, createdAt;
+  :Tra banners;
+  stop
+endif
+
+if (Admin quan ly banner?) then (Banner admin)
+  :protect + adminOnly;
+  if (GET danh sach?) then (Co)
+    :Tim tat ca Banner;
+    :Sort order;
+    :Tra danh sach;
+    stop
+  endif
+  :Normalize title, image, position, order, isActive, startDate, endDate;
+  :Validate title, image, position, startDate <= endDate;
+  if (Du lieu loi?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  if (POST tao?) then (Co)
+    :Banner.create;
+    :Emit banner_updated created;
+  elseif (PUT cap nhat?) then (Co)
+    :findByIdAndUpdate;
+    if (Khong thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Emit banner_updated updated;
+  elseif (PATCH toggle?) then (Co)
+    :Tim Banner va dao isActive;
+    :Emit banner_updated toggle-active;
+  else (DELETE)
+    :findByIdAndDelete;
+    :Emit banner_updated deleted;
+  endif
+  :Tra ket qua;
+  stop
+endif
+
+if (Chinh sach?) then (Policy)
+  if (Public GET /:type?) then (Co)
+    :Validate type terms/privacy;
+    if (Type khong hop le?) then (Co)
+      :Tra 400;
+      stop
+    endif
+    :Tim Policy theo type;
+    if (Khong thay?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Tra title, content, updatedAt;
+  else (Admin GET/PUT)
+    :protect + adminOnly;
+    if (GET all?) then (Co)
+      :Lay tat ca policy;
+      :Populate updatedBy;
+      :Sort terms truoc privacy;
+    else (PUT)
+      :Validate title va content khong rong;
+      :Tim Policy;
+      :Cap nhat title, content, updatedBy;
+    endif
+    :Tra ket qua;
+  endif
+endif
+
+stop
+@enduml

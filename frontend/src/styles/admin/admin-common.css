@@ -78,6 +78,11 @@
   background: #f8fafc;
 }
 
+.admin-page-heading + .card .table-responsive,
+.admin-page-heading ~ .card .table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 767px) {
   .admin-page-heading {
     align-items: stretch;
@@ -95,5 +100,16 @@
   .admin-pagination-shell {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .admin-page-heading .btn,
+  .admin-page-heading button {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .admin-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

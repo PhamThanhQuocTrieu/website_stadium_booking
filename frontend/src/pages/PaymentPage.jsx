@@ -15,8 +15,10 @@ const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Nhận dữ liệu Id hóa đơn tạm và danh sách slot từ BookingPage chuyển sang
-  const { bookingId, totalAmount } = location.state || {};
+  // Nhận dữ liệu Id hóa đơn tạm từ BookingPage hoặc từ thông báo hàng chờ.
+  const queryParams = new URLSearchParams(location.search);
+  const { bookingId: stateBookingId, totalAmount } = location.state || {};
+  const bookingId = stateBookingId || queryParams.get('bookingId');
 
   // --- BỔ SUNG STATE DỊCH VỤ ---
   const [services, setServices] = useState([]);
@@ -39,6 +41,8 @@ const PaymentPage = () => {
     phone: '',
     note: ''
   });
+
+  const formatMoney = (value) => Number(value || 0).toLocaleString('vi-VN');
 
   useEffect(() => {
     // Nếu cố tình vào trang này mà không đi đúng luồng chọn sân, đá về trang chủ
@@ -87,7 +91,7 @@ const PaymentPage = () => {
             }
           });
           setMyVouchers(Array.isArray(voucherRes.data) ? voucherRes.data : []);
-        } catch (voucherErr) {
+        } catch {
           setMyVouchers([]);
         }
         setIsLoading(false);
@@ -98,7 +102,7 @@ const PaymentPage = () => {
     };
 
     fetchAllData();
-  }, [bookingId, navigate]);
+  }, [bookingId, navigate, totalAmount]);
 
   // --- LOGIC XỬ LÝ DỊCH VỤ ---
   const getSelectedServiceQuantity = (serviceId) => (
@@ -168,10 +172,19 @@ const PaymentPage = () => {
     return '14:00 - 15:00';
   };
 
-  const calculateOriginalTotal = () => {
-    const serviceTotal = selectedServices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    return (totalAmount || 0) + serviceTotal;
+  const calculateFieldSubtotal = () => {
+    const savedSubtotal = Number(bookingDetail?.subtotal || 0);
+    if (savedSubtotal > 0) return savedSubtotal;
+    if (totalAmount) return Number(totalAmount);
+
+    const savedTotal = Number(bookingDetail?.originalAmount || bookingDetail?.totalPrice || 0);
+    const savedServiceTotal = Number(bookingDetail?.serviceTotal || 0);
+    return Math.max(0, savedTotal - savedServiceTotal);
   };
+  const calculateServiceTotal = () => selectedServices.reduce((sum, item) => {
+    return sum + (Number(item.price || 0) * Number(item.quantity || 0));
+  }, 0);
+  const calculateOriginalTotal = () => calculateFieldSubtotal() + calculateServiceTotal();
   const calculateFinalTotal = () => appliedVoucher?.finalAmount ?? calculateOriginalTotal();
   const calculateDiscount = () => appliedVoucher?.discountAmount ?? 0;
   // ---------------------------
@@ -218,18 +231,23 @@ const PaymentPage = () => {
       const token = localStorage.getItem('userToken');
 
       // 1. Cập nhật thông tin khách hàng, ghi chú VÀ dịch vụ vào đơn hàng
-      await axios.put(`http://localhost:5000/api/bookings/${bookingId}/update-info`, {
+      const updateRes = await axios.put(`http://localhost:5000/api/bookings/${bookingId}/update-info`, {
         ...formData,
         services: selectedServices,
         voucherCode: appliedVoucher?.voucherCode || ''
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      const updatedBooking = updateRes.data || {};
+      setBookingDetail(updatedBooking);
+      const paymentAmount = Number(
+        updatedBooking.finalAmount ?? updatedBooking.totalPrice ?? calculateFinalTotal()
+      );
 
       // 2. Gọi API khởi tạo đường dẫn thanh toán VNPay gateway
       const res = await axios.post(`http://localhost:5000/api/payments/vnpay/create`, {
         bookingId,
-        amount: calculateFinalTotal()
+        amount: paymentAmount
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -304,7 +322,7 @@ const PaymentPage = () => {
                       <img src={s.image} style={{ width: 40, height: 40, borderRadius: '4px', objectFit: 'cover' }} alt="" />
                       <div className="ms-3 flex-grow-1">
                         <div className="fw-bold text-dark small">{s.name}</div>
-                        <div className="text-secondary small">{s.quantity} x {s.price.toLocaleString()}đ</div>
+                        <div className="text-secondary small">{s.quantity} x {formatMoney(s.price)}đ</div>
                         <div className="d-inline-flex align-items-center border rounded-pill overflow-hidden mt-2">
                           <Button
                             size="sm"
@@ -326,7 +344,7 @@ const PaymentPage = () => {
                         </div>
                       </div>
                       <div className="text-end">
-                        <div className="fw-bold text-success">{(s.price * s.quantity).toLocaleString()}đ</div>
+                        <div className="fw-bold text-success">{formatMoney(Number(s.price || 0) * Number(s.quantity || 0))}đ</div>
                         <Trash size={16} className="text-danger cursor-pointer mt-1" onClick={() => removeService(s.serviceId)} />
                       </div>
                     </div>
@@ -355,7 +373,7 @@ const PaymentPage = () => {
                 </div>
                 <div className="info-item-row pt-3 border-0">
                   <span className="fw-bold text-dark">THÀNH TIỀN HÓA ĐƠN</span>
-                  <h4 className="fw-bold text-success mb-0">{(totalAmount || 100000).toLocaleString()} đ</h4>
+                  <h4 className="fw-bold text-success mb-0">{formatMoney(calculateFieldSubtotal())} đ</h4>
                 </div>
               </div>
             </div>
@@ -419,7 +437,7 @@ const PaymentPage = () => {
                           onClick={() => handleApplyVoucher(voucher.code)}
                         >
                           <span className="fw-bold">{voucher.code}</span>
-                          <small>{voucher.discountType === 'fixed' ? `${Number(voucher.discountValue || 0).toLocaleString('vi-VN')}d` : `${voucher.discountValue}%`}</small>
+                          <small>{voucher.discountType === 'fixed' ? `${formatMoney(voucher.discountValue)}đ` : `${voucher.discountValue}%`}</small>
                         </button>
                       ))}
                     </div>
@@ -427,7 +445,7 @@ const PaymentPage = () => {
 
                   {appliedVoucher && (
                     <div className="voucher-success mt-3">
-                      Da ap dung {appliedVoucher.voucherCode}, giam {Number(appliedVoucher.discountAmount || 0).toLocaleString('vi-VN')}d
+                      Đã áp dụng {appliedVoucher.voucherCode}, giảm {formatMoney(appliedVoucher.discountAmount)}đ
                     </div>
                   )}
                 </div>
@@ -442,9 +460,42 @@ const PaymentPage = () => {
                 </div>
 
                 <div className="payment-total-box mt-4 mb-4">
-                  <div><span>Tạm tính</span><strong>{calculateOriginalTotal().toLocaleString()} đ</strong></div>
-                  <div><span>Giảm giá</span><strong className="text-danger">- {calculateDiscount().toLocaleString()} đ</strong></div>
-                  <div className="final"><span>Tổng thanh toán</span><strong>{calculateFinalTotal().toLocaleString()} đ</strong></div>
+                  <div>
+                    <span>Tiền sân</span>
+                    <strong>{formatMoney(calculateFieldSubtotal())} đ</strong>
+                  </div>
+                  <div>
+                    <span>Dịch vụ bổ sung</span>
+                    <strong>{formatMoney(calculateServiceTotal())} đ</strong>
+                  </div>
+                  {selectedServices.length > 0 && (
+                    <div className="service-breakdown">
+                      {selectedServices.map((service) => {
+                        const quantity = Number(service.quantity || 0);
+                        const price = Number(service.price || 0);
+                        return (
+                          <div key={service.serviceId || service._id || service.name}>
+                            <span>
+                              {service.name} <small>x{quantity} ({formatMoney(price)}đ)</small>
+                            </span>
+                            <strong>{formatMoney(price * quantity)} đ</strong>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="subtotal">
+                    <span>Tạm tính</span>
+                    <strong>{formatMoney(calculateOriginalTotal())} đ</strong>
+                  </div>
+                  <div>
+                    <span>{appliedVoucher ? `Voucher ${appliedVoucher.voucherCode}` : 'Giảm giá'}</span>
+                    <strong className="text-danger">- {formatMoney(calculateDiscount())} đ</strong>
+                  </div>
+                  <div className="final">
+                    <span>Tổng thanh toán</span>
+                    <strong>{formatMoney(calculateFinalTotal())} đ</strong>
+                  </div>
                 </div>
                 <div className="payment-method-box mb-4">
                   <div className="small fw-bold text-secondary mb-3">PHƯƠNG THỨC THANH TOÁN</div>
@@ -506,7 +557,7 @@ const PaymentPage = () => {
                   <img src={s.image} style={{ width: 50, height: 50 }} alt={s.name} />
                   <div className="ms-3 flex-grow-1">
                     <div className="fw-bold">{s.name}</div>
-                    <small className="text-muted d-block">{s.price.toLocaleString()} đ</small>
+                    <small className="text-muted d-block">{formatMoney(s.price)} đ</small>
                     <small className={isOutOfStock ? 'text-danger fw-bold' : 'text-success'}>
                       {isOutOfStock ? 'Het so luong' : `Con ${remainingStock}`}
                     </small>

@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   getBookingStatus,
   reserveSlots,
+  joinBookingWaitlist,
+  getMyBookingWaitlist,
   getBookingById,
   getMyBookings,
   updateBookingInfo,
@@ -14,6 +16,8 @@ const { protect, adminOnly } = require('../middlewares/authMiddleware');
 
 router.get('/fields/:fieldId/booking-status', getBookingStatus);
 router.post('/reserve', protect, reserveSlots);
+router.post('/waitlist', protect, joinBookingWaitlist);
+router.get('/waitlist', protect, getMyBookingWaitlist);
 router.get('/my-bookings', protect, getMyBookings);
 router.get('/admin/list', protect, adminOnly, adminGetBookings);
 router.get('/:id', protect, getBookingById);

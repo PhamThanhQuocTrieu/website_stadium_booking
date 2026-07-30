@@ -307,6 +307,17 @@
   min-width: 720px;
 }
 
+.field-pricing-table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.field-pricing-table-wrap table {
+  width: max-content;
+  min-width: 720px;
+}
+
 .service-item {
   min-height: 72px;
   min-width: 0;

@@ -4,9 +4,14 @@ const Field = require('../models/Field');
 const Review = require('../models/Review');
 const Payment = require('../models/Payment');
 const Service = require('../models/Service');
+const Notification = require('../models/Notification');
+const BookingWaitlist = require('../models/BookingWaitlist');
 const cron = require('node-cron');
+const jwt = require('jsonwebtoken');
+const { getSocket } = require('../utils/socket');
 const { createNotification } = require('../services/notificationService');
 const { validateVoucherForBooking } = require('../services/voucherService');
+const { findUserTimeConflict } = require('../services/bookingConflictService');
 
 const normalizeTime = (time) => {
   const [hour, minute] = String(time).split(':').map(Number);
@@ -88,7 +93,14 @@ const expandBookingSlots = (booking) => {
   return slots;
 };
 
-const HOLD_DURATION_MS = 5 * 60 * 1000;
+const areSlotsContiguous = (slots = []) => {
+  return slots.every((slot, index) => {
+    if (index === 0) return true;
+    return timeToMinutes(slot) - timeToMinutes(slots[index - 1]) === 30;
+  });
+};
+
+const HOLD_DURATION_MS = 3 * 60 * 1000;
 const getHoldExpiredAt = () => new Date(Date.now() - HOLD_DURATION_MS);
 const getHoldExpiresAt = () => new Date(Date.now() + HOLD_DURATION_MS);
 const getActivePendingHoldQuery = () => ({
@@ -121,6 +133,175 @@ const getBlockingBookingPaymentQuery = () => ({
 });
 const getBookingEndDate = (booking) => new Date(`${booking.date}T${normalizeTime(booking.endTime)}:00`);
 const getFieldName = (field) => field?.fieldName || field?.name || 'sân';
+const canRequestCancelBeforeOneDay = (booking) => {
+  const bookingDate = new Date(`${booking.date}T00:00:00`);
+  if (Number.isNaN(bookingDate.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return bookingDate.getTime() - today.getTime() >= 24 * 60 * 60 * 1000;
+};
+const pendingPaymentStatusSet = pendingPaymentStatuses.map(normalizeStatus);
+const getTimelineSlotStatus = (booking) => {
+  const bookingStatus = normalizeStatus(booking?.status);
+  const paymentStatus = normalizeStatus(booking?.paymentStatus);
+  if (bookingStatus === 'pending_payment' || pendingPaymentStatusSet.includes(paymentStatus)) {
+    return 'held';
+  }
+  return 'booked';
+};
+const buildTimelineSlotStatuses = (bookings = []) => {
+  const slotStatuses = {};
+  bookings.forEach((booking) => {
+    const timelineStatus = getTimelineSlotStatus(booking);
+    expandBookingSlots(booking).forEach((slot) => {
+      slotStatuses[slot] = timelineStatus;
+    });
+  });
+  return slotStatuses;
+};
+const getOptionalRequestUserId = (req) => {
+  let token = req.headers.authorization || req.headers.Authorization;
+  if (!token || !token.toLowerCase().startsWith('bearer ')) return null;
+
+  try {
+    token = token.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded?.id ? String(decoded.id) : null;
+  } catch {
+    return null;
+  }
+};
+const buildTimelineSlotBookings = (bookings = [], currentUserId = null) => {
+  const slotBookings = {};
+  bookings.forEach((booking) => {
+    const timelineStatus = getTimelineSlotStatus(booking);
+    const bookingUserId = booking.user ? String(booking.user) : null;
+    const slotInfo = {
+      bookingId: String(booking._id),
+      userId: bookingUserId,
+      isMine: Boolean(currentUserId && bookingUserId === currentUserId),
+      startTime: normalizeTime(booking.startTime),
+      endTime: normalizeTime(booking.endTime),
+      totalAmount: booking.finalAmount || booking.totalPrice,
+      slotStatus: timelineStatus
+    };
+    expandBookingSlots(booking).forEach((slot) => {
+      slotBookings[slot] = slotInfo;
+    });
+  });
+  return slotBookings;
+};
+
+const notifyWaitlistedUsersForExpiredHold = async (booking, io) => {
+  const waitlistItem = await BookingWaitlist.findOneAndUpdate(
+    {
+      sourceBooking: booking._id,
+      status: 'waiting'
+    },
+    {
+      $set: {
+        status: 'notified',
+        notifiedAt: new Date()
+      }
+    },
+    { sort: { createdAt: 1 }, new: true }
+  );
+
+  if (!waitlistItem) return;
+
+  const field = await Field.findById(waitlistItem.field);
+  if (!field) {
+    waitlistItem.status = 'cancelled';
+    await waitlistItem.save();
+    return;
+  }
+
+  const stillBlocked = await Booking.findOne({
+    field: waitlistItem.field,
+    date: waitlistItem.date,
+    status: { $in: activeBookingStatuses },
+    startTime: { $lt: waitlistItem.endTime },
+    endTime: { $gt: waitlistItem.startTime },
+    ...getBlockingBookingPaymentQuery()
+  });
+  if (stillBlocked) {
+    waitlistItem.status = 'waiting';
+    waitlistItem.notifiedAt = undefined;
+    await waitlistItem.save();
+    return;
+  }
+
+  const totalPrice = calculateFieldAmount(field, waitlistItem.date, waitlistItem.startTime, waitlistItem.endTime);
+  const nextBooking = await Booking.create({
+    user: waitlistItem.user,
+    field: waitlistItem.field,
+    date: waitlistItem.date,
+    startTime: waitlistItem.startTime,
+    endTime: waitlistItem.endTime,
+    totalPrice,
+    originalAmount: totalPrice,
+    subtotal: totalPrice,
+    finalAmount: totalPrice,
+    paymentStatus: 'UNPAID',
+    paymentMethod: 'VNPAY',
+    status: 'PENDING_PAYMENT',
+    holdExpiresAt: getHoldExpiresAt()
+  });
+
+  waitlistItem.sourceBooking = nextBooking._id;
+  await waitlistItem.save();
+
+  await BookingWaitlist.updateMany(
+    {
+      sourceBooking: booking._id,
+      status: 'waiting',
+      _id: { $ne: waitlistItem._id }
+    },
+    { $set: { sourceBooking: nextBooking._id } }
+  );
+
+  if (io) {
+    io.emit('slot_booked_success', {
+      bookingId: nextBooking._id,
+      fieldId: String(nextBooking.field),
+      date: nextBooking.date,
+      slots: expandBookingSlots(nextBooking),
+      holdExpiresAt: nextBooking.holdExpiresAt,
+      slotStatus: 'held'
+    });
+  }
+
+  const fieldName = field.fieldName || field.name || 'sân';
+  const existingNotification = await Notification.findOne({
+    user: waitlistItem.user,
+    title: 'Khung giờ đang chờ đã trống',
+    'metadata.waitlistId': String(waitlistItem._id),
+    'metadata.bookingId': String(nextBooking._id)
+  });
+  if (existingNotification) return;
+
+  await createNotification({
+    user: waitlistItem.user,
+    title: 'Khung giờ đang chờ đã trống',
+    message: `Khung giờ ${waitlistItem.startTime} - ${waitlistItem.endTime} ngày ${waitlistItem.date} tại ${fieldName} đã được giữ chỗ cho bạn. Vui lòng thanh toán trong 3 phút.`,
+    type: 'booking',
+    relatedId: nextBooking._id,
+    relatedModel: 'Booking',
+    link: `/payment?bookingId=${nextBooking._id}`,
+    metadata: {
+      bookingId: String(nextBooking._id),
+      fieldId: String(nextBooking.field),
+      date: waitlistItem.date,
+      startTime: waitlistItem.startTime,
+      endTime: waitlistItem.endTime,
+      waitlistId: String(waitlistItem._id)
+    },
+    io
+  });
+};
+
 const calculateFieldAmount = (field, date, startTime, endTime) => {
   const dateObj = new Date(date);
   const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
@@ -230,7 +411,7 @@ const releaseBookingServices = async (booking, mode = 'all') => {
   }
 };
 
-const cancelExpiredPendingBookings = async () => {
+const cancelExpiredPendingBookings = async (io = getSocket()) => {
   const expiredBookings = await Booking.find({
     paymentStatus: { $in: pendingPaymentStatuses },
     status: { $in: activeBookingStatuses },
@@ -246,6 +427,8 @@ const cancelExpiredPendingBookings = async () => {
     booking.paymentStatus = 'FAILED';
     booking.holdExpiresAt = undefined;
     await booking.save();
+    await notifyWaitlistedUsersForExpiredHold(booking, io);
+    if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
   }
 
   return { modifiedCount: expiredBookings.length };
@@ -281,7 +464,7 @@ exports.getBookingStatus = async (req, res) => {
     const { fieldId } = req.params;
     const { date } = req.query;
 
-    await cancelExpiredPendingBookings();
+    await cancelExpiredPendingBookings(req.app.get('io'));
     await completePastPaidBookings();
 
     const field = await Field.findById(fieldId);
@@ -313,7 +496,9 @@ exports.getBookingStatus = async (req, res) => {
 
     return res.status(200).json({
       field: { _id: fieldId, fieldName: field.fieldName, status: field.status, pricingRules: field.pricingRules || [] },
-      bookedSlots
+      bookedSlots,
+      slotStatuses: buildTimelineSlotStatuses(bookings),
+      slotBookings: buildTimelineSlotBookings(bookings, getOptionalRequestUserId(req))
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -322,15 +507,21 @@ exports.getBookingStatus = async (req, res) => {
 
 exports.reserveSlots = async (req, res) => {
   try {
-    const { fieldId, date, slots } = req.body;
+    const { fieldId, date, slots, ignoreConflict } = req.body;
 
     if (!fieldId || !date || !Array.isArray(slots) || slots.length === 0) {
       return res.status(400).json({ success: false, message: 'Thieu thong tin dat san!' });
     }
 
-    await cancelExpiredPendingBookings();
+    await cancelExpiredPendingBookings(req.app.get('io'));
 
     const selectedSlots = [...new Set(slots.map(normalizeTime))].sort();
+    if (!areSlotsContiguous(selectedSlots)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng chỉ chọn một đoạn thời gian liên tục. Không thể đặt các khung giờ rời nhau trong cùng một đơn.'
+      });
+    }
     const startTime = selectedSlots[0];
     const endTime = addMinutes(selectedSlots[selectedSlots.length - 1], 30);
 
@@ -365,6 +556,25 @@ exports.reserveSlots = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Khung gio nay da co nguoi dat!' });
     }
 
+    if (ignoreConflict !== true) {
+      const conflictBooking = await findUserTimeConflict({
+        userId: req.user.id,
+        fieldId,
+        date,
+        startTime,
+        endTime
+      });
+
+      if (conflictBooking) {
+        return res.status(200).json({
+          success: true,
+          warning: true,
+          message: 'Bạn đã có một đơn đặt sân khác trong cùng khung giờ.',
+          conflictBooking
+        });
+      }
+    }
+
     const bookingData = {
       user: new mongoose.Types.ObjectId(req.user.id),
       field: new mongoose.Types.ObjectId(fieldId),
@@ -390,7 +600,8 @@ exports.reserveSlots = async (req, res) => {
         fieldId: String(fieldId),
         date,
         slots: selectedSlots,
-        holdExpiresAt: newBooking.holdExpiresAt
+        holdExpiresAt: newBooking.holdExpiresAt,
+        slotStatus: 'held'
       });
     }
     return res.status(200).json({ success: true, bookingId: newBooking._id, totalPrice });
@@ -399,6 +610,125 @@ exports.reserveSlots = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Khung gio nay da co nguoi dat!' });
     }
 
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.joinBookingWaitlist = async (req, res) => {
+  try {
+    const { fieldId, date, startTime, endTime } = req.body;
+
+    if (!fieldId || !date || !startTime) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin khung giờ cần xếp hàng.' });
+    }
+
+    await cancelExpiredPendingBookings(req.app.get('io'));
+
+    const normalizedStart = normalizeTime(startTime);
+    const normalizedEnd = endTime ? normalizeTime(endTime) : addMinutes(normalizedStart, 30);
+
+    const field = await Field.findById(fieldId);
+    if (!field) return res.status(404).json({ success: false, message: 'Không tìm thấy sân!' });
+
+    const blockingBooking = await Booking.findOne({
+      field: new mongoose.Types.ObjectId(fieldId),
+      date: String(date).trim(),
+      status: { $in: activeBookingStatuses },
+      startTime: { $lt: normalizedEnd },
+      endTime: { $gt: normalizedStart },
+      ...getBlockingBookingPaymentQuery()
+    });
+
+    if (!blockingBooking) {
+      return res.status(200).json({
+        success: true,
+        available: true,
+        message: 'Khung giờ này hiện đang trống, bạn có thể đặt ngay.'
+      });
+    }
+
+    if (getTimelineSlotStatus(blockingBooking) !== 'held') {
+      return res.status(400).json({ success: false, message: 'Khung giờ này đã được đặt, không thể xếp hàng.' });
+    }
+
+    if (String(blockingBooking.user) === String(req.user.id)) {
+      return res.status(400).json({ success: false, message: 'Bạn đang giữ chỗ khung giờ này.' });
+    }
+
+    const blockedStart = normalizeTime(blockingBooking.startTime);
+    const blockedEnd = normalizeTime(blockingBooking.endTime);
+    const waitlistBaseQuery = {
+      user: new mongoose.Types.ObjectId(req.user.id),
+      field: new mongoose.Types.ObjectId(fieldId),
+      date: String(date).trim(),
+      sourceBooking: blockingBooking._id,
+      status: 'waiting'
+    };
+    const waitlistQuery = {
+      ...waitlistBaseQuery,
+      startTime: blockedStart
+    };
+
+    const existingWaitlistItem = await BookingWaitlist.findOne(waitlistBaseQuery);
+    if (existingWaitlistItem) {
+      return res.status(200).json({
+        success: true,
+        waitlisted: true,
+        alreadyWaitlisted: true,
+        message: `Bạn đã vào hàng chờ khung giờ ${existingWaitlistItem.startTime} - ${existingWaitlistItem.endTime} rồi. Hệ thống sẽ thông báo khi khung giờ trống nhé.`,
+        waitlistId: existingWaitlistItem._id,
+        startTime: existingWaitlistItem.startTime,
+        endTime: existingWaitlistItem.endTime
+      });
+    }
+
+    const waitlistItem = await BookingWaitlist.create({
+      ...waitlistQuery,
+      endTime: blockedEnd
+    });
+
+    return res.status(200).json({
+      success: true,
+      waitlisted: true,
+      alreadyWaitlisted: false,
+      message: `Bạn đã được thêm vào hàng chờ khung giờ ${blockedStart} - ${blockedEnd}. Hệ thống sẽ thông báo nếu khung giờ này trống.`,
+      waitlistId: waitlistItem._id,
+      startTime: waitlistItem.startTime,
+      endTime: waitlistItem.endTime
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(200).json({
+        success: true,
+        waitlisted: true,
+        alreadyWaitlisted: true,
+        message: 'Bạn đã vào hàng chờ khung giờ này rồi. Hệ thống sẽ thông báo khi khung giờ trống nhé.'
+      });
+    }
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.getMyBookingWaitlist = async (req, res) => {
+  try {
+    const { fieldId, date } = req.query;
+    const query = {
+      user: new mongoose.Types.ObjectId(req.user.id),
+      status: 'waiting'
+    };
+
+    if (fieldId) query.field = new mongoose.Types.ObjectId(fieldId);
+    if (date) query.date = String(date).trim();
+
+    const waitlist = await BookingWaitlist.find(query)
+      .select('field date startTime endTime sourceBooking status createdAt')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      waitlist
+    });
+  } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -533,22 +863,21 @@ exports.updateBookingInfo = async (req, res) => {
 exports.cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (!booking) return res.status(404).json({ message: 'Không tìm thấy đơn!' });
     if (String(booking.user) !== String(req.user.id)) {
-      return res.status(403).json({ message: 'Ban khong co quyen huy don nay.' });
+      return res.status(403).json({ message: 'Bạn không có quyền hủy đơn này.' });
     }
     if (completedBookingStatuses.includes(booking.status) || cancelledBookingStatuses.includes(booking.status)) {
-      return res.status(400).json({ message: 'Booking nay khong the huy.' });
+      return res.status(400).json({ message: 'Booking này không thể hủy.' });
     }
 
     const startAt = new Date(`${booking.date}T${normalizeTime(booking.startTime)}:00`);
     if (Number.isNaN(startAt.getTime())) {
-      return res.status(400).json({ message: 'Thoi gian booking khong hop le.' });
+      return res.status(400).json({ message: 'Thời gian booking không hợp lệ.' });
     }
 
-    const twoHoursBeforeStart = startAt.getTime() - (2 * 60 * 60 * 1000);
-    if (Date.now() >= twoHoursBeforeStart) {
-      return res.status(400).json({ message: 'Chi co the huy truoc gio bat dau toi thieu 2 tieng.' });
+    if (!canRequestCancelBeforeOneDay(booking)) {
+      return res.status(400).json({ message: 'Chỉ có thể yêu cầu hủy sân trước ngày đặt ít nhất 1 ngày.' });
     }
 
     booking.status = 'Cancelled';
@@ -588,17 +917,20 @@ exports.cancelBooking = async (req, res) => {
 exports.requestCancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ message: 'Khong tim thay don!' });
+    if (!booking) return res.status(404).json({ message: 'Không tìm thấy đơn!' });
     if (String(booking.user) !== String(req.user.id)) {
-      return res.status(403).json({ message: 'Ban khong co quyen huy don nay.' });
+      return res.status(403).json({ message: 'Bạn không có quyền hủy đơn này.' });
     }
 
     const currentStatus = normalizeStatus(booking.status);
     if (completedStatusSet.includes(currentStatus) || cancelledStatusSet.includes(currentStatus)) {
-      return res.status(400).json({ message: 'Booking nay khong the huy.' });
+      return res.status(400).json({ message: 'Booking này không thể hủy.' });
     }
     if (currentStatus === 'cancel_requested') {
-      return res.json({ success: true, booking, message: 'Booking dang cho admin xac nhan huy.' });
+      return res.json({ success: true, booking, message: 'Booking đang chờ admin xác nhận hủy.' });
+    }
+    if (!canRequestCancelBeforeOneDay(booking)) {
+      return res.status(400).json({ message: 'Chỉ có thể yêu cầu hủy sân trước ngày đặt ít nhất 1 ngày.' });
     }
 
     const latestPayment = await Payment.findOne({ bookingId: booking._id }).sort({ createdAt: -1 });

@@ -27,6 +27,15 @@ import '../styles/MyBookingsPage.css';
 const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')} d`;
 const normalize = (value) => String(value || '').trim().toLowerCase();
 const text = (value, fallback = '-') => value || fallback;
+const canRequestCancelBeforeOneDay = (booking) => {
+  const bookingDate = new Date(`${booking?.date}T00:00:00`);
+  if (Number.isNaN(bookingDate.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return bookingDate.getTime() - today.getTime() >= 24 * 60 * 60 * 1000;
+};
 
 const paymentStatusMap = {
   pending: 'Chờ thanh toán',
@@ -49,8 +58,7 @@ const bookingStatusMap = {
   canceled: 'Đã hủy',
   refunded: 'Đã hoàn tiền',
   'da hoan thanh': 'Hoàn thành',
-  'hoan thanh': 'Hoàn thành',
-  'da hoan thanh': 'Hoàn thành'
+  'hoan thanh': 'Hoàn thành'
 };
 
 const statusMeta = {
@@ -284,6 +292,15 @@ const MyBookingsPage = () => {
   };
 
   const handleRequestCancel = async (booking) => {
+    if (!canRequestCancelBeforeOneDay(booking)) {
+      Swal.fire(
+        'Không thể yêu cầu hủy',
+        'Bạn chỉ có thể yêu cầu hủy sân trước ngày đặt ít nhất 1 ngày.',
+        'warning'
+      );
+      return;
+    }
+
     const paid = isPaid(booking);
     const result = await Swal.fire({
       title: paid ? 'Yêu cầu hủy đặt sân?' : 'Yêu cầu hủy đặt sân?',

@@ -4,7 +4,27 @@ import { Bell, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import socket, { joinSocketRoom } from '../socket';
-import { formatTimeAgo, getNotificationIcon } from '../utils/notificationUtils';
+import { formatNotificationText, formatTimeAgo, getNotificationIcon } from '../utils/notificationUtils';
+
+const getNotificationKey = (notification) => {
+  const metadata = notification?.metadata || {};
+  if (metadata.waitlistId) return `waitlist:${metadata.waitlistId}`;
+  if (metadata.bookingId && notification?.title) return `booking:${metadata.bookingId}:${notification.title}`;
+  if (notification?.relatedId && notification?.title) {
+    return `related:${notification.relatedId}:${notification.type}:${notification.title}`;
+  }
+  return String(notification?._id || '');
+};
+
+const dedupeNotifications = (items = []) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = getNotificationKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 const NotificationBell = ({ user }) => {
   const navigate = useNavigate();
@@ -29,7 +49,7 @@ const NotificationBell = ({ user }) => {
         nextUnreadCount = retry.data.unreadCount || 0;
       }
 
-      setNotifications(nextNotifications);
+      setNotifications(dedupeNotifications(nextNotifications));
       setUnreadCount(nextUnreadCount);
     } catch (error) {
       if (error.response?.status !== 401) {
@@ -50,8 +70,14 @@ const NotificationBell = ({ user }) => {
     if (!user) return undefined;
     joinSocketRoom(user);
     const handleNewNotification = (notification) => {
-      setNotifications((prev) => [notification, ...prev].slice(0, 5));
-      setUnreadCount((prev) => prev + 1);
+      const notificationKey = getNotificationKey(notification);
+      setNotifications((prev) => {
+        if (prev.some((item) => getNotificationKey(item) === notificationKey)) {
+          return prev;
+        }
+        setUnreadCount((current) => current + 1);
+        return [notification, ...prev].slice(0, 5);
+      });
     };
     socket.on('notification:new', handleNewNotification);
     return () => socket.off('notification:new', handleNewNotification);
@@ -151,8 +177,8 @@ const NotificationBell = ({ user }) => {
                       <Icon size={17} />
                     </span>
                     <span className="notification-item-body">
-                      <strong>{notification.title}</strong>
-                      <span>{notification.message}</span>
+                      <strong>{formatNotificationText(notification.title)}</strong>
+                      <span>{formatNotificationText(notification.message)}</span>
                       <small>{formatTimeAgo(notification.createdAt)}</small>
                     </span>
                     {!notification.isRead && <i aria-hidden="true" />}

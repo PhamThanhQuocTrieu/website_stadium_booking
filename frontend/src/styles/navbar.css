@@ -96,6 +96,11 @@
   max-height: 55px;
 }
 
+.mobile-header-actions,
+.mobile-login-btn {
+  display: none;
+}
+
 .search-input-wrapper {
   height: 42px;
   width: min(260px, 100%);
@@ -329,11 +334,94 @@
     min-height: 64px;
   }
 
+  .navbar-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
   .navbar-brand-custom img {
     max-height: 46px;
   }
 
+  .mobile-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    margin-right: 10px;
+  }
+
+  .mobile-login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 13px;
+    margin-left: auto;
+    margin-right: 10px;
+    font-size: 0.82rem;
+  }
+
+  .mobile-header-actions .notification-bell-wrap {
+    width: auto;
+  }
+
+  .mobile-header-actions .notification-bell-btn {
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    background: #f8fafc !important;
+  }
+
+  .mobile-header-actions .notification-bell-btn::after {
+    content: none;
+  }
+
+  .mobile-header-actions .notification-count {
+    top: -2px;
+    right: -3px;
+  }
+
+  .mobile-header-actions .notification-dropdown {
+    position: fixed;
+    top: 62px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-height: calc(100vh - 78px);
+    margin-top: 0;
+    overflow: hidden;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  }
+
+  .mobile-header-actions .notification-dropdown-list {
+    max-height: min(390px, calc(100vh - 210px));
+  }
+
+  .mobile-header-actions .custom-dropdown {
+    position: relative;
+  }
+
+  .mobile-header-actions .custom-dropdown .dropdown-menu {
+    position: absolute !important;
+    inset: calc(100% + 10px) 0 auto auto !important;
+    width: min(280px, calc(100vw - 24px));
+    margin-top: 0 !important;
+  }
+
+  .mobile-header-actions .custom-dropdown::after {
+    display: none;
+  }
+
+  .custom-navbar .navbar-toggler {
+    flex: 0 0 auto;
+  }
+
   .custom-navbar .navbar-collapse {
+    flex-basis: 100%;
     padding: 1rem 0 0.75rem;
   }
 
@@ -359,6 +447,11 @@
     flex-direction: column;
     gap: 0.75rem !important;
     margin-top: 0.75rem;
+  }
+
+  .navbar-actions > .d-flex.align-items-center.gap-3,
+  .navbar-actions > .btn-login-custom {
+    display: none !important;
   }
 
   .notification-bell-wrap {

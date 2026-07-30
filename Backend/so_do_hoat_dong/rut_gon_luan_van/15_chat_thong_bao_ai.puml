@@ -1,0 +1,29 @@
+@startuml
+title Chat, thong bao va tro ly AI
+
+start
+:Nguoi dung su dung tinh nang ho tro;
+
+if (Chat voi admin?) then (Chat)
+  :Nguoi dung gui tin nhan;
+  :He thong tim hoac tao cuoc hoi thoai;
+  :Luu tin nhan;
+  :Gui realtime cho admin;
+  :Admin tra loi;
+  :He thong luu tin nhan va gui realtime cho user;
+elseif (Thong bao?) then (Notification)
+  :He thong tao thong bao khi co su kien;
+  :Luu thong bao cho nguoi dung;
+  :Gui realtime qua Socket.IO;
+  :Nguoi dung xem, danh dau da doc hoac xoa thong bao;
+else (AI chat)
+  :Nguoi dung gui cau hoi cho tro ly AI;
+  :He thong lay thong tin nguoi dung, san, lich trong, voucher, booking, chinh sach;
+  :Tao ngu canh hoi dap;
+  :Goi dich vu AI;
+  :Luu lich su hoi dap;
+  :Tra cau tra loi cho nguoi dung;
+endif
+
+stop
+@enduml

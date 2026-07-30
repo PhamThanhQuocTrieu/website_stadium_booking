@@ -3,7 +3,7 @@ import { Badge, Button, Card, Col, Form, Pagination, Row, Spinner, Table } from 
 import { BellRing, RefreshCcw, Send } from 'lucide-react';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
-import { notificationTypeLabels } from '../../utils/notificationUtils';
+import { formatNotificationText, notificationTypeLabels } from '../../utils/notificationUtils';
 import '../../styles/admin/admin-common.css';
 import '../../styles/admin/notificationmanager.css';
 
@@ -193,8 +193,8 @@ const AdminNotificationManager = () => {
                             <span>{notification.user?.email}</span>
                           </td>
                           <td>
-                            <strong>{notification.title}</strong>
-                            <span>{notification.message}</span>
+                            <strong>{formatNotificationText(notification.title)}</strong>
+                            <span>{formatNotificationText(notification.message)}</span>
                           </td>
                           <td>{notificationTypeLabels[notification.type] || notification.type}</td>
                           <td>

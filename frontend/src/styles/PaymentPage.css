@@ -215,6 +215,33 @@
   border-bottom: 1px solid #edf2f7;
 }
 
+.payment-total-box .service-breakdown {
+  display: block;
+  background: #f8fafc;
+  padding: 8px 16px;
+}
+
+.payment-total-box .service-breakdown div {
+  padding: 6px 0 6px 16px;
+  border-bottom: 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.payment-total-box .service-breakdown span {
+  overflow-wrap: anywhere;
+}
+
+.payment-total-box .service-breakdown small {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.payment-total-box .subtotal {
+  background: #ffffff;
+  font-weight: 700;
+}
+
 .payment-total-box div:last-child {
   border-bottom: 0;
 }

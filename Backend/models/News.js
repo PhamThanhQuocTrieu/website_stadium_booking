@@ -52,26 +52,8 @@ const newsSchema = new mongoose.Schema({
 
   newsType: {
     type: String,
-    enum: ['internal', 'external'],
+    enum: ['internal'],
     default: 'internal'
-  },
-
-  sourceName: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-
-  sourceUrl: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-
-  originalAuthor: {
-    type: String,
-    trim: true,
-    default: ''
   },
 
   status: {

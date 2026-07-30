@@ -1,0 +1,73 @@
+.admin-calendar {
+  min-width: 0;
+}
+
+.admin-calendar-header {
+  gap: 16px;
+}
+
+.admin-calendar-header h3 {
+  overflow-wrap: anywhere;
+}
+
+.admin-calendar-scroll {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-calendar .fc {
+  min-width: 760px;
+}
+
+.admin-calendar .fc-toolbar {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-calendar .fc-toolbar-title {
+  font-size: clamp(1.05rem, 3vw, 1.55rem);
+}
+
+.admin-calendar .fc-button {
+  min-height: 36px;
+  border-radius: 8px;
+}
+
+@media (max-width: 767.98px) {
+  .admin-calendar {
+    padding: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .admin-calendar-header {
+    align-items: flex-start !important;
+    flex-direction: column;
+    margin-bottom: 14px !important;
+  }
+
+  .admin-calendar-header h3 {
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
+
+  .admin-calendar .fc {
+    min-width: 640px;
+    font-size: 0.82rem;
+  }
+
+  .admin-calendar .fc-toolbar {
+    align-items: stretch;
+  }
+
+  .admin-calendar .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+
+  .admin-calendar .fc-toolbar-title {
+    text-align: center;
+    width: 100%;
+  }
+}

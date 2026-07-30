@@ -1,0 +1,74 @@
+@startuml
+title Dat san va giu cho 3 phut
+
+start
+:Nguoi dung xem san tren frontend;
+
+partition "GET /api/bookings/fields/:fieldId/booking-status" {
+  :Chay cron logic ngay trong request;
+  :Huy booking pending het han;
+  :Hoan thanh booking da qua gio va da thanh toan;
+  :Tim Field theo fieldId;
+  if (Khong thay san?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  if (San dang Maintenance?) then (Co)
+    :Lay tat ca slot theo pricingRules;
+    :Tra bookedSlots = tat ca slot va isMaintenance=true;
+    stop
+  endif
+  :Tim booking cung ngay co status active;
+  :Chi lay booking da thanh toan hoac pending con hold;
+  :Mo rong moi booking thanh cac slot 30 phut;
+  :Tra field va bookedSlots;
+}
+
+:Nguoi dung chon slot va bam dat san;
+
+partition "POST /api/bookings/reserve" {
+  :protect JWT;
+  :Validate fieldId, date, slots;
+  if (Thieu thong tin?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Huy booking pending het han;
+  :Normalize, unique va sort slots;
+  :Tinh startTime va endTime;
+  :Tim Field;
+  if (San khong ton tai hoac Maintenance?) then (Co)
+    :Tra 404/400;
+    stop
+  endif
+  :Tinh gia tung slot theo pricingRules;
+  :Tim booking active cung san/ngay;
+  :Tao set bookedSlots;
+  if (Slot bi trung?) then (Co)
+    :Tra 400 khung gio da co nguoi dat;
+    stop
+  endif
+  :Tao Booking PENDING_PAYMENT;
+  :paymentStatus = Pending;
+  :holdExpiresAt = now + 3 phut;
+  :Luu tong tien san;
+  :Emit slot_booked_success qua Socket.IO;
+  :Tra bookingId va totalPrice;
+}
+
+partition "Cron moi phut trong bookingController" {
+  fork
+    :cancelExpiredPendingBookings;
+    :Tim booking pending active het hold;
+    :Hoan kho dich vu da giu;
+    :Set status Cancelled va paymentStatus FAILED;
+  fork again
+    :completePastPaidBookings;
+    :Tim booking confirmed + paid da qua gio ket thuc;
+    :Hoan kho dich vu rental;
+    :Set status completed;
+  end fork
+}
+
+stop
+@enduml

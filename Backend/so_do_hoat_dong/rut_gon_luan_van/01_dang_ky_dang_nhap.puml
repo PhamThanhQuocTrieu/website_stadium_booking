@@ -1,0 +1,38 @@
+@startuml
+title Dang ky va dang nhap tai khoan
+
+start
+:Nguoi dung mo man hinh xac thuc;
+
+if (Chon dang ky?) then (Dang ky)
+  :Nhap ho ten, email, sdt, mat khau;
+  :He thong kiem tra email ton tai;
+  if (Email da ton tai?) then (Co)
+    :Thong bao loi;
+    stop
+  endif
+  :Ma hoa mat khau;
+  :Tao tai khoan user;
+  :Cap voucher chao mung;
+  :Tao JWT;
+  :Tra thong tin dang nhap;
+else (Dang nhap)
+  :Nhap email/sdt va mat khau;
+  :He thong tim tai khoan;
+  :Kiem tra mat khau;
+  if (Thong tin khong dung?) then (Co)
+    :Thong bao sai tai khoan hoac mat khau;
+    stop
+  endif
+  if (Tai khoan bi khoa?) then (Co)
+    :Thong bao tai khoan bi khoa;
+    stop
+  endif
+  :Dam bao voucher chao mung neu du dieu kien;
+  :Tao JWT;
+  :Tra thong tin nguoi dung;
+endif
+
+:Frontend luu token va dieu huong theo role;
+stop
+@enduml

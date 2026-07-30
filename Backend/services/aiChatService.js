@@ -25,6 +25,15 @@ Quy tắc:
 - Trả lời ngắn gọn, rõ ràng.
 - Nếu không chắc chắn, thêm câu: "Tôi chưa chắc về thông tin này, bạn có muốn chuyển sang admin không?"`;
 
+const AI_OPERATION_LIMITS = `Gioi han bat buoc cua tro ly AI ArenaHub:
+- Chi duoc goi y san, cung cap thong tin san, bang gia va khung gio trong.
+- Duoc huong dan nguoi dung tu thao tac dat san tren giao dien.
+- Tuyet doi khong nhan dat san, giu san, tao don, xac nhan don, huy don hoac thanh toan thay nguoi dung.
+- Khong duoc noi rang da dat san, da giu san, da tao don hoac da thanh toan.
+- Neu nguoi dung yeu cau dat san dum, giu san ho, tao don giup hoac thanh toan giup, phai tu choi lich su va nhac nguoi dung tu chon san, chon khung gio trong roi bam dat san tren giao dien.`;
+
+const BOOKING_ACTION_REFUSAL = 'Tôi có thể gợi ý sân phù hợp, kiểm tra khung giờ trống và hướng dẫn bạn cách đặt sân, nhưng tôi không thể đặt sân, giữ sân, tạo đơn hoặc thanh toán thay bạn. Bạn vui lòng chọn sân và khung giờ trống trên giao diện ArenaHub, sau đó bấm đặt sân để tự xác nhận nhé.';
+
 const MAX_HISTORY = 12;
 const ACTIVE_BOOKING_STATUSES = [
   'pending',
@@ -116,6 +125,13 @@ const detectDate = (message) => {
   const month = String(match[3]).padStart(2, '0');
   const year = match[4] || new Date().getFullYear();
   return `${year}-${month}-${day}`;
+};
+
+const isBookingActionRequest = (message) => {
+  const text = normalizeText(message);
+  const actionPattern = /(dat san|giu san|giu cho|tao don|xac nhan don|book san|booking|thanh toan)/;
+  const delegatePattern = /(dum|giup|ho toi|cho toi|luon di|lam giup|dat ho|giu ho|tao giup|thanh toan giup)/;
+  return actionPattern.test(text) && delegatePattern.test(text);
 };
 
 const timeToMinutes = (time) => {
@@ -329,6 +345,8 @@ const buildPrompt = ({ user, message, history, context }) => {
 
   return `${SYSTEM_PROMPT}
 
+${AI_OPERATION_LIMITS}
+
 THÔNG TIN KHÁCH HÀNG:
 ${JSON.stringify(context.user, null, 2)}
 
@@ -382,6 +400,14 @@ const generateAiReply = async ({ user, message, history, bookingId }) => {
   }
 
   const context = await buildArenaContext({ user, message, bookingId });
+  if (isBookingActionRequest(message)) {
+    return {
+      text: BOOKING_ACTION_REFUSAL,
+      context,
+      modelName: 'rule-based-refusal'
+    };
+  }
+
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const prompt = buildPrompt({ user, message, history, context });
   const { result, modelName } = await generateWithFallbackModel({ genAI, prompt });

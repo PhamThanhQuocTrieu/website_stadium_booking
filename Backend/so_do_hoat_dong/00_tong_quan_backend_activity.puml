@@ -1,0 +1,82 @@
+@startuml
+title Tong quan luong xu ly Backend ArenaHub
+
+start
+:Client goi API hoac Socket event;
+
+partition "Express server.js" {
+  :Nhan request;
+  :Ap dung CORS, JSON body, URL encoded body;
+  :Phuc vu static /uploads;
+  :Gan Socket.IO vao app context;
+}
+
+if (Duong dan API?) then (Co)
+  :Dinh tuyen theo prefix /api;
+else (Khong)
+  :Tra 404 hoac static resource;
+  stop
+endif
+
+partition "Middleware" {
+  if (Endpoint can dang nhap?) then (Co)
+    :protect xac thuc JWT;
+    if (Token hop le?) then (Co)
+      :Gan req.user;
+    else (Khong)
+      :Tra 401;
+      stop
+    endif
+  endif
+
+  if (Endpoint chi admin?) then (Co)
+    :adminOnly/admin kiem tra role;
+    if (Role hop le?) then (Co)
+      :Cho xu ly tiep;
+    else (Khong)
+      :Tra 403;
+      stop
+    endif
+  endif
+}
+
+partition "Routes" {
+  :Chon controller theo module;
+  note right
+    users/auth, fields, bookings, payments,
+    vouchers, services, reviews, policies,
+    contacts, notifications, chat, ai-chat,
+    banners, news, admin dashboard/report/schedule
+  end note
+}
+
+partition "Controller / Service" {
+  :Validate params, query, body;
+  if (Du lieu khong hop le?) then (Co)
+    :Tra 400/404/409;
+    stop
+  endif
+  :Thuc hien nghiep vu;
+  :Goi service phu neu can;
+}
+
+partition "MongoDB / Mongoose" {
+  :Doc/ghi models;
+  note right
+    User, Field, Booking, Payment, Voucher,
+    UserVoucher, Service, Review, Notification,
+    RecurringBooking, Conversation, Message,
+    ChatSession, Contact, News, Banner, Policy,
+    PricingRule
+  end note
+}
+
+if (Co thay doi realtime?) then (Co)
+  partition "Socket.IO" {
+    :emit slot, booking, notification, chat, schedule event;
+  }
+endif
+
+:Tra JSON response cho client;
+stop
+@enduml

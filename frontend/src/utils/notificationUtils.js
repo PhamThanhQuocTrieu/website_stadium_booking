@@ -40,6 +40,41 @@ export const notificationTypeIcons = {
 
 export const getNotificationIcon = (type) => notificationTypeIcons[type] || Megaphone;
 
+const notificationTextReplacements = [
+  ['Lich dat san da duoc thay doi', 'Lịch đặt sân đã được thay đổi'],
+  ['Lich dat san cua ban da duoc chuyen sang', 'Lịch đặt sân của bạn đã được chuyển sang'],
+  ['Lich dat san co dinh da duoc tao', 'Lịch đặt sân cố định đã được tạo'],
+  ['Ban da duoc dat lich co dinh vao', 'Bạn đã được đặt lịch cố định vào'],
+  ['Lich dat san co dinh da bi huy', 'Lịch đặt sân cố định đã bị hủy'],
+  ['Lich dat san co dinh cua ban da duoc huy boi admin', 'Lịch đặt sân cố định của bạn đã được hủy bởi admin'],
+  ['Lich dat san co dinh da duoc cap nhat', 'Lịch đặt sân cố định đã được cập nhật'],
+  ['Lich co dinh cua ban da duoc cap nhat', 'Lịch cố định của bạn đã được cập nhật'],
+  ['Ban vua nhan voucher moi', 'Bạn vừa nhận voucher mới'],
+  ['Ban vua nhan voucher', 'Bạn vừa nhận voucher'],
+  ['Ap dung ma giam gia thanh cong', 'Áp dụng mã giảm giá thành công'],
+  ['Cho thanh toan', 'Chờ thanh toán'],
+  ['Don dat san cua ban dang cho thanh toan', 'Đơn đặt sân của bạn đang chờ thanh toán'],
+  ['Thanh toan thanh cong', 'Thanh toán thành công'],
+  ['Thanh toan cho don dat san cua ban da thanh cong', 'Thanh toán cho đơn đặt sân của bạn đã thành công'],
+  ['Dat san thanh cong', 'Đặt sân thành công'],
+  ['Ban da dat san', 'Bạn đã đặt sân'],
+  [' luc ', ' lúc '],
+  [' ngay ', ' ngày '],
+  [' tu ', ' từ '],
+  [' den ', ' đến '],
+  [' giam ', ' giảm '],
+  [' cho lan dat san dau tien', ' cho lần đặt sân đầu tiên'],
+  [' Tong gia tri lich', ' Tổng giá trị lịch']
+];
+
+export const formatNotificationText = (value) => {
+  let text = String(value || '');
+  notificationTextReplacements.forEach(([from, to]) => {
+    text = text.replaceAll(from, to);
+  });
+  return text;
+};
+
 export const formatTimeAgo = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';

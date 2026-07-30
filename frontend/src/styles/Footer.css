@@ -1,20 +1,25 @@
 .user-footer {
   margin-top: 4rem;
-  padding: 64px 0 26px;
+  padding: 64px 24px 26px;
   color: #cbd5e1;
   background: #111827;
   overflow-x: hidden;
 }
 
 .footer-container {
-  width: min(100% - 48px, 1320px);
+  width: min(100%, 1320px);
   max-width: none;
   margin: 0 auto;
   padding: 0 !important;
+  box-sizing: border-box;
 }
 
 .footer-grid {
   row-gap: 34px;
+}
+
+.footer-grid > [class*="col"] {
+  min-width: 0;
 }
 
 .footer-brand {
@@ -49,6 +54,11 @@
   list-style: none;
   color: #cbd5e1;
   font-size: 0.94rem;
+}
+
+.footer-list li {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .footer-list a,
@@ -98,26 +108,40 @@
 
 @media (max-width: 991px) {
   .user-footer {
-    padding-top: 48px;
+    padding: 48px 16px 26px;
   }
 
   .footer-container {
-    width: min(100% - 32px, 760px);
+    width: min(100%, 760px);
   }
 }
 
 @media (max-width: 767px) {
   .user-footer {
     margin-top: 3rem;
-    padding: 42px 0 24px;
+    padding: 42px 16px 24px;
   }
 
   .footer-grid {
     row-gap: 30px;
   }
 
+  .footer-brand,
+  .footer-heading {
+    margin-bottom: 12px;
+  }
+
   .footer-description {
     max-width: none;
+  }
+
+  .footer-list {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+  }
+
+  .footer-contact-list {
+    grid-template-columns: 1fr;
   }
 
   .footer-bottom {
@@ -128,5 +152,56 @@
 
   .footer-policy-links {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 575px) {
+  .user-footer {
+    margin-top: 2.5rem;
+    padding: 34px 18px 22px;
+  }
+
+  .footer-container {
+    width: 100%;
+  }
+
+  .footer-grid {
+    row-gap: 26px;
+  }
+
+  .footer-brand {
+    font-size: 1.35rem;
+  }
+
+  .footer-description,
+  .footer-list {
+    font-size: 0.9rem;
+  }
+
+  .footer-bottom {
+    align-items: center;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 18px;
+    text-align: center;
+  }
+
+  .footer-policy-links {
+    justify-content: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .footer-list {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-policy-links {
+    flex-direction: column;
+  }
+
+  .footer-policy-links span {
+    display: none;
   }
 }

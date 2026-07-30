@@ -1,0 +1,97 @@
+@startuml
+title Dashboard va bao cao doanh thu
+
+start
+:Admin truy cap dashboard/bao cao;
+:protect JWT;
+:adminOnly;
+if (Khong phai admin?) then (Co)
+  :Tra 403;
+  stop
+endif
+
+if (Dashboard tong quan?) then (GET /api/admin/dashboard)
+  :Nhan range today/7d/30d/month;
+  :Tinh start, end, so ngay;
+  :Tao query booking theo date va paymentStatus paid;
+  fork
+    :Dem totalUsers;
+  fork again
+    :Dem totalBookings;
+  fork again
+    :Lay booking paid hom nay;
+  fork again
+    :Lay tat ca booking paid;
+  fork again
+    :Dem activeFields;
+  fork again
+    :Dem activeVouchers con han;
+  fork again
+    :Aggregate average rating;
+  fork again
+    :Lay periodBookings de ve chart;
+  fork again
+    :Lay fields va recentBookings;
+  fork again
+    :Aggregate topFields va topUsers;
+  fork again
+    :Lay latestReviews;
+  end fork
+  :Tinh todayRevenue va totalRevenue;
+  :Tao revenueChart va bookingChart theo ngay;
+  :Tinh fieldStatus va occupancyRate hom nay;
+  :Map topFields/topUsers voi thong tin chi tiet;
+  :Gop activityLogs tu booking va review moi;
+  :Tra stats, charts, fieldStatus, recentBookings, topFields, topUsers;
+  stop
+endif
+
+if (Bao cao doanh thu?) then (GET /api/admin/reports/revenue)
+  :Nhan month/startDate/endDate, field, fieldType, paymentStatus, search, sort, page, export;
+  :Normalize filters;
+  if (Filter loi?) then (Co)
+    :Tra 400 kem errors;
+    stop
+  endif
+  :Build aggregation pipeline Booking;
+  :Match date range;
+  if (Co field?) then (Co)
+    :Match field ObjectId;
+  endif
+  if (Co paymentStatus?) then (Co)
+    :Map paid/unpaid/refunded/cancelled thanh nhom status;
+  endif
+  :Lookup fields;
+  if (Co fieldType?) then (Co)
+    :Match fieldDoc.type;
+  endif
+  :Lookup users;
+  :Add revenueAmount, customerDisplayName, isPaid/isUnpaid/isRefunded/isCancelled, monthKey, bookingCode;
+  if (Co search?) then (Co)
+    :Match customer, email, bookingCode hoac ObjectId;
+  endif
+  partition "Facet report" {
+    fork
+      :summary tong booking, doanh thu, paid/unpaid/refunded/cancelled;
+    fork again
+      :topFields theo revenue;
+    fork again
+      :topHours theo startTime;
+    fork again
+      :topCustomers theo doanh thu;
+    fork again
+      :revenueTrend theo ngay hoac thang;
+    fork again
+      :tableRows sort + skip + limit;
+    fork again
+      :totalRows count;
+    end fork
+  }
+  :Tinh averageRevenuePerBooking;
+  :Tinh paymentSuccessRate;
+  :Lay options fields va fieldTypes;
+  :Tra summary, charts, rows, pagination, options;
+endif
+
+stop
+@enduml

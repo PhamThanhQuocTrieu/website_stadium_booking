@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Container, Spinner } from 'react-bootstrap';
 import { CheckCheck, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import {
   formatTimeAgo,
+  formatNotificationText,
   getNotificationIcon,
   notificationFilters,
   notificationTypeLabels
@@ -22,7 +23,7 @@ const NotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchNotifications = async (nextPage = 1, append = false) => {
+  const fetchNotifications = useCallback(async (nextPage = 1, append = false) => {
     append ? setLoadingMore(true) : setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -44,11 +45,11 @@ const NotificationsPage = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     fetchNotifications(1, false);
-  }, [filter]);
+  }, [fetchNotifications]);
 
   const markAllRead = async () => {
     try {
@@ -70,7 +71,9 @@ const NotificationsPage = () => {
         )));
         setUnreadCount((prev) => Math.max(prev - 1, 0));
       }
-      if (notification.relatedModel === 'Booking' || ['booking', 'payment', 'cancellation'].includes(notification.type)) {
+      if (notification.link) {
+        navigate(notification.link);
+      } else if (notification.relatedModel === 'Booking' || ['booking', 'payment', 'cancellation'].includes(notification.type)) {
         navigate('/my-bookings');
       }
     } catch (error) {
@@ -153,10 +156,10 @@ const NotificationsPage = () => {
                     </span>
                     <span className="notifications-row-content">
                       <span className="notifications-row-top">
-                        <strong>{notification.title}</strong>
+                        <strong>{formatNotificationText(notification.title)}</strong>
                         <small>{formatTimeAgo(notification.createdAt)}</small>
                       </span>
-                      <span className="notifications-row-message">{notification.message}</span>
+                      <span className="notifications-row-message">{formatNotificationText(notification.message)}</span>
                       <span className="notifications-row-type">{notificationTypeLabels[notification.type] || 'Thông báo'}</span>
                     </span>
                     {!notification.isRead && <i aria-hidden="true" />}

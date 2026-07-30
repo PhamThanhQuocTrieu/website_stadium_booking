@@ -1,0 +1,113 @@
+@startuml
+title Thanh toan VNPay
+
+start
+:Nguoi dung bam thanh toan;
+
+partition "POST /api/payments/vnpay/create" {
+  :protect JWT;
+  :Nhan bookingId va amount;
+  :Validate ObjectId;
+  :Tim Booking;
+  if (Khong thay booking?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  if (Booking khong thuoc user?) then (Co)
+    :Tra 403;
+    stop
+  endif
+  if (Booking da huy?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  if (Pending da het 3 phut hold?) then (Co)
+    :Set Booking Cancelled va FAILED;
+    :Tra 400 yeu cau dat lai;
+    stop
+  endif
+  if (Booking da thanh toan?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  if (Booking khong o trang thai can thanh toan?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Doi chieu amount voi booking.totalPrice;
+  if (So tien khong khop?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Tim Payment VNPAY PENDING moi nhat;
+  if (Chua co payment pending?) then (Co)
+    :Tao Payment voi txnRef AH + timestamp + bookingId;
+    :Tao notification Cho thanh toan;
+  endif
+  :Set booking paymentStatus PENDING, method VNPAY, status PENDING_PAYMENT;
+  :Build paymentUrl bang vnpay config;
+  :Tra paymentUrl;
+}
+
+:Nguoi dung thanh toan tren cong VNPay;
+
+if (VNPay redirect Return URL?) then (GET /vnpay/return)
+  partition "handleVnpayReturn" {
+    :Verify checksum returnUrl;
+    if (Checksum sai?) then (Co)
+      :Tra 400;
+      stop
+    endif
+    :Tim Payment theo vnp_TxnRef;
+    if (Khong thay payment?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :Kiem tra ResponseCode va TransactionStatus;
+    if (Thanh cong 00/00?) then (Co)
+      :Cap nhat Payment SUCCESS;
+      :Cap nhat Booking PAID, VNPAY, CONFIRMED;
+      :Xoa holdExpiresAt;
+      :Danh dau voucher da su dung;
+      :Tao notification Dat san thanh cong;
+      :Tao notification Thanh toan thanh cong;
+      :Tra success true kem booking/payment;
+    else (That bai)
+      :Cap nhat Payment FAILED;
+      :Cap nhat Booking paymentStatus FAILED;
+      :Tra success false;
+    endif
+  }
+else (VNPay IPN server-to-server)
+  partition "GET /api/payments/vnpay/ipn" {
+    :Verify checksum IPN;
+    if (Checksum sai?) then (Co)
+      :Tra RspCode 97;
+      stop
+    endif
+    :Tim Payment theo txnRef;
+    if (Khong thay?) then (Co)
+      :Tra RspCode 01;
+      stop
+    endif
+    if (Payment da SUCCESS?) then (Co)
+      :Tra RspCode 02;
+      stop
+    endif
+    :Doi chieu vnp_Amount voi payment.amount;
+    if (Sai so tien?) then (Co)
+      :Tra RspCode 04;
+      stop
+    endif
+    if (Thanh cong 00/00?) then (Co)
+      :applySuccessPayment;
+    else (That bai)
+      :Payment FAILED;
+      :Booking paymentStatus FAILED;
+    endif
+    :Tra RspCode 00 Confirm Success;
+  }
+endif
+
+stop
+@enduml

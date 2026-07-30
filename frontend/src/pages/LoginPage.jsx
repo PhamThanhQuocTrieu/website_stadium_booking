@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, InputGroup, Spinner } from 'react-bootstrap';
 import { Eye, EyeSlash, Person, Lock, Stars, Trophy, ArrowLeft, LightningCharge, ShieldCheck, Clock } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -82,7 +82,7 @@ const LoginPage = () => {
         token: credentialResponse.credential
       });
       handleLoginSuccess(data);
-    } catch (err) {
+    } catch {
       Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Xác thực Google thất bại.', confirmButtonColor: '#d33' });
     } finally {
       setLoading(false);
@@ -90,7 +90,7 @@ const LoginPage = () => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+    <Motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
       <Container fluid className="auth-page p-0">
         <Row className="auth-shell g-0">
           <Col lg={5} className="auth-brand-panel d-none d-lg-flex">
@@ -115,7 +115,7 @@ const LoginPage = () => {
               <div className="auth-mini-stats">
                 <div><LightningCharge /><strong>24/7</strong><span>Đặt sân nhanh mọi lúc</span></div>
                 <div><ShieldCheck /><strong>An toàn</strong><span>Thanh toán bảo mật</span></div>
-                <div><Clock /><strong>Tiết kiệm</strong><span>Giữ chỗ tự động 5 phút</span></div>
+                <div><Clock /><strong>Tiết kiệm</strong><span>Giữ chỗ tự động 3 phút</span></div>
               </div>
             </div>
 
@@ -197,7 +197,7 @@ const LoginPage = () => {
           </Col>
         </Row>
       </Container>
-    </motion.div>
+    </Motion.div>
   );
 };
 

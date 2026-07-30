@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Card, Col, Container, Form, InputGroup, Row, Spinner } from 'react-bootstrap';
 import { CalendarDays, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import socket from '../socket';
 import '../styles/NewsPage.css';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=1200&q=80';
@@ -19,26 +20,29 @@ const NewsPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    const loadNews = async () => {
-      try {
-        setLoading(true);
-        const { data } = await axiosClient.get('/news');
-        setNews(Array.isArray(data) ? data : data.news || []);
-      } catch {
-        setNews([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadNews();
+  const loadNews = useCallback(async (showLoading = false) => {
+    try {
+      if (showLoading) setLoading(true);
+      const { data } = await axiosClient.get('/news');
+      setNews(Array.isArray(data) ? data : data.news || []);
+    } catch {
+      setNews([]);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadNews(true);
+    if (!socket.connected) socket.connect();
+    socket.on('news_updated', loadNews);
+    return () => socket.off('news_updated', loadNews);
+  }, [loadNews]);
 
   const filteredNews = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) return news;
-    return news.filter((item) => [item.title, item.summary, item.category, item.sourceName]
+    return news.filter((item) => [item.title, item.summary, item.category]
       .some((value) => String(value || '').toLowerCase().includes(keyword)));
   }, [news, search]);
 
@@ -77,7 +81,6 @@ const NewsPage = () => {
                 <Card as={Link} to={`/news/${item.slug || item._id}`} className="news-card">
                   <div className="news-card-image">
                     <img src={item.thumbnail || fallbackImage} alt={item.title} />
-                    {item.newsType === 'external' && <Badge className="news-external-badge">Nguồn ngoài</Badge>}
                   </div>
                   <Card.Body>
                     <div className="news-card-meta">
@@ -86,9 +89,6 @@ const NewsPage = () => {
                     </div>
                     <h2>{item.title}</h2>
                     <p>{item.summary || 'Xem chi tiết tin tức từ ArenaHub.'}</p>
-                    {item.newsType === 'external' && item.sourceName && (
-                      <small>Nguồn: {item.sourceName}</small>
-                    )}
                   </Card.Body>
                 </Card>
               </Col>

@@ -1,0 +1,33 @@
+@startuml
+title Quan ly noi dung hien thi
+
+start
+:Admin truy cap quan ly noi dung;
+:He thong xac thuc quyen admin;
+if (Khong co quyen?) then (Co)
+  :Tu choi truy cap;
+  stop
+endif
+
+if (Quan ly tin tuc?) then (Tin tuc)
+  :Admin them/sua/xoa tin tuc;
+  :Nhap tieu de, noi dung, anh, trang thai;
+  :He thong tao slug duy nhat;
+  :Luu tin tuc;
+  :Cap nhat realtime danh sach tin;
+elseif (Quan ly banner?) then (Banner)
+  :Admin them/sua/xoa/bat tat banner;
+  :Nhap tieu de, anh, vi tri, thoi gian hien thi;
+  :He thong kiem tra ngay hien thi;
+  :Luu banner;
+  :Cap nhat realtime banner trang chu;
+else (Chinh sach)
+  :Admin chon dieu khoan hoac chinh sach bao mat;
+  :Cap nhat tieu de va noi dung;
+  :Luu nguoi cap nhat;
+endif
+
+:Nguoi dung truy cap trang public;
+:He thong chi hien thi noi dung dang xuat ban/hoat dong;
+stop
+@enduml

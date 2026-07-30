@@ -1,6 +1,5 @@
 const News = require('../models/News');
 
-const allowedNewsTypes = ['internal', 'external'];
 const allowedStatuses = ['draft', 'published', 'hidden'];
 
 const createSlug = (title = '') => {
@@ -14,15 +13,6 @@ const createSlug = (title = '') => {
     .replace(/^-+|-+$/g, '');
 
   return normalized || `tin-tuc-${Date.now()}`;
-};
-
-const isValidUrl = (value) => {
-  try {
-    const url = new URL(value);
-    return ['http:', 'https:'].includes(url.protocol);
-  } catch {
-    return false;
-  }
 };
 
 const buildUniqueSlug = async (title, currentId = null) => {
@@ -50,7 +40,6 @@ const normalizeTags = (tags) => {
 };
 
 const normalizePayload = (body) => {
-  const newsType = allowedNewsTypes.includes(body.newsType) ? body.newsType : 'internal';
   const status = allowedStatuses.includes(body.status) ? body.status : 'draft';
 
   return {
@@ -60,10 +49,7 @@ const normalizePayload = (body) => {
     thumbnail: String(body.thumbnail || '').trim(),
     category: body.category || 'Tin tức chung',
     tags: normalizeTags(body.tags),
-    newsType,
-    sourceName: newsType === 'external' ? String(body.sourceName || '').trim() : '',
-    sourceUrl: newsType === 'external' ? String(body.sourceUrl || '').trim() : '',
-    originalAuthor: newsType === 'external' ? String(body.originalAuthor || '').trim() : '',
+    newsType: 'internal',
     status,
     isFeatured: Boolean(body.isFeatured)
   };
@@ -72,12 +58,6 @@ const normalizePayload = (body) => {
 const validatePayload = (payload) => {
   if (!payload.title) return 'Vui lòng nhập tiêu đề tin tức.';
   if (!payload.content) return 'Vui lòng nhập nội dung tin tức.';
-
-  if (payload.newsType === 'external') {
-    if (!payload.sourceName) return 'Vui lòng nhập tên nguồn cho tin nguồn ngoài.';
-    if (!payload.sourceUrl) return 'Vui lòng nhập link nguồn cho tin nguồn ngoài.';
-    if (!isValidUrl(payload.sourceUrl)) return 'Link nguồn không đúng định dạng URL.';
-  }
 
   return '';
 };
@@ -89,15 +69,7 @@ const emitNewsUpdated = (req, payload) => {
 
 exports.getAdminNews = async (req, res) => {
   try {
-    const { newsType = 'all' } = req.query;
-    const query = {};
-
-    if (newsType !== 'all') {
-      if (!allowedNewsTypes.includes(newsType)) {
-        return res.status(400).json({ message: 'Loại tin không hợp lệ.' });
-      }
-      query.newsType = newsType;
-    }
+    const query = { newsType: 'internal' };
 
     const news = await News.find(query)
       .populate('author', 'fullName email')
@@ -165,7 +137,7 @@ exports.deleteNews = async (req, res) => {
 
 exports.getPublishedNews = async (req, res) => {
   try {
-    const news = await News.find({ status: 'published' })
+    const news = await News.find({ status: 'published', newsType: 'internal' })
       .select('-content')
       .sort({ isFeatured: -1, publishedAt: -1, createdAt: -1 });
     res.json({ message: 'Lấy danh sách tin tức thành công.', news });
@@ -183,6 +155,7 @@ exports.getPublishedNewsDetail = async (req, res) => {
 
     const article = await News.findOne({
       status: 'published',
+      newsType: 'internal',
       $or: identifiers
     }).populate('author', 'fullName email');
 

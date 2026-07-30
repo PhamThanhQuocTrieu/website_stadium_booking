@@ -1,0 +1,171 @@
+/* Shared responsive safety layer for public/user pages. */
+
+html,
+body,
+#root {
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+.swal2-container {
+  z-index: 4000 !important;
+  padding: 12px !important;
+}
+
+.swal2-popup {
+  width: min(520px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  border-radius: 14px !important;
+}
+
+.swal2-html-container {
+  overflow-wrap: anywhere;
+}
+
+.swal2-html-container > div {
+  max-width: 100%;
+}
+
+.swal2-actions {
+  max-width: 100%;
+}
+
+.modal-dialog {
+  max-width: min(var(--bs-modal-width, 500px), calc(100vw - 24px));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.modal-content {
+  max-height: calc(100vh - 24px);
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  body {
+    font-size: 15px;
+  }
+
+  .container,
+  .container-sm,
+  .container-md,
+  .container-lg,
+  .container-xl,
+  .container-xxl {
+    max-width: 100%;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .card,
+  .modal-content,
+  .dropdown-menu,
+  .notification-dropdown {
+    border-radius: 14px;
+  }
+
+  .btn {
+    min-height: 42px;
+    white-space: normal;
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .swal2-popup {
+    padding: 22px 18px !important;
+  }
+
+  .swal2-icon {
+    width: 4.25em !important;
+    height: 4.25em !important;
+    margin: 0.75em auto 1.25em !important;
+  }
+
+  .swal2-title {
+    padding: 0 !important;
+    font-size: 1.55rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .swal2-html-container {
+    margin: 0.9rem 0 0 !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    text-align: left !important;
+  }
+
+  .swal2-actions {
+    width: 100%;
+    gap: 10px;
+    margin-top: 1.25rem !important;
+  }
+
+  .swal2-actions .swal2-confirm,
+  .swal2-actions .swal2-cancel,
+  .swal2-actions .swal2-deny {
+    flex: 1 1 100%;
+    min-height: 44px;
+    margin: 0 !important;
+    border-radius: 9px !important;
+  }
+
+  .notification-dropdown {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .notification-dropdown-head {
+    align-items: flex-start;
+  }
+
+  .notification-dropdown-list {
+    max-height: min(68vh, 430px);
+  }
+
+  .notification-item {
+    grid-template-columns: 36px minmax(0, 1fr) 8px;
+  }
+
+  .notification-item-title,
+  .notification-item-message {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 480px) {
+  .container,
+  .container-fluid {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .swal2-popup {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .swal2-title {
+    font-size: 1.35rem !important;
+  }
+
+  .swal2-html-container {
+    font-size: 0.95rem !important;
+  }
+}

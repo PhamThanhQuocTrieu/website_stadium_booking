@@ -1,0 +1,108 @@
+@startuml
+title Thong bao he thong va khuyen mai
+
+start
+:Nguoi dung/Admin goi API notification;
+
+if (User xem thong bao?) then (GET /api/notifications)
+  :protect JWT;
+  :Lay userId tu token;
+  :Dam bao voucher chao mung neu du dieu kien;
+  :Nhan page, limit, type, unread;
+  :Tao filter user=userId;
+  if (Co type hop le?) then (Co)
+    :Filter theo type;
+  endif
+  if (unread=true?) then (Co)
+    :Filter isRead=false;
+  endif
+  fork
+    :Find notifications sort createdAt desc;
+  fork again
+    :Count unread;
+  fork again
+    :Count total;
+  end fork
+  :Tra notifications, unreadCount, total, page, totalPages;
+  stop
+endif
+
+if (User danh dau da doc mot thong bao?) then (PATCH /:id/read)
+  :protect JWT;
+  :Validate ObjectId;
+  if (Id khong hop le?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :findOneAndUpdate theo _id va user;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tra notification;
+  stop
+endif
+
+if (User danh dau tat ca da doc?) then (PATCH /read-all)
+  :protect JWT;
+  :UpdateMany notification unread cua user thanh isRead=true;
+  :Tra modifiedCount;
+  stop
+endif
+
+if (User xoa thong bao?) then (DELETE /:id)
+  :protect JWT;
+  :Validate ObjectId;
+  :findOneAndDelete theo _id va user;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tra thong bao da xoa;
+  stop
+endif
+
+if (Admin tao thong bao?) then (POST /api/admin/notifications)
+  :protect + adminOnly;
+  :Nhan title, message, type, targetUser;
+  :Validate title/message khong rong;
+  :Chi cho type system hoac promotion;
+  if (Du lieu khong hop le?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  if (Co targetUser?) then (Co)
+    :Validate ObjectId;
+    :Tim User nhan;
+    if (Khong thay user?) then (Co)
+      :Tra 404;
+      stop
+    endif
+    :targetUsers = mot user;
+  else (Gui tat ca)
+    :Lay tat ca User role=user;
+    :targetUsers = danh sach user;
+  endif
+  repeat
+    :createNotification cho tung user;
+    :Luu Notification;
+    :Emit realtime qua Socket.IO;
+  repeat while (Con user nhan?)
+  :Tra so thong bao da gui;
+  stop
+endif
+
+if (Admin xem lich su thong bao?) then (GET /api/admin/notifications)
+  :protect + adminOnly;
+  :Nhan page, limit, type;
+  :Filter type neu hop le;
+  fork
+    :Find Notification populate user;
+  fork again
+    :Count total;
+  end fork
+  :Tra notifications, total, page, totalPages;
+endif
+
+stop
+@enduml

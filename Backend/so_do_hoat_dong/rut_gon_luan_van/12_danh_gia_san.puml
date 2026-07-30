@@ -1,0 +1,39 @@
+@startuml
+title Danh gia san sau khi su dung
+
+start
+:Nguoi dung mo don da hoan thanh;
+:Chon viet danh gia;
+:Nhap diem, noi dung va hinh anh neu co;
+:He thong xac thuc nguoi dung;
+:Kiem tra booking thuoc nguoi dung;
+
+if (Booking chua hoan thanh?) then (Co)
+  :Thong bao chi duoc danh gia sau khi hoan thanh;
+  stop
+endif
+
+if (Booking da duoc danh gia?) then (Co)
+  :Thong bao da danh gia;
+  stop
+endif
+
+:Kiem tra diem va noi dung danh gia;
+if (Du lieu khong hop le?) then (Co)
+  :Thong bao loi;
+  stop
+endif
+
+:Luu danh gia;
+:Danh dau booking da danh gia;
+:Tinh lai diem trung binh cua san;
+:Cap nhat danh sach danh gia realtime;
+
+if (Admin an danh gia?) then (Co)
+  :Admin chon danh gia can an;
+  :He thong cap nhat isHidden;
+  :Tinh lai diem trung binh cua san;
+endif
+
+stop
+@enduml

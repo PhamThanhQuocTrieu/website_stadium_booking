@@ -1,0 +1,100 @@
+@startuml
+title Lien he va phan hoi khach hang
+
+start
+:Nguoi dung hoac Admin goi /api/contacts;
+
+if (Nguoi dung gui lien he?) then (POST /)
+  :Nhan fullName, email, phone, category, subject, message;
+  :Trim va chuan hoa email/phone;
+  :Validate email regex;
+  :Validate so dien thoai Viet Nam;
+  :Validate category thuoc danh sach cho phep;
+  :Validate subject va message >= 10 ky tu;
+  if (Du lieu khong hop le?) then (Co)
+    :Tra 400 voi message cu the;
+    stop
+  endif
+  :Contact.create;
+  :Tra 201 va thong bao se phan hoi som;
+  stop
+endif
+
+:Admin thao tac lien he;
+:protect JWT;
+:adminOnly;
+if (Khong phai admin?) then (Co)
+  :Tra 403;
+  stop
+endif
+
+if (Lay danh sach lien he?) then (GET /)
+  :Nhan page, limit, search, status, category;
+  :Tao filter theo status/category hop le;
+  if (Co search?) then (Co)
+    :Tao regex loc fullName, email, phone, subject;
+  endif
+  :Promise.all find contacts va countDocuments;
+  :Tra contacts, total, page, totalPages;
+  stop
+endif
+
+if (Xem chi tiet?) then (GET /:id)
+  :Validate ObjectId;
+  if (Id khong hop le?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Tim Contact;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tra chi tiet Contact;
+  stop
+endif
+
+if (Cap nhat trang thai?) then (PATCH /:id/status)
+  :Validate status thuoc CONTACT_STATUSES;
+  :Validate ObjectId;
+  if (Khong hop le?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :findByIdAndUpdate status;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tra Contact moi;
+  stop
+endif
+
+if (Admin phan hoi?) then (PATCH /:id/reply)
+  :Validate adminReply khong rong;
+  :Validate ObjectId;
+  if (Khong hop le?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Cap nhat adminReply, status=replied, repliedAt=now;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tra Contact da phan hoi;
+  stop
+endif
+
+if (Xoa lien he?) then (DELETE /:id)
+  :Validate ObjectId;
+  :findByIdAndDelete;
+  if (Khong tim thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Tra thong bao xoa thanh cong;
+endif
+
+stop
+@enduml

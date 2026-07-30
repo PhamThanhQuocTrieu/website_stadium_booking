@@ -7,6 +7,21 @@ const { ensureWelcomeVoucherForEligibleUser } = require('../services/voucherServ
 
 const getUserId = (req) => req.user?.id || req.user?._id;
 const isObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const getNotificationDedupeKey = (notification) => {
+  const metadata = notification?.metadata || {};
+  if (metadata.waitlistId) return `waitlist:${metadata.waitlistId}`;
+  if (metadata.bookingId && notification?.title) return `booking:${metadata.bookingId}:${notification.title}`;
+  return String(notification?._id || '');
+};
+const dedupeNotifications = (notifications = []) => {
+  const seen = new Set();
+  return notifications.filter((notification) => {
+    const key = getNotificationDedupeKey(notification);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 exports.getMyNotifications = async (req, res) => {
   try {
@@ -24,18 +39,24 @@ exports.getMyNotifications = async (req, res) => {
     if (type && NOTIFICATION_TYPES.includes(type)) filter.type = type;
     if (unread) filter.isRead = false;
 
-    const [notifications, unreadCount, total] = await Promise.all([
+    const fetchLimit = Math.min(limit * 3, 50);
+    const [notifications, unreadNotifications, total] = await Promise.all([
       Notification.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
-        .limit(limit)
+        .limit(fetchLimit)
         .lean(),
-      Notification.countDocuments({ user: userId, isRead: false }),
+      Notification.find({ user: userId, isRead: false })
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .lean(),
       Notification.countDocuments(filter)
     ]);
+    const uniqueNotifications = dedupeNotifications(notifications).slice(0, limit);
+    const unreadCount = dedupeNotifications(unreadNotifications).length;
 
     res.json({
-      notifications,
+      notifications: uniqueNotifications,
       unreadCount,
       total,
       page,

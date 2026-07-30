@@ -1,0 +1,109 @@
+@startuml
+title Quan ly lich san va lich co dinh cho Admin
+
+start
+:Admin mo trang lich;
+
+partition "GET /api/admin/schedule" {
+  :protect + adminOnly;
+  :Nhan date, sportType, search;
+  :Tim Fields theo sportType;
+  :Tim Bookings trong ngay cua cac san;
+  :Populate user va field;
+  if (Co search?) then (Co)
+    :Loc theo bookingId, ten, phone, email;
+  endif
+  :Map fields thanh resources;
+  :Map bookings thanh calendar events;
+  :Tra resources va events;
+}
+
+if (Admin doi lich booking?) then (PATCH /api/admin/bookings/:id/reschedule)
+  :Tim Booking va populate user;
+  if (Khong thay hoac booking bi khoa?) then (Co)
+    :Tra 404/400;
+    stop
+  endif
+  :Validate newStartTime/newEndTime;
+  :Tim san moi;
+  :Kiem tra trung lich voi findConflict;
+  if (Co booking trung?) then (Co)
+    :Tra 400;
+    stop
+  endif
+  :Cap nhat field, date, startTime, endTime;
+  :Ghi rescheduleHistory;
+  :Tao notification cho user;
+  :Emit booking:rescheduled cho user;
+  :Emit schedule:refresh cho admin;
+  :Tra booking va notification;
+  stop
+endif
+
+if (Admin kiem tra lich co dinh?) then (POST /recurring-bookings/check)
+  :Validate courtId, startDate, endDate, daysOfWeek, time range;
+  :Sinh danh sach ngay theo daysOfWeek;
+  repeat
+    :Kiem tra tung ngay co booking trung khong;
+    :Danh dau isAvailable va conflictBookingId;
+  repeat while (Con slot can kiem tra?)
+  :Tra totalSlots, availableSlots, conflictSlots, slots;
+  stop
+endif
+
+if (Admin tao lich co dinh?) then (POST /recurring-bookings)
+  :Validate khach hang, san, ngay, gio;
+  :checkRecurringSlots;
+  if (Co slot trung va khong cho tao slot ranh?) then (Co)
+    :Tra 409 kem conflictSlots;
+    stop
+  endif
+  :Tao RecurringBooking;
+  :InsertMany Booking cho cac slot available;
+  :Gan bookingIds vao RecurringBooking;
+  if (Co customerId?) then (Co)
+    :Tao notification cho customer;
+    :Emit booking:recurring-created;
+  endif
+  :Emit schedule:refresh;
+  :Emit slot_booked_success theo ngay;
+  :Tra createdCount, skippedCount, conflictSlots;
+  stop
+endif
+
+if (Admin huy lich co dinh?) then (PATCH /recurring-bookings/:id/cancel)
+  :Tim RecurringBooking;
+  if (Khong thay?) then (Co)
+    :Tra 404;
+    stop
+  endif
+  :Update cac Booking tu hom nay tro di thanh cancelled;
+  :Set RecurringBooking status cancelled;
+  :Luu cancelledBy, cancelledAt, cancelReason;
+  if (Co customer?) then (Co)
+    :Tao notification lich co dinh bi huy;
+  endif
+  :Emit schedule:refresh;
+  :Tra recurringBooking;
+  stop
+endif
+
+if (Admin cap nhat tuong lai lich co dinh?) then (PATCH /recurring-bookings/:id/update-future)
+  :Tim RecurringBooking;
+  :Validate time range;
+  :checkRecurringSlots voi excludeBookingIds hien tai;
+  if (Co conflict?) then (Co)
+    :Tra 409;
+    stop
+  endif
+  :Huy cac booking tu hom nay tro di cua lich cu;
+  :InsertMany booking moi;
+  :Ghi updateHistory;
+  :Cap nhat thong tin RecurringBooking;
+  :Tao notification neu co customer;
+  :Emit schedule:refresh va slot_booked_success;
+  :Tra recurringBooking va createdCount;
+endif
+
+stop
+@enduml

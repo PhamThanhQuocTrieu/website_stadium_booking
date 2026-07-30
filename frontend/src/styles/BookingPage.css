@@ -80,7 +80,17 @@
   border: 1px solid #cbd5e1;
 }
 .box-demo.empty { background: #ffffff; }
-.box-demo.booked { background: #ff4d4f; border-color: #ff4d4f; }
+.box-demo.held { background: #ff4d4f; border-color: #ff4d4f; }
+.box-demo.booked {
+  background: repeating-linear-gradient(
+    45deg,
+    #C62828 0px,
+    #C62828 8px,
+    #8E0000 8px,
+    #8E0000 16px
+  );
+  border-color: #8E0000;
+}
 .box-demo.locked { background: #cccccc; border-color: #cccccc; }
 .box-demo.selecting { background: #c6f6d5; border-color: #38a169; }
 
@@ -223,8 +233,21 @@
 .grid-slot-box:hover { background: #ecfdf5; }
 
 /* Trạng thái */
-.grid-slot-box.booked {
+.grid-slot-box.held {
     background: #ff4d4f !important;
+    color: white;
+    cursor: pointer;
+    position: relative;
+}
+
+.grid-slot-box.booked {
+    background: repeating-linear-gradient(
+        45deg,
+        #C62828 0px,
+        #C62828 8px,
+        #8E0000 8px,
+        #8E0000 16px
+    ) !important;
     color: white;
     cursor: not-allowed;
     position: relative;
@@ -435,17 +458,23 @@
   }
 
   .payment-bar-v3 {
-    padding: 14px 0;
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    z-index: 1800;
   }
 
   .payment-bar-v3 .container {
     align-items: stretch !important;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .payment-bar-v3 span {
+    font-size: 1rem !important;
   }
 
   .payment-bar-v3 h4 {
-    font-size: 1.25rem;
+    font-size: 1.25rem !important;
+    line-height: 1.2;
   }
 
   .btn-next-v3 {
@@ -456,6 +485,10 @@
 }
 
 @media (max-width: 480px) {
+  .booking-page-premium {
+    padding-bottom: 150px;
+  }
+
   .booking-nav-premium h5 {
     font-size: 0.95rem;
   }
@@ -467,6 +500,22 @@
 
   .legend-item-v3 {
     flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+
+  .legend-row-v3 {
+    gap: 10px 12px;
+  }
+
+  .booking-note-panel {
+    padding: 12px 14px;
+    font-size: 0.92rem;
+  }
+
+  .matrix-wrapper {
+    margin-left: -4px;
+    margin-right: -4px;
+    border-radius: 8px;
   }
 
   .calendar-modal-content {
@@ -481,5 +530,15 @@
     left: 12px;
     right: 12px;
     top: 12px;
+  }
+
+  .payment-bar-v3 .container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .btn-next-v3 {
+    min-height: 44px;
+    font-size: 1rem !important;
   }
 }

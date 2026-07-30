@@ -8,7 +8,7 @@ import axiosClient from '../api/axiosClient';
 import '../styles/forgot-password.css';
 
 const RESEND_SECONDS = 60;
-const OTP_EXPIRE_SECONDS = 5 * 60;
+const OTP_EXPIRE_SECONDS = 60;
 
 const steps = [
   { key: 1, label: 'Email' },
@@ -196,7 +196,7 @@ const ForgotPasswordPage = () => {
                 <ShieldLock size={34} />
               </div>
               <h1>Lấy lại quyền truy cập ArenaHub</h1>
-              <p>Mã OTP được gửi qua email và chỉ có hiệu lực trong 5 phút để bảo vệ tài khoản của bạn.</p>
+              <p>Mã OTP được gửi qua email và chỉ có hiệu lực trong 1 phút để bảo vệ tài khoản của bạn.</p>
             </div>
           </Col>
 
@@ -252,7 +252,6 @@ const ForgotPasswordPage = () => {
                       <Form.Control
                         inputMode="numeric"
                         maxLength={6}
-                        placeholder="123456"
                         value={otp}
                         onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="border-0 bg-transparent shadow-none"

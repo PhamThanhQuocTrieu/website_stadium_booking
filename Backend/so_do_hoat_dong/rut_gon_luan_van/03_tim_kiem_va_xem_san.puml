@@ -1,0 +1,51 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+title So do hoat dong tim kiem va xem chi tiet san
+
+|Nguoi dung|
+start
+:Truy cap trang danh sach san;
+:Nhap tieu chi tim kiem va ngay dat;
+
+|He thong|
+:Tiep nhan tieu chi tim kiem;
+
+|Co so du lieu|
+:Lay danh sach san phu hop;
+:Lay booking trong ngay;
+:Lay danh gia hop le cua san;
+
+|He thong|
+:Tinh so khung gio con trong cua tung san;
+if (San dang bao tri?) then (Co)
+  :Gan trang thai bao tri;
+else (Khong)
+  if (Con slot trong?) then (Co)
+    :Gan trang thai con lich;
+  else (Khong)
+    :Gan trang thai het lich;
+  endif
+endif
+
+:Hien thi danh sach san;
+
+|Nguoi dung|
+:Chon mot san de xem chi tiet;
+
+|He thong|
+:Tiep nhan yeu cau xem chi tiet;
+
+|Co so du lieu|
+:Lay thong tin san, bang gia, hinh anh va danh gia;
+
+|He thong|
+:Hien thi bang gia, hinh anh, danh gia va nut dat san;
+stop
+@enduml

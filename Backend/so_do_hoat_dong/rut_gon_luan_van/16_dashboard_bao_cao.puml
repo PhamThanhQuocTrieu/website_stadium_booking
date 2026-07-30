@@ -1,0 +1,66 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam activityFontSize 18
+skinparam activityDiamondFontSize 17
+skinparam titleFontSize 22
+skinparam swimlaneTitleFontSize 18
+skinparam arrowThickness 1.4
+skinparam Padding 8
+skinparam nodesep 35
+skinparam ranksep 35
+title So do hoat dong dashboard va bao cao doanh thu
+
+|Admin|
+start
+:Mo man hinh dashboard\nhoac bao cao doanh thu;
+
+|He thong|
+:Xac thuc quyen admin;
+if (Khong co quyen?) then (Co)
+  :Tu choi truy cap;
+  stop
+else (Khong)
+  :Cho phep truy cap;
+endif
+
+|Admin|
+:Chon che do xem\nva khoang thoi gian;
+
+|He thong|
+:Kiem tra tham so loc;
+if (Tham so khong hop le?) then (Co)
+  :Thong bao loi;
+  stop
+else (Khong)
+  :Xac dinh loai bao cao;
+endif
+
+if (Xem dashboard?) then (Co)
+  |Co so du lieu|
+  :Lay du lieu tong quan:\nnguoi dung, booking,\nsan, voucher, danh gia;
+
+  |He thong|
+  :Tinh doanh thu hom nay,\ntong doanh thu,\nso luong booking;
+  :Tong hop san noi bat,\nkhach hang tich cuc,\ndanh gia moi;
+  :Tao du lieu bieu do dashboard;
+
+else (Khong)
+  |Co so du lieu|
+  :Lay booking theo bo loc:\nngay/thang, san,\nloai san, trang thai\nthanh toan;
+
+  |He thong|
+  :Tinh tong doanh thu,\nso don da thanh toan,\nchua thanh toan,\nhoan tien, da huy;
+  :Thong ke san, khung gio,\nkhach hang co doanh thu cao;
+  :Tao bang chi tiet booking;
+  :Phan trang ket qua bao cao;
+endif
+
+|He thong|
+:Tra du lieu thong ke\ncho giao dien admin;
+
+|Admin|
+:Xem dashboard\nhoac bao cao doanh thu;
+stop
+@enduml

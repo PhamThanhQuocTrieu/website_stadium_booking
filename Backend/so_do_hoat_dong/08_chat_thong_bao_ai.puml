@@ -1,0 +1,93 @@
+@startuml
+title Chat, thong bao realtime va AI chat
+
+start
+:Client ket noi Socket.IO va goi API;
+
+if (Chat user-admin?) then (/api/chat)
+  partition "User gui tin nhan" {
+    :protect JWT;
+    :POST /messages;
+    :Tim hoac tao Conversation cua user;
+    :Tao Message senderRole=user;
+    :Cap nhat lastMessage, unreadForAdmin;
+    :Emit chat updates cho admin va user;
+    :Tra message;
+  }
+  partition "Admin tra loi" {
+    :protect + adminOnly;
+    :POST /conversations/:id/messages;
+    :Kiem tra conversation;
+    :Tao Message senderRole=admin;
+    :Cap nhat unreadForUser;
+    :Emit chat updates;
+    :Tra message;
+  }
+  partition "Trang thai chat" {
+    :GET conversations/my hoac admin list;
+    :GET messages;
+    :PUT read/delivered;
+    :PUT close/reopen cho admin;
+  }
+  stop
+endif
+
+if (Thong bao?) then (/api/notifications)
+  partition "User notifications" {
+    :protect JWT;
+    :GET thong bao cua toi;
+    :PATCH mark read mot thong bao;
+    :PATCH read-all;
+    :DELETE thong bao cua toi;
+  }
+  partition "Admin notifications" {
+    :protect + adminOnly;
+    :GET tat ca notification;
+    :POST tao notification;
+    if (Gui cho nhom user?) then (Co)
+      :Tao notification cho nhieu user;
+    else (Mot user)
+      :Tao notification cho user duoc chon;
+    endif
+    :Emit realtime qua Socket.IO;
+  }
+  stop
+endif
+
+if (AI chat?) then (/api/ai-chat)
+  partition "POST /send" {
+    :protect JWT;
+    :Nhan message va optional bookingId;
+    :Validate message khong rong, toi da 2000 ky tu;
+    :Validate bookingId neu co;
+    :Lay profile user tu req.user;
+    :Tim ChatSession moi nhat theo user va relatedBooking;
+    if (Chua co session?) then (Co)
+      :Tao ChatSession moi voi messages rong;
+    endif
+    :Luu tin nhan user vao history;
+    :Emit ai_typing_start;
+    partition "aiChatService" {
+      :Lay context san phu hop;
+      :Lay context lich trong neu message co ngay/gio;
+      :Lay voucher cua user;
+      :Lay booking context neu co bookingId;
+      :Lay policy context;
+      :Tao prompt ArenaHub;
+      :Goi Gemini model va fallback neu can;
+    }
+    :Luu cau tra loi AI;
+    :Emit ai_typing_stop;
+    :Emit ai_message kem session va message moi;
+    :Tra reply, message va session;
+  }
+  partition "History" {
+    :GET /history lay danh sach ChatSession cua user;
+    :Populate relatedBooking;
+    :DELETE /clear xoa tat ca ChatSession cua user;
+    :Emit ai_history_cleared;
+  }
+endif
+
+stop
+@enduml
