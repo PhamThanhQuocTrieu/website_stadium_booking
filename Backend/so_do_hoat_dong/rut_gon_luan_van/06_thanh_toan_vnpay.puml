@@ -11,72 +11,68 @@ title So do hoat dong thanh toan booking qua VNPay
 
 |Nguoi dung|
 start
-:Bam thanh toan;
+:Nhap thong tin nguoi nhan san;
+:Chon dich vu/voucher neu co;
+:Bam xac nhan va thanh toan;
 
 |He thong|
 :Xac thuc nguoi dung;
 
 |Co so du lieu|
-:Kiem tra booking;
+:Lay booking cho thanh toan;
 
-if (Booking khong thuoc nguoi dung?) then (Co)
-  |He thong|
+|He thong|
+if (Booking khong hop le\nhoac khong thuoc nguoi dung?) then (Co)
   :Tu choi thanh toan;
   stop
 endif
 
-if (Booking het thoi gian giu cho?) then (Co)
+if (Da het 3 phut giu cho?) then (Co)
   |Co so du lieu|
-  :Huy booking;
+  :Huy booking tam;
+  :Giai phong khung gio;
   |He thong|
-  :Thong bao dat lai;
-  stop
-endif
-
-if (Booking da thanh toan hoac da huy?) then (Co)
-  |He thong|
-  :Thong bao trang thai khong hop le;
+  :Thong bao het thoi gian\ngiu cho, yeu cau dat lai;
   stop
 endif
 
 |He thong|
-:Kiem tra so tien thanh toan;
+:Cap nhat thong tin nguoi nhan san;
+:Tinh lai tong tien sau\ndich vu va voucher;
 
 |Co so du lieu|
-:Tao hoac lay giao dich VNPay dang cho;
-:Cap nhat booking sang cho thanh toan;
+:Luu thong tin booking\nva giao dich dang cho;
 
 |He thong|
-:Tao URL thanh toan VNPay;
+:Tao duong dan thanh toan VNPay;
 
 |Nguoi dung|
-:Chuyen nguoi dung sang cong VNPay;
+:Thanh toan tai cong VNPay;
 
 |VNPay|
-:Xu ly giao dich thanh toan;
-:Tra ket qua ve he thong;
+:Xu ly giao dich;
+:Tra ket qua thanh toan ve he thong;
 
 |He thong|
-:Xac minh chu ky;
-if (Chu ky khong hop le?) then (Co)
-  :Tu choi ket qua;
-  stop
-endif
-
+:Xac minh ket qua tu VNPay;
 if (Thanh toan thanh cong?) then (Co)
   |Co so du lieu|
   :Cap nhat payment thanh cong;
-  :Cap nhat booking da xac nhan;
-  :Danh dau voucher da su dung;
+  :Xac nhan booking;
+  :Xoa thoi gian giu cho;
+  :Ghi nhan voucher da su dung neu co;
   |He thong|
-  :Gui thong bao thanh cong;
+  :Thong bao dat san thanh cong;
 else (Khong)
   |Co so du lieu|
   :Cap nhat payment that bai;
-  :Cap nhat booking thanh toan that bai;
+  :Huy booking neu con dang cho;
+  :Giai phong khung gio;
+  |He thong|
+  :Thong bao thanh toan that bai;
 endif
 
-|He thong|
-:Tra ket qua cho frontend;
+|Nguoi dung|
+:Xem trang ket qua thanh toan;
 stop
 @enduml

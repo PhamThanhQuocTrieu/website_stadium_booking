@@ -101,14 +101,20 @@ const ScheduleManager = () => {
       fetchRecurring();
     };
     socket.on('schedule:refresh', refetch);
+    socket.on('slot_booked_success', refetch);
     socket.on('booking:updated', refetch);
     socket.on('booking:rescheduled', refetch);
     socket.on('booking:recurring-created', refetch);
+    socket.on('booking_cancelled', refetch);
+    socket.on('booking_cancel_requested', refetch);
     return () => {
       socket.off('schedule:refresh', refetch);
+      socket.off('slot_booked_success', refetch);
       socket.off('booking:updated', refetch);
       socket.off('booking:rescheduled', refetch);
       socket.off('booking:recurring-created', refetch);
+      socket.off('booking_cancelled', refetch);
+      socket.off('booking_cancel_requested', refetch);
     };
   }, [currentUser, fetchSchedule, fetchRecurring]);
 

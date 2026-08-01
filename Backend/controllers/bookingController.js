@@ -8,7 +8,7 @@ const Notification = require('../models/Notification');
 const BookingWaitlist = require('../models/BookingWaitlist');
 const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
-const { getSocket } = require('../utils/socket');
+const { getSocket, emitToAdmin } = require('../utils/socket');
 const { createNotification } = require('../services/notificationService');
 const { validateVoucherForBooking } = require('../services/voucherService');
 const { findUserTimeConflict } = require('../services/bookingConflictService');
@@ -194,6 +194,13 @@ const buildTimelineSlotBookings = (bookings = [], currentUserId = null) => {
   return slotBookings;
 };
 
+const emitScheduleRefresh = (payload = {}) => {
+  emitToAdmin('schedule:refresh', {
+    message: 'Lich san da duoc cap nhat',
+    ...payload
+  });
+};
+
 const notifyWaitlistedUsersForExpiredHold = async (booking, io) => {
   const waitlistItem = await BookingWaitlist.findOneAndUpdate(
     {
@@ -272,6 +279,12 @@ const notifyWaitlistedUsersForExpiredHold = async (booking, io) => {
       slotStatus: 'held'
     });
   }
+  emitScheduleRefresh({
+    bookingId: nextBooking._id,
+    fieldId: String(nextBooking.field),
+    date: nextBooking.date,
+    action: 'booking:held'
+  });
 
   const fieldName = field.fieldName || field.name || 'sân';
   const existingNotification = await Notification.findOne({
@@ -429,6 +442,12 @@ const cancelExpiredPendingBookings = async (io = getSocket()) => {
     await booking.save();
     await notifyWaitlistedUsersForExpiredHold(booking, io);
     if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
+    emitScheduleRefresh({
+      bookingId: booking._id,
+      fieldId: String(booking.field),
+      date: booking.date,
+      action: 'booking:cancelled'
+    });
   }
 
   return { modifiedCount: expiredBookings.length };
@@ -597,6 +616,7 @@ exports.reserveSlots = async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       io.emit('slot_booked_success', {
+        bookingId: newBooking._id,
         fieldId: String(fieldId),
         date,
         slots: selectedSlots,
@@ -604,6 +624,12 @@ exports.reserveSlots = async (req, res) => {
         slotStatus: 'held'
       });
     }
+    emitScheduleRefresh({
+      bookingId: newBooking._id,
+      fieldId: String(fieldId),
+      date,
+      action: 'booking:held'
+    });
     return res.status(200).json({ success: true, bookingId: newBooking._id, totalPrice });
   } catch (error) {
     if (error.code === 11000) {
@@ -907,6 +933,12 @@ exports.cancelBooking = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
+    emitScheduleRefresh({
+      bookingId: booking._id,
+      fieldId: String(booking.field),
+      date: booking.date,
+      action: 'booking:cancelled'
+    });
 
     return res.json({ success: true, booking, payment: latestPayment });
   } catch (error) {
@@ -963,6 +995,13 @@ exports.requestCancelBooking = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) io.emit('booking_cancel_requested', { bookingId: booking._id, fieldId: booking.field, date: booking.date, status: booking.status });
+    emitScheduleRefresh({
+      bookingId: booking._id,
+      fieldId: String(booking.field),
+      date: booking.date,
+      status: booking.status,
+      action: paid ? 'booking:cancel-requested' : 'booking:cancelled'
+    });
 
     return res.json({ success: true, booking, payment: latestPayment });
   } catch (error) {
@@ -996,6 +1035,12 @@ exports.approveCancelBooking = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) io.emit('booking_cancelled', { bookingId: booking._id, fieldId: booking.field, date: booking.date });
+    emitScheduleRefresh({
+      bookingId: booking._id,
+      fieldId: String(booking.field),
+      date: booking.date,
+      action: 'booking:cancelled'
+    });
 
     return res.json({ success: true, booking });
   } catch (error) {

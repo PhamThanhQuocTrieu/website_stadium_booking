@@ -17,7 +17,9 @@ import {
   Newspaper,
   ScrollText,
   PanelsTopLeft,
-  BarChart3
+  BarChart3,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import axiosClient from '../../api/axiosClient';
@@ -33,10 +35,13 @@ const getStoredAdmin = () => {
   }
 };
 
+const getStoredSidebarCollapsed = () => localStorage.getItem('adminSidebarCollapsed') === 'true';
+
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(getStoredSidebarCollapsed);
 
   const loadChatUnreadCount = useCallback(async () => {
     try {
@@ -88,6 +93,14 @@ const AdminLayout = () => {
     });
   };
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('adminSidebarCollapsed', String(next));
+      return next;
+    });
+  };
+
   const menuItems = [
     { path: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/admin/fields', icon: <MapPinned size={20} />, label: 'Quản lý sân' },
@@ -108,13 +121,22 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="admin-layout">
+    <div className={`admin-layout ${sidebarCollapsed ? 'admin-layout-collapsed' : ''}`}>
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
           <span className="admin-sidebar-brand-icon">
             <LayoutDashboard size={20} />
           </span>
           <h4>ARENAHUB ADMIN</h4>
+          <button
+            type="button"
+            className="admin-sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? 'Mở rộng menu quản trị' : 'Thu gọn menu quản trị'}
+            title={sidebarCollapsed ? 'Mở rộng' : 'Thu gọn'}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
         </div>
 
         <nav className="admin-sidebar-menu" aria-label="Admin navigation">
@@ -123,6 +145,8 @@ const AdminLayout = () => {
               key={item.path}
               to={item.path}
               className={`admin-sidebar-link ${location.pathname === item.path ? 'active-menu' : ''}`}
+              title={sidebarCollapsed ? item.label : undefined}
+              aria-label={item.label}
             >
               <span className="admin-sidebar-link-icon">{item.icon}</span>
               <span className="admin-sidebar-link-text">{item.label}</span>
@@ -134,7 +158,12 @@ const AdminLayout = () => {
             </Link>
           ))}
 
-          <button onClick={handleLogout} className="admin-sidebar-logout">
+          <button
+            onClick={handleLogout}
+            className="admin-sidebar-logout"
+            title={sidebarCollapsed ? 'Đăng xuất' : undefined}
+            aria-label="Đăng xuất"
+          >
             <LogOut size={19} />
             <span>Đăng xuất</span>
           </button>

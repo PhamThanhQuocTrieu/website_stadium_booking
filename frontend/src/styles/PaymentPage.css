@@ -71,6 +71,60 @@
   border-radius: 0 12px 12px 0;
 }
 
+.payment-countdown-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+  border-radius: 0 12px 12px 0;
+  padding: 14px 16px;
+}
+
+.payment-countdown-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.payment-countdown-copy span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #065f46;
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.payment-countdown-copy small {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.payment-countdown-box strong {
+  min-width: 92px;
+  color: #047857;
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.payment-countdown-box.expired {
+  background: #fef2f2;
+  border-color: #fecaca;
+  border-left-color: #dc2626;
+}
+
+.payment-countdown-box.expired .payment-countdown-copy span,
+.payment-countdown-box.expired strong {
+  color: #b91c1c;
+}
+
 /* Nút xác nhận thanh toán */
 .btn-submit-payment {
   background: linear-gradient(135deg, #10b981, #059669);
@@ -405,6 +459,19 @@
 
   .policy-box-v3 {
     padding: 14px;
+  }
+
+  .payment-countdown-box {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .payment-countdown-box strong {
+    width: 100%;
+    text-align: left;
+    font-size: 1.35rem;
   }
 
   .btn-submit-payment {

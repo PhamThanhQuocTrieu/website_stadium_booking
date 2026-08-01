@@ -26,6 +26,7 @@ const toDateKey = (date) => date.toISOString().slice(0, 10);
 
 const isValidDateKey = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
 const isValidMonthKey = (value) => /^\d{4}-\d{2}$/.test(String(value || ''));
+const isValidYearKey = (value) => /^\d{4}$/.test(String(value || ''));
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -41,12 +42,51 @@ const getLastDayOfMonth = (month) => {
   return new Date(year, monthIndex, 0).getDate();
 };
 
+const getQuarterRange = (year, quarter) => {
+  const quarterNumber = Number(quarter);
+  const startMonthNumber = ((quarterNumber - 1) * 3) + 1;
+  const endMonthNumber = startMonthNumber + 2;
+  const startMonth = String(startMonthNumber).padStart(2, '0');
+  const endMonth = String(endMonthNumber).padStart(2, '0');
+  return {
+    startDate: `${year}-${startMonth}-01`,
+    endDate: `${year}-${endMonth}-${String(getLastDayOfMonth(`${year}-${endMonth}`)).padStart(2, '0')}`
+  };
+};
+
 const normalizeFilters = (query) => {
   const errors = [];
   const filters = {};
   const defaultRange = getDefaultRange();
 
-  if (query.month) {
+  filters.period = ['range', 'month', 'quarter', 'year'].includes(query.period) ? query.period : 'range';
+  filters.year = String(query.year || new Date().getFullYear()).trim();
+  filters.quarter = String(query.quarter || '1').trim();
+
+  if (query.month && !query.period) filters.period = 'month';
+  if (query.year && !query.period) filters.period = query.quarter ? 'quarter' : 'year';
+
+  if (filters.period === 'month') {
+    const month = query.month || `${filters.year}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    if (!isValidMonthKey(month)) errors.push('Thang khong hop le. Dinh dang dung la YYYY-MM.');
+    filters.month = String(month);
+    filters.startDate = `${filters.month}-01`;
+    filters.endDate = `${filters.month}-${String(getLastDayOfMonth(filters.month)).padStart(2, '0')}`;
+    filters.year = filters.month.slice(0, 4);
+  } else if (filters.period === 'quarter') {
+    if (!isValidYearKey(filters.year)) errors.push('Nam khong hop le.');
+    if (!['1', '2', '3', '4'].includes(filters.quarter)) errors.push('Quy khong hop le.');
+    const quarterRange = getQuarterRange(filters.year, filters.quarter);
+    filters.startDate = quarterRange.startDate;
+    filters.endDate = quarterRange.endDate;
+    filters.month = '';
+  } else if (filters.period === 'year') {
+    if (!isValidYearKey(filters.year)) errors.push('Nam khong hop le.');
+    filters.startDate = `${filters.year}-01-01`;
+    filters.endDate = `${filters.year}-12-31`;
+    filters.month = '';
+    filters.quarter = '';
+  } else if (query.month) {
     if (!isValidMonthKey(query.month)) errors.push('Thang khong hop le. Dinh dang dung la YYYY-MM.');
     filters.month = String(query.month);
     filters.startDate = `${filters.month}-01`;
@@ -132,7 +172,28 @@ const buildBasePipeline = (filters) => {
             { $in: ['$paymentStatus', paymentStatusGroups.cancelled] }
           ]
         },
-        monthKey: { $substr: ['$date', 0, 7] }
+        monthKey: { $substr: ['$date', 0, 7] },
+        quarterKey: {
+          $concat: [
+            { $substr: ['$date', 0, 4] },
+            '-Q',
+            {
+              $toString: {
+                $ceil: {
+                  $divide: [{ $toInt: { $substr: ['$date', 5, 2] } }, 3]
+                }
+              }
+            }
+          ]
+        },
+        isActiveBooking: {
+          $not: [{
+            $or: [
+              { $in: ['$status', CANCELLED_BOOKING_STATUSES] },
+              { $in: ['$paymentStatus', paymentStatusGroups.cancelled] }
+            ]
+          }]
+        }
       }
     },
     {
@@ -166,6 +227,12 @@ const getSortStage = (filters) => {
   return { date: filters.sortOrder, startTime: filters.sortOrder };
 };
 
+const getRevenueTrendGroupKey = (filters) => {
+  if (filters.period === 'month') return '$date';
+  if (filters.period === 'quarter' || filters.period === 'year') return '$monthKey';
+  return filters.startDate.slice(0, 7) !== filters.endDate.slice(0, 7) ? '$monthKey' : '$date';
+};
+
 const formatBookingRow = (booking) => ({
   _id: booking._id,
   bookingCode: booking.bookingCode || String(booking._id).slice(-8).toUpperCase(),
@@ -187,7 +254,7 @@ exports.getRevenueReport = async (req, res) => {
 
     const basePipeline = buildBasePipeline(filters);
     const skip = (filters.page - 1) * filters.limit;
-    const useMonthlyRevenue = filters.startDate.slice(0, 7) !== filters.endDate.slice(0, 7);
+    const revenueTrendGroupKey = getRevenueTrendGroupKey(filters);
 
     const [
       reportResult,
@@ -225,6 +292,42 @@ exports.getRevenueReport = async (req, res) => {
               { $sort: { revenue: -1, bookings: -1 } },
               { $limit: 8 }
             ],
+            topBookedFields: [
+              { $match: { isActiveBooking: true } },
+              {
+                $group: {
+                  _id: '$field',
+                  fieldName: { $first: '$fieldDoc.fieldName' },
+                  fieldType: { $first: '$fieldDoc.type' },
+                  bookings: { $sum: 1 },
+                  revenue: { $sum: { $cond: ['$isPaid', '$revenueAmount', 0] } }
+                }
+              },
+              { $sort: { bookings: -1, revenue: -1 } },
+              { $limit: 8 }
+            ],
+            topFieldTypes: [
+              { $match: { isActiveBooking: true } },
+              {
+                $group: {
+                  _id: { $ifNull: ['$fieldDoc.type', 'Khac'] },
+                  fieldType: { $first: { $ifNull: ['$fieldDoc.type', 'Khac'] } },
+                  bookings: { $sum: 1 },
+                  revenue: { $sum: { $cond: ['$isPaid', '$revenueAmount', 0] } },
+                  fields: { $addToSet: '$field' }
+                }
+              },
+              {
+                $project: {
+                  fieldType: 1,
+                  bookings: 1,
+                  revenue: 1,
+                  fieldCount: { $size: '$fields' }
+                }
+              },
+              { $sort: { bookings: -1, revenue: -1 } },
+              { $limit: 8 }
+            ],
             topHours: [
               { $match: { isPaid: true } },
               {
@@ -255,7 +358,7 @@ exports.getRevenueReport = async (req, res) => {
               { $match: { isPaid: true } },
               {
                 $group: {
-                  _id: useMonthlyRevenue ? '$monthKey' : '$date',
+                  _id: revenueTrendGroupKey,
                   revenue: { $sum: '$revenueAmount' },
                   bookings: { $sum: 1 }
                 }
@@ -312,7 +415,10 @@ exports.getRevenueReport = async (req, res) => {
       filters: {
         startDate: filters.startDate,
         endDate: filters.endDate,
-        month: filters.month || ''
+        month: filters.month || '',
+        period: filters.period,
+        year: filters.year || '',
+        quarter: filters.quarter || ''
       },
       summary,
       charts: {
@@ -321,6 +427,18 @@ exports.getRevenueReport = async (req, res) => {
           fieldType: item.fieldType || '',
           revenue: item.revenue || 0,
           bookings: item.bookings || 0
+        })),
+        topBookedFields: (data.topBookedFields || []).map((item) => ({
+          fieldName: item.fieldName || 'San da xoa',
+          fieldType: item.fieldType || '',
+          revenue: item.revenue || 0,
+          bookings: item.bookings || 0
+        })),
+        topFieldTypes: (data.topFieldTypes || []).map((item) => ({
+          fieldType: item.fieldType || 'Khac',
+          revenue: item.revenue || 0,
+          bookings: item.bookings || 0,
+          fieldCount: item.fieldCount || 0
         })),
         topHours: (data.topHours || []).map((item) => ({
           hour: item._id || 'Khac',

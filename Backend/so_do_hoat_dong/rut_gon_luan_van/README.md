@@ -9,9 +9,9 @@ Khac voi thu muc cha, cac so do o day chi giu cac buoc nghiep vu chinh, han che 
 - `01_dang_ky_dang_nhap.puml`: Dang ky, dang nhap va cap token.
 - `02_quen_mat_khau_otp.puml`: Khoi phuc mat khau bang OTP.
 - `03_tim_kiem_va_xem_san.puml`: Tim kiem san va xem chi tiet san.
-- `04_dat_san_giu_cho.puml`: Chon slot, giu cho va tao booking cho thanh toan.
+- `04_dat_san_giu_cho.puml`: Chon slot, tao booking cho thanh toan va giu cho tam thoi 3 phut.
 - `05_cap_nhat_booking_voucher_dich_vu.puml`: Them dich vu va ap dung voucher cho booking.
-- `06_thanh_toan_vnpay.puml`: Thanh toan booking qua VNPay.
+- `06_thanh_toan_vnpay.puml`: Kiem tra thoi gian giu cho, tao giao dich va xu ly ket qua VNPay.
 - `07_huy_don_dat_san.puml`: Huy don va admin duyet huy.
 - `08_quan_ly_lich_admin.puml`: Admin xem lich va doi lich.
 - `09_lich_co_dinh.puml`: Tao va quan ly lich co dinh.

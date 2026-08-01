@@ -24,15 +24,22 @@ import {
   Search,
   Trophy,
   Users,
-  WalletCards
+  WalletCards,
+  Dumbbell,
+  Target
 } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import '../../styles/admin/revenue-report.css';
 
+const currentYear = String(new Date().getFullYear());
+
 const defaultFilters = {
+  period: 'range',
   startDate: '',
   endDate: '',
   month: '',
+  year: currentYear,
+  quarter: '1',
   field: '',
   fieldType: '',
   paymentStatus: '',
@@ -43,7 +50,7 @@ const defaultFilters = {
 
 const emptyReport = {
   summary: {},
-  charts: { topFields: [], topHours: [], topCustomers: [], revenueTrend: [] },
+  charts: { topFields: [], topBookedFields: [], topFieldTypes: [], topHours: [], topCustomers: [], revenueTrend: [] },
   rows: [],
   pagination: { total: 0, page: 1, limit: 10, totalPages: 1 },
   options: { fields: [], fieldTypes: [] }
@@ -142,6 +149,13 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+const getTrendTitle = (period) => {
+  if (period === 'month') return 'Doanh thu theo ngày trong tháng';
+  if (period === 'quarter') return 'Doanh thu theo tháng trong quý';
+  if (period === 'year') return 'Doanh thu theo tháng trong năm';
+  return 'Doanh thu theo thời gian';
+};
+
 const StatCard = ({ icon, label, value, hint, tone, loading }) => (
   <article className="revenue-report-stat">
     {loading ? (
@@ -217,11 +231,23 @@ const RevenueReport = () => {
     setPage(1);
     setFilters((prev) => {
       const next = { ...prev, [key]: value };
+      if (key === 'period') {
+        if (value !== 'month') next.month = '';
+        if (value !== 'range') {
+          next.startDate = '';
+          next.endDate = '';
+        }
+      }
       if (key === 'month' && value) {
+        next.period = 'month';
         next.startDate = '';
         next.endDate = '';
+        next.year = value.slice(0, 4);
       }
-      if ((key === 'startDate' || key === 'endDate') && value) next.month = '';
+      if ((key === 'startDate' || key === 'endDate') && value) {
+        next.period = 'range';
+        next.month = '';
+      }
       return next;
     });
   };
@@ -403,9 +429,38 @@ const RevenueReport = () => {
 
       <form className="revenue-report-filters" onSubmit={handleSearchSubmit}>
         <div className="filter-title"><Filter size={18} /><strong>Bộ lọc</strong></div>
-        <label><span>Từ ngày</span><input type="date" value={filters.startDate} onChange={(event) => updateFilter('startDate', event.target.value)} /></label>
-        <label><span>Đến ngày</span><input type="date" value={filters.endDate} onChange={(event) => updateFilter('endDate', event.target.value)} /></label>
-        <label><span>Theo tháng</span><input type="month" value={filters.month} onChange={(event) => updateFilter('month', event.target.value)} /></label>
+        <label>
+          <span>Kỳ báo cáo</span>
+          <select value={filters.period} onChange={(event) => updateFilter('period', event.target.value)}>
+            <option value="range">Khoảng ngày</option>
+            <option value="month">Theo tháng</option>
+            <option value="quarter">Theo quý</option>
+            <option value="year">Theo năm</option>
+          </select>
+        </label>
+        {filters.period === 'range' && (
+          <>
+            <label><span>Từ ngày</span><input type="date" value={filters.startDate} onChange={(event) => updateFilter('startDate', event.target.value)} /></label>
+            <label><span>Đến ngày</span><input type="date" value={filters.endDate} onChange={(event) => updateFilter('endDate', event.target.value)} /></label>
+          </>
+        )}
+        {filters.period === 'month' && (
+          <label><span>Tháng</span><input type="month" value={filters.month} onChange={(event) => updateFilter('month', event.target.value)} /></label>
+        )}
+        {(filters.period === 'quarter' || filters.period === 'year') && (
+          <label><span>Năm</span><input type="number" min="2020" max="2100" value={filters.year} onChange={(event) => updateFilter('year', event.target.value)} /></label>
+        )}
+        {filters.period === 'quarter' && (
+          <label>
+            <span>Quý</span>
+            <select value={filters.quarter} onChange={(event) => updateFilter('quarter', event.target.value)}>
+              <option value="1">Quý 1</option>
+              <option value="2">Quý 2</option>
+              <option value="3">Quý 3</option>
+              <option value="4">Quý 4</option>
+            </select>
+          </label>
+        )}
         <label>
           <span>Sân</span>
           <select value={filters.field} onChange={(event) => updateFilter('field', event.target.value)}>
@@ -462,7 +517,7 @@ const RevenueReport = () => {
       </section>
 
       <section className="revenue-report-grid two-columns">
-        <ChartPanel title="Doanh thu theo thời gian" icon={<CircleDollarSign size={18} />}>
+        <ChartPanel title={getTrendTitle(filters.period)} icon={<CircleDollarSign size={18} />}>
           {loading ? <SkeletonBlock className="skeleton-chart" /> : charts.revenueTrend.length ? (
             <div className="revenue-report-chart">
               <ResponsiveContainer width="100%" height={300}>
@@ -474,6 +529,41 @@ const RevenueReport = () => {
                   <Line name="Doanh thu" type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+          ) : <EmptyState />}
+        </ChartPanel>
+
+        <ChartPanel title="Sân được đặt nhiều nhất" icon={<Target size={18} />}>
+          {loading ? <SkeletonBlock className="skeleton-chart" /> : charts.topBookedFields.length ? (
+            <div className="revenue-report-chart">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={charts.topBookedFields} margin={{ top: 12, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="fieldName" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} interval={0} angle={-12} height={62} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar name="Lượt đặt" dataKey="bookings" fill="#0f766e" radius={[10, 10, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : <EmptyState />}
+        </ChartPanel>
+      </section>
+
+      <section className="revenue-report-grid two-columns">
+        <ChartPanel title="Loại hình được chơi nhiều nhất" icon={<Dumbbell size={18} />}>
+          {loading ? <SkeletonBlock className="skeleton-chart" /> : charts.topFieldTypes.length ? (
+            <div className="revenue-report-ranking">
+              {charts.topFieldTypes.map((type, index) => (
+                <article key={`${type.fieldType}-${index}`}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{type.fieldType}</strong>
+                    <small>{formatNumber(type.bookings)} lượt đặt từ {formatNumber(type.fieldCount)} sân</small>
+                  </div>
+                  <b>{formatCurrency(type.revenue)}</b>
+                </article>
+              ))}
             </div>
           ) : <EmptyState />}
         </ChartPanel>

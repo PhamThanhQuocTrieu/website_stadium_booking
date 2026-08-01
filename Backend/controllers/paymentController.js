@@ -5,7 +5,7 @@ const Field = require('../models/Field');
 const { vnpay, vnpayConfig } = require('../config/vnpay');
 const { createNotification } = require('../services/notificationService');
 const { markVoucherUsed } = require('../services/voucherService');
-const { getSocket } = require('../utils/socket');
+const { getSocket, emitToAdmin } = require('../utils/socket');
 
 const paidStatuses = ['PAID', 'Paid'];
 const cancelledStatuses = ['CANCELLED', 'Cancelled'];
@@ -55,6 +55,19 @@ const attachPaymentToBooking = async (booking) => {
   return { ...bookingData, payment };
 };
 
+const emitScheduleRefresh = (booking, action) => {
+  if (!booking) return;
+  emitToAdmin('schedule:refresh', {
+    message: 'Lich san da duoc cap nhat',
+    bookingId: booking._id,
+    fieldId: String(booking.field),
+    date: booking.date,
+    status: booking.status,
+    paymentStatus: booking.paymentStatus,
+    action
+  });
+};
+
 const applySuccessPayment = async (payment, query, io) => {
   const shouldNotify = payment.status !== 'SUCCESS';
 
@@ -80,11 +93,15 @@ const applySuccessPayment = async (payment, query, io) => {
     const socket = io || getSocket();
     if (socket && shouldNotify) {
       socket.emit('slot_booked_success', {
+        bookingId: booking._id,
         fieldId: String(booking.field),
         date: booking.date,
         slots: expandBookingSlots(booking),
         slotStatus: 'booked'
       });
+    }
+    if (shouldNotify) {
+      emitScheduleRefresh(booking, 'booking:paid');
     }
     if (shouldNotify) {
       await markVoucherUsed(booking, io);

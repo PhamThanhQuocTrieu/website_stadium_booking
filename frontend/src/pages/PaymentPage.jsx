@@ -3,13 +3,32 @@ import { Container, Row, Col, Form, Button, Spinner, Modal } from 'react-bootstr
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, ShieldCheck, CalendarCheck, Wallet2, 
-  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash, QrCode 
+  Person, Telephone, PencilSquare, InfoCircle, PlusCircle, Trash, QrCode, ClockHistory 
 } from 'react-bootstrap-icons';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import api from '../api/api';
 import vnpayLogo from '../assets/vnpay-logo.jpg';
 import '../styles/PaymentPage.css';
+
+const HOLD_DURATION_SECONDS = 3 * 60;
+
+const getHoldExpiryTime = (booking) => {
+  const holdExpiresAt = booking?.holdExpiresAt ? new Date(booking.holdExpiresAt).getTime() : NaN;
+  if (Number.isFinite(holdExpiresAt)) return holdExpiresAt;
+
+  const createdAt = booking?.createdAt ? new Date(booking.createdAt).getTime() : NaN;
+  if (Number.isFinite(createdAt)) return createdAt + HOLD_DURATION_SECONDS * 1000;
+
+  return null;
+};
+
+const formatCountdown = (seconds) => {
+  const safeSeconds = Math.max(0, Number(seconds || 0));
+  const minutes = Math.floor(safeSeconds / 60).toString().padStart(2, '0');
+  const remainSeconds = (safeSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remainSeconds}`;
+};
 
 const PaymentPage = () => {
   const location = useLocation();
@@ -34,6 +53,7 @@ const PaymentPage = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [myVouchers, setMyVouchers] = useState([]);
+  const [remainingSeconds, setRemainingSeconds] = useState(HOLD_DURATION_SECONDS);
 
   // State quản lý form người đặt
   const [formData, setFormData] = useState({
@@ -103,6 +123,24 @@ const PaymentPage = () => {
 
     fetchAllData();
   }, [bookingId, navigate, totalAmount]);
+
+  useEffect(() => {
+    if (!bookingDetail) return undefined;
+
+    const expiresAt = getHoldExpiryTime(bookingDetail);
+    if (!expiresAt) {
+      setRemainingSeconds(HOLD_DURATION_SECONDS);
+      return undefined;
+    }
+
+    const tick = () => {
+      setRemainingSeconds(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [bookingDetail]);
 
   // --- LOGIC XỬ LÝ DỊCH VỤ ---
   const getSelectedServiceQuantity = (serviceId) => (
@@ -187,6 +225,7 @@ const PaymentPage = () => {
   const calculateOriginalTotal = () => calculateFieldSubtotal() + calculateServiceTotal();
   const calculateFinalTotal = () => appliedVoucher?.finalAmount ?? calculateOriginalTotal();
   const calculateDiscount = () => appliedVoucher?.discountAmount ?? 0;
+  const isHoldExpired = remainingSeconds <= 0;
   // ---------------------------
 
   const handleApplyVoucher = async (codeToApply = voucherCode) => {
@@ -224,6 +263,10 @@ const PaymentPage = () => {
   // Xử lý gửi yêu cầu thanh toán tích hợp VNPay Sandbox
   const handleConfirmPayment = async (e) => {
     e.preventDefault();
+    if (isHoldExpired) {
+      Swal.fire('Hết thời gian giữ chỗ', 'Thời gian thanh toán 3 phút đã hết. Vui lòng quay lại chọn lịch và đặt sân lại.', 'warning');
+      return;
+    }
     if (!formData.fullName || !formData.phone || isProcessing) return;
 
     setIsProcessing(true);
@@ -384,6 +427,14 @@ const PaymentPage = () => {
             <div className="summary-card-v3 shadow-sm p-4 bg-white">
               <h5 className="fw-bold mb-4 text-dark border-start border-4 border-success ps-2">THÔNG TIN KHÁCH HÀNG TẠI QUẦY</h5>
 
+              <div className={`payment-countdown-box mb-4 ${isHoldExpired ? 'expired' : ''}`}>
+                <div className="payment-countdown-copy">
+                  <span><ClockHistory size={18} /> Thời gian giữ chỗ</span>
+                  <small>{isHoldExpired ? 'Đơn giữ chỗ đã hết hạn' : 'Hoàn tất thanh toán trước khi hết giờ'}</small>
+                </div>
+                <strong>{formatCountdown(remainingSeconds)}</strong>
+              </div>
+
               <Form onSubmit={handleConfirmPayment}>
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-bold text-secondary"><Person className="me-1" /> Tên người nhận sân *</Form.Label>
@@ -527,10 +578,10 @@ const PaymentPage = () => {
                 <Button
                   type="submit"
                   className="w-100 btn-submit-payment d-flex align-items-center justify-content-center gap-2"
-                  disabled={isProcessing}
+                  disabled={isProcessing || isHoldExpired}
                 >
                   {isProcessing ? <Spinner animation="border" size="sm" /> : <Wallet2 />}
-                  <span>XÁC NHẬN & THANH TOÁN</span>
+                  <span>{isHoldExpired ? 'HẾT THỜI GIAN GIỮ CHỖ' : 'XÁC NHẬN & THANH TOÁN'}</span>
                 </Button>
               </Form>
             </div>
